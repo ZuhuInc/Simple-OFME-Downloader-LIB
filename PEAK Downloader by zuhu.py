@@ -14,7 +14,7 @@ import re
 import hashlib
 
 # --- Configuration --- #
-GITHUB_LINKS_URL = "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/blob/main/Download-DB.txt"
+GITHUB_LINKS_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Download-DB.txt"
 RAR_PASSWORD = "online-fix.me"
 WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
 CLEANUP_RAR_FILE = True
