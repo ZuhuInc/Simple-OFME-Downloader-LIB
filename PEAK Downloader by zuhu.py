@@ -1,10 +1,10 @@
 """
-Simple Zuhu Peak Downloader V1.1.0 | converted using (python -m auto_py_to_exe)
+Simple Zuhu Peak Downloader V1.2.1 | converted using (python -m auto_py_to_exe)
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 
-Exe 1.1.0 dowload link:
-https://mega.nz/file/JCEzxYTR#CbBzIbNF2jKH85H5KedG00aifyCk4uVAagJdAJNQyUg
+Exe 1.3.1 download link:
+https://mega.nz/file/sOdz3bAK#PpQ7Zv9YrLLt9T4v79hLXAjYvffUEIf4Oxvj1sNrjsY
 """
 
 import requests
@@ -13,6 +13,7 @@ import tqdm
 import sys
 import subprocess
 import shutil
+import re
 
 # --- Configuration ---
 GITHUB_LINKS_URL = "https://raw.githubusercontent.com/ZuhuInc/TESTS/refs/heads/main/DWNLD.txt"
@@ -24,24 +25,48 @@ CLEANUP_RAR_FILE = True
 # --- Helper Functions ---
 
 def fetch_links_from_github(github_raw_url):
-    """Fetches key-value pairs of links from a raw text file on GitHub.""" # <-- CHANGED
-    print(f"[*] Fetching latest download links from GitHub...")
+    """
+    Fetches games and their download sources from a structured text file on GitHub.
+    Parses "SourceName (Game Name)" format.
+    """
+    print(f"[*] Fetching latest game list from GitHub...")
     try:
         response = requests.get(github_raw_url)
         response.raise_for_status()
-        links_dict = {} # <-- CHANGED: Now using a dictionary
+        
+        games = {}
+        current_game_name = None
+        current_source_name = None
+
         for line in response.text.splitlines():
             line = line.strip()
-            if not line or line.startswith('#'): continue
-            if ':' in line:
+            if not line or line.startswith('#'):
+                continue
+
+            match = re.match(r'(.+?)\s*\((.+?)\)', line)
+            if match:
+                current_source_name = match.group(1).strip()
+                current_game_name = match.group(2).strip()
+                games.setdefault(current_game_name, {})[current_source_name] = {}
+            elif ':' in line and current_game_name and current_source_name:
                 key, value = line.split(':', 1)
-                links_dict[key.strip()] = value.strip() # Store as key-value pair
-        
-        if not links_dict:
-            print("[X] ERROR: No valid key:value link pairs were found in the GitHub file.")
+                key = key.strip()
+                value = value.strip()
+                
+                if "maingame" in key.lower(): standard_key = "MainGame"
+                elif "fix" in key.lower(): standard_key = "Fix"
+                else: standard_key = key
+                
+                games[current_game_name][current_source_name][standard_key] = value
+
+        if not games:
+            print("[X] ERROR: No valid games or sources were found in the GitHub file.")
+            print("[!] Ensure the format is 'SourceName (Game Name)'.")
             return None
-        print(f"[V] Successfully fetched {len(links_dict)} link entry/entries from GitHub.")
-        return links_dict
+            
+        print(f"[V] Successfully fetched {len(games)} game(s) from GitHub.")
+        return games
+        
     except Exception as e:
         print(f"[X] ERROR: Could not fetch link file from GitHub: {e}")
         return None
@@ -54,7 +79,6 @@ def download_file(url, destination_folder):
         os.makedirs(destination_folder, exist_ok=True)
         local_filename = url.split('/')[-1].split('?')[0]
         if not local_filename: local_filename = "downloaded_file"
-        
         local_filepath = os.path.join(destination_folder, local_filename)
         print(f"[*] Starting download: {local_filename}")
         
@@ -71,7 +95,6 @@ def download_file(url, destination_folder):
         if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
             print("[X] ERROR: Downloaded size does not match expected size.")
             return None
-
         print(f"[V] Download complete: {local_filepath}")
         return local_filepath
     except Exception as e:
@@ -100,53 +123,71 @@ def winrar_extraction(winrar_path, rar_path, destination_folder, password):
         return False
 
 # --- MAIN SCRIPT LOGIC ---
-
 def main():
-    print("--- Zuhu's Smart PEAK Downloader and Extractor ---")
-    links_dict = fetch_links_from_github(GITHUB_LINKS_URL)
-    if not links_dict:
+    print("--- Zuhu's Smart Downloader and Extractor ---")
+    games = fetch_links_from_github(GITHUB_LINKS_URL)
+    if not games:
         sys.exit(1)
 
-    # --- NEW: Logic to choose download source ---
-    game_url = None
-    fix_url = None
-
-    # Check if a backup source is available to prompt the user
-    if 'MainGame' in links_dict and 'MainGameBackUP' in links_dict:
-        print("\n[?] Choose a download source:")
-        print("  [1] Primary Server (VikingFile)")
-        print("  [2] Backup Server (Dropbox)")
-        
-        choice = ""
-        while choice not in ['1', '2']:
-            choice = input("> Enter your choice (1 or 2): ").strip()
-
-        if choice == '1':
-            print("[*] Primary source selected.")
-            game_url = links_dict.get('MainGame')
-            fix_url = links_dict.get('Fix')
-        else: # choice == '2'
-            print("[*] Backup source selected.")
-            game_url = links_dict.get('MainGameBackUP')
-            fix_url = links_dict.get('FixBackUP')
+    # --- 1. Choose the Game ---
+    game_names = list(games.keys())
+    selected_game_name = None
+    if len(game_names) == 1:
+        selected_game_name = game_names[0]
+        print(f"\n[*] Only one game found: '{selected_game_name}'. Selecting it automatically.")
     else:
-        # If no backup exists, just use the primary links without asking
-        print("[*] Only one download source found. Using primary links.")
-        game_url = links_dict.get('MainGame')
-        fix_url = links_dict.get('Fix')
+        print("\n[?] Please choose which game to download:")
+        for i, name in enumerate(game_names):
+            print(f"  [{i+1}] {name}")
+        while True:
+            try:
+                choice = int(input(f"> Enter your choice (1-{len(game_names)}): ").strip())
+                if 1 <= choice <= len(game_names):
+                    selected_game_name = game_names[choice - 1]
+                    break
+                else:
+                    print(f"[!] Invalid choice. Please enter a number between 1 and {len(game_names)}.")
+            except ValueError:
+                print("[!] Invalid input. Please enter a number.")
+    
+    # --- 2. Choose the Source for the selected game ---
+    sources_for_game = games[selected_game_name]
+    source_names = list(sources_for_game.keys())
+    selected_links = None
+    if len(source_names) == 1:
+        selected_source_name = source_names[0]
+        selected_links = sources_for_game[selected_source_name]
+        print(f"[*] Only one download source for '{selected_game_name}' found: '{selected_source_name}'. Using it automatically.")
+    else:
+        print(f"\n[?] Choose a download source for '{selected_game_name}':")
+        for i, name in enumerate(source_names):
+            print(f"  [{i+1}] {name}")
+        while True:
+            try:
+                choice = int(input(f"> Enter your choice (1-{len(source_names)}): ").strip())
+                if 1 <= choice <= len(source_names):
+                    selected_source_name = source_names[choice - 1]
+                    selected_links = sources_for_game[selected_source_name]
+                    print(f"[*] You selected source: '{selected_source_name}'")
+                    break
+                else:
+                    print(f"[!] Invalid choice. Please enter a number between 1 and {len(source_names)}.")
+            except ValueError:
+                print("[!] Invalid input. Please enter a number.")
+    
+    game_url = selected_links.get('MainGame')
+    fix_url = selected_links.get('Fix')
 
     if not game_url:
-        print("[X] ERROR: Main game URL could not be determined. Check your DWNLD.txt file.")
+        print("[X] ERROR: Main game URL ('MainGame') not found in the selected source. Check your DWNLD.txt file.")
         sys.exit(1)
-
-    # --- End of new logic ---
 
     temp_download_folder = "temp_downloads"
     main_game_folder_path = None
 
-    # --- SIMPLIFIED: Process the single main game file ---
+    # --- Process Main Game File ---
     print("\n--- Processing Main Game File ---")
-    user_base_path = input("\n> " + r"Enter the BASE path for game extraction (e.g., I:\Games) and press Enter: ").strip()
+    user_base_path = input("\n> " + r"Enter the BASE path for game extraction. (Like, I:\Games) and press Enter: ").strip()
     user_base_path = os.path.abspath(user_base_path)
     if not os.path.isdir(user_base_path):
         print(f"[X] Invalid path: The directory '{user_base_path}' does not exist. Exiting.")
@@ -181,10 +222,17 @@ def main():
         download_fix_choice = input("[?] A fix/update is available. Do you want to download and apply it? (y/n): ").lower().strip()
 
         if download_fix_choice in ['y', 'yes']:
-            prompt_message = "\n> " + r"Enter the path for the fix extraction (e.g., I:\Games\PEAK) and press Enter: "
+            # <<< THIS IS THE CORRECTED BLOCK >>>
+            prompt_message = "\n" + r"> Enter the path for the fix extraction. (e.g., I:\Games\(Game-Name)"
+            # Check if we successfully auto-detected the game folder earlier
+            if main_game_folder_path:
+                prompt_message += f"\n (auto-detected path: {main_game_folder_path}): "
+            else:
+                prompt_message += " and press Enter: "
+
             user_input_path = input(prompt_message).strip()
             fix_extraction_path = os.path.abspath(user_input_path) if user_input_path else main_game_folder_path
-
+            
             if not fix_extraction_path or not os.path.isdir(fix_extraction_path):
                 print(f"[X] ERROR: The specified path does not exist or is not a directory: '{fix_extraction_path}'")
                 print("[!] Aborting fix installation.")
