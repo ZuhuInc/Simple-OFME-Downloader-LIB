@@ -1,5 +1,5 @@
 """
-Simple Zuhu Downloader V1.3.4
+Simple Zuhu Downloader V1.3.5
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -14,7 +14,7 @@ import re
 import hashlib
 
 # --- Configuration --- #
-GITHUB_LINKS_URL = "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/blob/main/PEAK%20Downloader%20by%20zuhu.py"
+GITHUB_LINKS_URL = "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/blob/main/Download-DB.txt"
 RAR_PASSWORD = "online-fix.me"
 WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
 CLEANUP_RAR_FILE = True
