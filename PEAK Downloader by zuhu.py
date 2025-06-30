@@ -1,10 +1,10 @@
 """
-Simple Zuhu Downloader V1.4.0
+Simple Zuhu Downloader V1.3.7
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 
 Changelog:
-- V1.4.0: Added support for multi-part downloads (e.g., MainPart1, MainPart2).
+- V1.3.7: Added support for multi-part downloads (e.g., MainPart1, MainPart2).
 """
 
 import requests
