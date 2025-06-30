@@ -1,7 +1,10 @@
 """
-Simple Zuhu Downloader V1.3.5
+Simple Zuhu Downloader V1.4.0
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
+
+Changelog:
+- V1.4.0: Added support for multi-part downloads (e.g., MainPart1, MainPart2).
 """
 
 import requests
@@ -94,7 +97,7 @@ def resolve_gofile_link(gofile_url):
 def fetch_links_from_github(github_raw_url):
     """
     Fetches games and their download sources from a structured text file on GitHub.
-    Parses "SourceName (Game Name) [Version]" format.
+    Parses "SourceName (Game Name) [Version]" format and handles multi-part downloads.
     """
     clear_screen()
     print("--- Zuhu's Smart Downloader and Extractor ---")
@@ -111,7 +114,6 @@ def fetch_links_from_github(github_raw_url):
             line = line.strip()
             if not line or line.startswith('#'): continue
             
-            # --- THIS IS THE NEW REGEX FOR VERSION PARSING --- #
             match = re.match(r'(.+?)\s*\((.+?)\)\s*\[(.+?)\]', line)
             if match:
                 source_name = match.group(1).strip()
@@ -122,11 +124,24 @@ def fetch_links_from_github(github_raw_url):
                 current_source_name = source_name
                 
                 games.setdefault(current_display_name, {'base_name': base_name, 'sources': {}})
-                games[current_display_name]['sources'][current_source_name] = {}
+                games[current_display_name]['sources'][current_source_name] = {'MainParts': []}
+                # ### MODIFICATION END ###
+
             elif ':' in line and current_display_name and current_source_name:
                 key, value = [s.strip() for s in line.split(':', 1)]
-                standard_key = "MainGame" if "maingame" in key.lower() else "Fix" if "fix" in key.lower() else key
-                games[current_display_name]['sources'][current_source_name][standard_key] = value
+                
+                # ### MODIFICATION START ###
+                # Check for MainGame, MainPart, or Fix keys
+                key_lower = key.lower()
+                if key_lower.startswith('maingame') or key_lower.startswith('mainpart'):
+                    games[current_display_name]['sources'][current_source_name]['MainParts'].append(value)
+                elif key_lower == 'fix':
+                    games[current_display_name]['sources'][current_source_name]['Fix'] = value
+                else:
+                    # You can store other keys if needed, or ignore them
+                    # games[current_display_name]['sources'][current_source_name][key] = value
+                    pass
+                # ### MODIFICATION END ###
         
         if not games:
             print("[X] ERROR: No valid games found. Check format: 'Source (Game) [Version]'.")
@@ -181,7 +196,13 @@ def winrar_extraction(winrar_path, rar_path, destination_folder, password):
         return True
     except subprocess.CalledProcessError as e:
         print("[X] An error occurred during WinRAR execution.")
-        print("[!] HINT: The error might be related to an incorrect password." if "password" in e.stderr.lower() else f"[!] Details: {e.stderr}")
+        error_details = e.stderr.lower()
+        if "crc failed" in error_details or "checksum error" in error_details:
+             print("[!] HINT: This is a CRC error. One or more downloaded parts might be corrupt. Please try downloading them again.")
+        elif "password" in error_details:
+            print("[!] HINT: The error might be related to an incorrect password.")
+        else:
+            print(f"[!] Details: {e.stderr}")
         return False
     except Exception as e:
         print(f"[X] An unexpected error occurred during WinRAR execution: {e}")
@@ -211,7 +232,6 @@ def main():
                 else: print(f"[!] Invalid choice.")
             except ValueError: print("[!] Invalid input.")
     
-    # --- Get Base Name and Sources using the selected Display Name --- #
     base_game_name = games[selected_display_name]['base_name']
     sources_for_game = games[selected_display_name]['sources']
     
@@ -233,31 +253,47 @@ def main():
     print_status_header(selected_display_name, selected_source_name)
     
     selected_links = sources_for_game[selected_source_name]
-    game_url, fix_url = selected_links.get('MainGame'), selected_links.get('Fix')
+    
+    # ### MODIFICATION START ###
+    main_part_urls = selected_links.get('MainParts', [])
+    fix_url = selected_links.get('Fix')
 
-    if not game_url:
-        print("[X] ERROR: Main game URL ('MainGame') not found. Check your DWNLD.txt file.")
+    if not main_part_urls:
+        print("[X] ERROR: Main game URL(s) ('MainGame' or 'MainPartX') not found. Check your DB file.")
         sys.exit(1)
 
     temp_download_folder, main_game_folder_path = "temp_downloads", None
 
-    print("--- Processing Main Game File ---")
+    print(f"--- Processing {len(main_part_urls)} Main Game File(s) ---")
     user_base_path = os.path.abspath(input("> Enter the BASE path for game extraction. (e.g., I:\\Games): ").strip())
     if not os.path.isdir(user_base_path):
         print(f"[X] Invalid path: '{user_base_path}' does not exist. Exiting.")
         sys.exit(1)
 
-    direct_game_url, game_token = game_url, None
-    if "gofile.io" in game_url:
-        direct_game_url, game_token = resolve_gofile_link(game_url)
-        if not direct_game_url:
-            print("[X] Failed to get direct download link from GoFile. Aborting.")
-            sys.exit(1)
+    downloaded_rar_paths = []
+    all_downloads_successful = True
+    for i, game_url in enumerate(main_part_urls):
+        print(f"\n--- Downloading Part {i+1}/{len(main_part_urls)} ---")
+        direct_game_url, game_token = game_url, None
+        if "gofile.io" in game_url:
+            direct_game_url, game_token = resolve_gofile_link(game_url)
+            if not direct_game_url:
+                print(f"[X] Failed to get direct download link for Part {i+1}. Aborting.")
+                all_downloads_successful = False
+                break
+        
+        downloaded_path = download_file(direct_game_url, temp_download_folder, token=game_token)
+        if downloaded_path:
+            downloaded_rar_paths.append(downloaded_path)
+        else:
+            print(f"[X] Download failed for Part {i+1}. Aborting.")
+            all_downloads_successful = False
+            break
 
-    downloaded_rar_path = download_file(direct_game_url, temp_download_folder, token=game_token)
-    if downloaded_rar_path:
+    if all_downloads_successful:
         dirs_before = set(os.listdir(user_base_path))
-        if winrar_extraction(WINRAR_PATH, downloaded_rar_path, user_base_path, RAR_PASSWORD):
+        # We only need to extract the first part; WinRAR finds the rest
+        if winrar_extraction(WINRAR_PATH, downloaded_rar_paths[0], user_base_path, RAR_PASSWORD):
             game_file_status = "Completed"
             dirs_after = set(os.listdir(user_base_path))
             new_dirs = [d for d in (dirs_after - dirs_before) if os.path.isdir(os.path.join(user_base_path, d))]
@@ -267,12 +303,22 @@ def main():
             else:
                 print("\n[!] Warning: Could not auto-detect the new game folder.")
             if CLEANUP_RAR_FILE:
-                print(f"[*] Cleaning up '{os.path.basename(downloaded_rar_path)}'...")
-                os.remove(downloaded_rar_path)
+                print(f"[*] Cleaning up downloaded part(s)...")
+                for rar_path in downloaded_rar_paths:
+                    try:
+                        os.remove(rar_path)
+                        print(f"  - Removed '{os.path.basename(rar_path)}'")
+                    except Exception as e:
+                        print(f"  - [!] Failed to remove '{os.path.basename(rar_path)}': {e}")
+        else:
+            game_file_status = "Extraction Failed"
+            print("[X] Main game extraction failed. Aborting.")
+            sys.exit(1)
     else:
-        game_file_status = "Failed"
+        game_file_status = "Download Failed"
         print("[X] Main game download failed. Aborting.")
         sys.exit(1)
+    # ### MODIFICATION END ###
     
     # --- Phase 3: Fix Download --- #
     if fix_url:
