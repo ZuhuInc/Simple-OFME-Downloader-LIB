@@ -28,7 +28,7 @@ MainGame: https://gofile.io/d/bxkkkP
 Fix: https://gofile.io/d/yOnTYN
 
 GoFile BETA (Palworld) [0.6.0.75365]
-MainPart1: https://gofile.io/d/1ReNjK
-MainPart2: https://gofile.io/d/m6h91H
-MainPart3: https://gofile.io/d/bEXgwD
+MainGame: https://gofile.io/d/1ReNjK
+MainGame: https://gofile.io/d/m6h91H
+MainGame: https://gofile.io/d/bEXgwD
 Fix: https://gofile.io/d/ahXhVx
