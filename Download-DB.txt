@@ -26,3 +26,9 @@ Fix: https://www.dropbox.com/scl/fi/sf29nqk8jg5zhk5b04g7v/CrimeSimulator_Fix_Rep
 GoFile BETA (Crime Sim) [1.17]
 MainGame: https://gofile.io/d/bxkkkP
 Fix: https://gofile.io/d/yOnTYN
+
+GoFile BETA (Palworld) [0.6.0.75365]
+MainPart1: https://gofile.io/d/1ReNjK
+MainPart2: https://gofile.io/d/m6h91H
+MainPart3: https://gofile.io/d/bEXgwD
+Fix: https://gofile.io/d/ahXhVx
