@@ -8,6 +8,8 @@
 # ===========================================================
 
 GoFile (PEAK) [1.5.a]
+ApproxSize: 5 GB
+Description: PEAK is a co-op climbing game where the slightest mistake can spell your doom.
 MainGame: https://gofile.io/d/zaMqFr
 Fix: https://gofile.io/d/IN9bPX
 
