@@ -9,11 +9,13 @@
 
 GoFile (PEAK) [1.5.a]
 ApproxSize: 5 GB
-Description: PEAK is a co-op climbing game where the slightest mistake can spell your doom.
+Description: A co-op climbing game where teamwork is survival.
 MainGame: https://gofile.io/d/zaMqFr
 Fix: https://gofile.io/d/IN9bPX
 
 DropBox (PEAK) [1.5.a]
+ApproxSize: 5 GB
+Description: A co-op climbing game where teamwork is survival.
 MainGame: https://www.dropbox.com/scl/fi/ftosmm4ga6m8p0kxdenu2/PEAK.v1.5.a-OFME.rar?rlkey=6cvkv6c9bk412kwyt0ngqnui3&st=8n2s5f7e&dl=1
 Fix: https://www.dropbox.com/scl/fi/c1956hdvzgx1238o28n5d/PEAK_Fix_Repair_Steam_V2_Generic.rar?rlkey=032m5z979o5pgxpqdcqazcmrw&st=mvn2h02d&dl=1
 
