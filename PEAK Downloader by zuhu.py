@@ -1,10 +1,7 @@
 """
-Simple Zuhu Downloader V1.3.7
+Simple Zuhu Downloader V1.4.6
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
-
-Changelog:
-- V1.3.7: Added support for multi-part downloads (e.g., MainPart1, MainPart2).
 """
 
 import requests
@@ -15,6 +12,9 @@ import subprocess
 import shutil
 import re
 import hashlib
+import questionary
+from rich.console import Console
+from rich.table import Table
 
 # --- Configuration --- #
 GITHUB_LINKS_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Download-DB.txt"
@@ -23,359 +23,267 @@ WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
 CLEANUP_RAR_FILE = True
 # --- End of Configuration --- #
 
+console = Console()
+
 # --- UI Helper Functions --- #
 def clear_screen():
-    """Clears the console screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def print_status_header(game_name, source_name=None, game_status=None, fix_status=None):
-    """Clears the screen and prints a status checklist header."""
     clear_screen()
-    print("--- Zuhu's Downloader Status ---")
-    print(f"Game:       {game_name}")
+    console.print("--- [bold yellow]Zuhu's Downloader Status[/bold yellow] ---")
+    # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
+    console.print(f"[bold]Game:[/]       [cyan]{game_name}[/cyan]", highlight=False)
     if source_name:
-        print(f"Source:     {source_name}")
+        console.print(f"[bold]Source:[/]     [green]{source_name}[/green]", highlight=False)
     if game_status:
-        print(f"Game File:  {game_status}")
+        console.print(f"[bold]Game File:[/]  {game_status}")
     if fix_status:
-        print(f"Fix File:   {fix_status}")
-    print("-" * 34 + "\n")
+        console.print(f"[bold]Fix File:[/]   {fix_status}")
+    console.print("-" * 34 + "\n")
 
-
+# --- Core Logic Functions --- #
 def resolve_gofile_link(gofile_url):
-    """
-    Resolves a GoFile.io URL using the correct API interaction method.
-    Returns a tuple: (direct_link, account_token)
-    """
-    print(f"[*] Resolving GoFile link using direct API calls: {gofile_url}")
+    console.print(f"[*] Resolving GoFile link using direct API calls: {gofile_url}", highlight=False)
     try:
-        print("[*] Step 1: Requesting a guest account token...")
+        console.print("[*] Step 1: Requesting a guest account token...")
         headers = {"User-Agent": "Mozilla/5.0"}
         token_response = requests.post("https://api.gofile.io/accounts", headers=headers).json()
         if token_response.get("status") != "ok":
-            print("[X] ERROR: Could not create a guest account to get a token.")
-            return None, None
+            console.print("[bold red][X] ERROR: Could not create a guest account.[/bold red]"); return None, None
         account_token = token_response["data"]["token"]
-        print("[V] Successfully obtained guest token.")
-
+        console.print("[green][V] Successfully obtained guest token.[/green]")
         content_id = gofile_url.split("/")[-1]
         hashed_password = hashlib.sha256(RAR_PASSWORD.encode()).hexdigest()
         api_url = f"https://api.gofile.io/contents/{content_id}"
         params = {'wt': '4fd6sg89d7s6', 'password': hashed_password}
         auth_headers = {"User-Agent": "Mozilla/5.0", "Authorization": f"Bearer {account_token}"}
-
-        print("[*] Step 2: Calling API with token and hashed password...")
+        console.print("[*] Step 2: Calling API...")
         content_response = requests.get(api_url, params=params, headers=auth_headers).json()
-
         if content_response.get("status") != "ok":
-            error_msg = content_response.get("status", "Unknown Error")
-            print(f"[X] ERROR: API call failed. Server responded: {error_msg}")
-            return None, None
-        print("[V] API call successful. Parsing response...")
-
+            console.print(f"[bold red][X] ERROR: API call failed: {content_response.get('status', 'Unknown')}[/bold red]"); return None, None
+        console.print("[green][V] API call successful.[/green]")
         data = content_response.get("data", {})
         if data.get("type") == "folder":
-            print("[*] Folder content detected, searching for first file...")
             for child_id, child_data in data.get("children", {}).items():
                 if child_data.get("type") == "file":
-                    direct_link = child_data.get("link")
-                    filename = child_data.get("name", "Unknown")
-                    print(f"[V] Found file '{filename}' in folder. Link acquired!")
-                    return direct_link, account_token
-            print("[X] ERROR: Folder found, but it contains no files.")
-            return None, None
+                    # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
+                    console.print(f"[green][V] Found file '{child_data.get('name', 'Unknown')}' in folder.[/green]", highlight=False); return child_data.get("link"), account_token
+            console.print("[bold red][X] ERROR: Folder found, but no files within.[/bold red]"); return None, None
         elif data.get("type") == "file":
-            print("[*] Direct file content detected. Link acquired!")
-            return data.get("link"), account_token
+            console.print("[green][V] Direct file content detected.[/green]"); return data.get("link"), account_token
         else:
-            print("[X] ERROR: Could not determine content type (file or folder).")
-            return None, None
+            console.print("[bold red][X] ERROR: Could not determine content type.[/bold red]"); return None, None
     except Exception as e:
-        print(f"[X] FATAL ERROR: An unexpected error occurred: {e}")
-        return None, None
+        console.print(f"[bold red][X] FATAL ERROR during GoFile resolution: {e}[/bold red]"); return None, None
 
 def fetch_links_from_github(github_raw_url):
-    """
-    Fetches games and their download sources from a structured text file on GitHub.
-    Parses "SourceName (Game Name) [Version]" format and handles multi-part downloads.
-    """
     clear_screen()
-    print("--- Zuhu's Smart Downloader and Extractor ---")
-    print(f"[*] Fetching latest game list from GitHub...")
+    console.print("[bold cyan]Fetching latest game list from GitHub...[/bold cyan]")
     try:
-        response = requests.get(github_raw_url)
-        response.raise_for_status()
-        
+        response = requests.get(github_raw_url); response.raise_for_status()
         games = {}
-        current_display_name = None
-        current_source_name = None
-
+        current_display_name, current_source_name = None, None
         for line in response.text.splitlines():
             line = line.strip()
             if not line or line.startswith('#'): continue
-            
             match = re.match(r'(.+?)\s*\((.+?)\)\s*\[(.+?)\]', line)
             if match:
-                source_name = match.group(1).strip()
-                base_name = match.group(2).strip()
-                version = match.group(3).strip()
-                
-                current_display_name = f"{base_name} {version}"
-                current_source_name = source_name
-                
-                games.setdefault(current_display_name, {'base_name': base_name, 'sources': {}})
-                games[current_display_name]['sources'][current_source_name] = {'MainParts': []}
-                # ### MODIFICATION END ###
-
+                source_name, base_name, version = [s.strip() for s in match.groups()]
+                current_display_name = f"{base_name} {version}"; current_source_name = source_name
+                games.setdefault(current_display_name, {'base_name': base_name, 'version': version, 'sources': {}})
+                games[current_display_name]['sources'][current_source_name] = {'MainParts': [], 'Description': 'N/A', 'ApproxSize': 'N/A'}
             elif ':' in line and current_display_name and current_source_name:
-                key, value = [s.strip() for s in line.split(':', 1)]
-                
-                # ### MODIFICATION START ###
-                # Check for MainGame, MainPart, or Fix keys
-                key_lower = key.lower()
-                if key_lower.startswith('maingame') or key_lower.startswith('mainpart'):
-                    games[current_display_name]['sources'][current_source_name]['MainParts'].append(value)
-                elif key_lower == 'fix':
-                    games[current_display_name]['sources'][current_source_name]['Fix'] = value
-                else:
-                    # You can store other keys if needed, or ignore them
-                    # games[current_display_name]['sources'][current_source_name][key] = value
-                    pass
-                # ### MODIFICATION END ###
-        
-        if not games:
-            print("[X] ERROR: No valid games found. Check format: 'Source (Game) [Version]'.")
-            return None
-            
-        print(f"[V] Successfully fetched {len(games)} game(s) from GitHub.")
-        return games
+                key, value = [s.strip() for s in line.split(':', 1)]; key_lower = key.lower()
+                target_dict = games[current_display_name]['sources'][current_source_name]
+                if key_lower.startswith('maingame') or key_lower.startswith('mainpart'): target_dict['MainParts'].append(value)
+                elif key_lower == 'fix': target_dict['Fix'] = value
+                elif key_lower == 'description': target_dict['Description'] = value
+                elif key_lower == 'approxsize': target_dict['ApproxSize'] = value
+        if not games: console.print("[bold red][X] ERROR: No valid games found.[/bold red]"); return None
+        console.print(f"[bold green][V] Successfully fetched {len(games)} game(s).[/bold green]\n"); return games
     except Exception as e:
-        print(f"[X] ERROR: Could not fetch link file from GitHub: {e}")
-        return None
+        console.print(f"[bold red][X] ERROR: Could not fetch link file: {e}[/bold red]"); return None
 
 def download_file(url, destination_folder, token=None):
-    print(f"\n[*] Preparing to download from: {url}")
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-    if token:
-        print("[*] Using account token as cookie for authorization.")
-        headers['Cookie'] = f'accountToken={token}'
+    console.print(f"\n[*] Preparing to download from: {url}", highlight=False)
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    if token: console.print("[*] Using account token for authorization."); headers['Cookie'] = f'accountToken={token}'
     try:
         os.makedirs(destination_folder, exist_ok=True)
         local_filename = url.split('/')[-1].split('?')[0] or "downloaded_file"
         local_filepath = os.path.join(destination_folder, local_filename)
-        print(f"[*] Starting download: {local_filename}")
+        # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
+        console.print(f"[*] Starting download: [cyan]{local_filename}[/cyan]", highlight=False)
         with requests.get(url, stream=True, headers=headers) as r:
             r.raise_for_status()
             total_size = int(r.headers.get('content-length', 0))
-            progress_bar = tqdm.tqdm(total=total_size, unit='iB', unit_scale=True, desc="Downloading")
-            with open(local_filepath, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    progress_bar.update(len(chunk))
-                    f.write(chunk)
-            progress_bar.close()
-        if total_size != 0 and progress_bar.n != total_size:
-            print("[X] ERROR: Downloaded size does not match expected size.")
-            return None
-        print(f"[V] Download complete: {local_filepath}")
-        return local_filepath
+            with tqdm.tqdm(total=total_size, unit='iB', unit_scale=True, desc="Downloading", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]") as progress_bar:
+                with open(local_filepath, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192): progress_bar.update(len(chunk)); f.write(chunk)
+        if total_size != 0 and os.path.getsize(local_filepath) != total_size:
+            console.print("[bold red][X] ERROR: Downloaded size mismatch.[/bold red]"); return None
+        # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
+        console.print(f"[green][V] Download complete:[/] {local_filepath}", highlight=False); return local_filepath
     except Exception as e:
-        print(f"[X] ERROR: An unexpected error occurred during download: {e}")
-        return None
+        console.print(f"[bold red][X] ERROR during download: {e}[/bold red]"); return None
 
 def winrar_extraction(winrar_path, rar_path, destination_folder, password):
-    print("\n--- Starting WinRAR Extraction ---")
+    console.print("\n--- [bold]Starting WinRAR Extraction[/bold] ---")
     if not os.path.exists(winrar_path):
-        print(f"[X] CRITICAL ERROR: WinRAR.exe not found at '{winrar_path}'.")
-        return False
+        console.print(f"[bold red][X] CRITICAL ERROR: WinRAR.exe not found at '{winrar_path}'.[/bold red]"); return False
     os.makedirs(destination_folder, exist_ok=True)
     command = [winrar_path, "x", f"-p{password}", "-ibck", "-o+", os.path.abspath(rar_path), os.path.abspath(destination_folder) + os.sep]
-    print(f"[*] Extracting '{os.path.basename(rar_path)}' to '{destination_folder}'...")
+    # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
+    console.print(f"[*] Extracting '[cyan]{os.path.basename(rar_path)}[/cyan]' to '[green]{destination_folder}[/green]'...", highlight=False)
     try:
         subprocess.run(command, check=True, capture_output=True, text=True)
-        print("[V] WinRAR extraction successful.")
-        return True
+        console.print("[green][V] WinRAR extraction successful.[/green]"); return True
     except subprocess.CalledProcessError as e:
-        print("[X] An error occurred during WinRAR execution.")
+        console.print("[bold red][X] An error occurred during WinRAR execution.[/bold red]")
         error_details = e.stderr.lower()
-        if "crc failed" in error_details or "checksum error" in error_details:
-             print("[!] HINT: This is a CRC error. One or more downloaded parts might be corrupt. Please try downloading them again.")
-        elif "password" in error_details:
-            print("[!] HINT: The error might be related to an incorrect password.")
-        else:
-            print(f"[!] Details: {e.stderr}")
+        if "crc failed" in error_details or "checksum error" in error_details: console.print("[!] [yellow]HINT: CRC error. A downloaded part might be corrupt.[/yellow]")
+        elif "password" in error_details: console.print("[!] [yellow]HINT: The password may be incorrect.[/yellow]")
+        else: console.print(f"[!] Details: {e.stderr}")
         return False
     except Exception as e:
-        print(f"[X] An unexpected error occurred during WinRAR execution: {e}")
-        return False
+        console.print(f"[bold red][X] An unexpected error during extraction: {e}[/bold red]"); return False
 
-# --- MAIN SCRIPT LOGIC --- #
+def display_game_table(games):
+    table = Table(title="[bold yellow]Zuhu's Game Downloader[/bold yellow]", show_header=True, header_style="bold magenta")
+    table.add_column("ID", style="dim", width=4)
+    table.add_column("Game Name", min_width=20, style="cyan")
+    table.add_column("Version", style="yellow")
+    table.add_column("Description", max_width=50)
+    table.add_column("Size", justify="right")
+    table.add_column("Sources", style="green")
+    game_display_names = list(games.keys())
+    for i, name in enumerate(game_display_names):
+        game_data = games[name]
+        sources_list = ", ".join(game_data['sources'].keys())
+        first_source_data = list(game_data['sources'].values())[0]
+        table.add_row(str(i + 1), game_data['base_name'], game_data['version'], first_source_data.get('Description', 'N/A'), first_source_data.get('ApproxSize', 'N/A'), sources_list)
+    console.print(table)
+
 def main():
     games = fetch_links_from_github(GITHUB_LINKS_URL)
-    if not games: sys.exit(1)
+    if not games: return
     
-    # --- Status Tracking Variables --- #
-    game_file_status = "Not Started"
-    fix_file_status = "Not Started"
-
-    # --- Phase 1: User Selection --- #
+    display_game_table(games)
+    
     game_display_names = list(games.keys())
-    selected_display_name = game_display_names[0] if len(game_display_names) == 1 else None
-    if selected_display_name:
-        print(f"\n[*] Only one game found: '{selected_display_name}'. Selecting it automatically.")
-    else:
-        print("\n[?] Please choose which game to download:")
-        for i, name in enumerate(game_display_names): print(f"  [{i+1}] {name}")
-        while not selected_display_name:
-            try:
-                choice = int(input(f"> Enter your choice (1-{len(game_display_names)}): ").strip())
-                if 1 <= choice <= len(game_display_names): selected_display_name = game_display_names[choice - 1]
-                else: print(f"[!] Invalid choice.")
-            except ValueError: print("[!] Invalid input.")
-    
+    choice_str = questionary.text("Enter the ID of the game you want to download:", validate=lambda text: True if text.isdigit() and 1 <= int(text) <= len(game_display_names) else f"Please enter a number between 1 and {len(game_display_names)}.").ask()
+    if not choice_str: return
+        
+    selected_display_name = game_display_names[int(choice_str) - 1]
     base_game_name = games[selected_display_name]['base_name']
+    console.print(f"\n[bold]You selected:[/] [bright_cyan]{selected_display_name}[/bright_cyan]", highlight=False)
+
     sources_for_game = games[selected_display_name]['sources']
-    
     source_names = list(sources_for_game.keys())
-    selected_source_name = source_names[0] if len(source_names) == 1 else None
-    if selected_source_name:
-        print(f"\n[*] Only one download source for '{base_game_name}' found: '{selected_source_name}'. Using it automatically.")
-    else:
-        print(f"\n[?] Choose a download source for '{base_game_name}':")
-        for i, name in enumerate(source_names): print(f"  [{i+1}] {name}")
-        while not selected_source_name:
-            try:
-                choice = int(input(f"> Enter your choice (1-{len(source_names)}): ").strip())
-                if 1 <= choice <= len(source_names): selected_source_name = source_names[choice - 1]
-                else: print(f"[!] Invalid choice.")
-            except ValueError: print("[!] Invalid input.")
-    
-    # --- Phase 2: Main Game Download --- #
-    print_status_header(selected_display_name, selected_source_name)
+    selected_source_name = source_names[0] if len(source_names) == 1 else questionary.select(f"Choose a download source for '{selected_display_name}':", choices=source_names, use_indicator=True).ask()
+    if len(source_names) == 1: console.print(f"[bold]Auto-selected source:[/] [green]{selected_source_name}[/green]")
+    if not selected_source_name: return
+
+    user_base_path = ""
+    while True:
+        prompt = "\n> Enter the BASE path for game extraction (e.g., I:\\Games): "
+        user_base_path = input(prompt).strip()
+        if os.path.isdir(user_base_path): break
+        else: console.print("[bold red]  [X] Invalid path. Please enter an existing directory.[/bold red]")
+    user_base_path = os.path.abspath(user_base_path)
+
+    game_file_status, fix_file_status = "Pending...", "Pending..."
+    print_status_header(selected_display_name, selected_source_name, game_file_status, fix_file_status)
     
     selected_links = sources_for_game[selected_source_name]
-    
-    # ### MODIFICATION START ###
-    main_part_urls = selected_links.get('MainParts', [])
-    fix_url = selected_links.get('Fix')
+    main_part_urls, fix_url = selected_links.get('MainParts', []), selected_links.get('Fix')
+    if not main_part_urls: console.print("[bold red][X] ERROR: Main game URL(s) not found.[/bold red]"); return
 
-    if not main_part_urls:
-        print("[X] ERROR: Main game URL(s) ('MainGame' or 'MainPartX') not found. Check your DB file.")
-        sys.exit(1)
-
-    temp_download_folder, main_game_folder_path = "temp_downloads", None
-
-    print(f"--- Processing {len(main_part_urls)} Main Game File(s) ---")
-    user_base_path = os.path.abspath(input("> Enter the BASE path for game extraction. (e.g., I:\\Games): ").strip())
-    if not os.path.isdir(user_base_path):
-        print(f"[X] Invalid path: '{user_base_path}' does not exist. Exiting.")
-        sys.exit(1)
-
-    downloaded_rar_paths = []
-    all_downloads_successful = True
+    console.print(f"--- Processing {len(main_part_urls)} Main Game File(s) ---")
+    temp_download_folder = "temp_downloads"
+    main_game_folder_path = None
+    downloaded_rar_paths, all_downloads_successful = [], True
     for i, game_url in enumerate(main_part_urls):
-        print(f"\n--- Downloading Part {i+1}/{len(main_part_urls)} ---")
+        console.print(f"\n--- [bold]Downloading Part {i+1}/{len(main_part_urls)}[/bold] ---")
         direct_game_url, game_token = game_url, None
         if "gofile.io" in game_url:
             direct_game_url, game_token = resolve_gofile_link(game_url)
-            if not direct_game_url:
-                print(f"[X] Failed to get direct download link for Part {i+1}. Aborting.")
-                all_downloads_successful = False
-                break
-        
+            if not direct_game_url: all_downloads_successful = False; break
         downloaded_path = download_file(direct_game_url, temp_download_folder, token=game_token)
-        if downloaded_path:
-            downloaded_rar_paths.append(downloaded_path)
-        else:
-            print(f"[X] Download failed for Part {i+1}. Aborting.")
-            all_downloads_successful = False
-            break
+        if downloaded_path: downloaded_rar_paths.append(downloaded_path)
+        else: all_downloads_successful = False; break
 
     if all_downloads_successful:
         dirs_before = set(os.listdir(user_base_path))
-        # We only need to extract the first part; WinRAR finds the rest
         if winrar_extraction(WINRAR_PATH, downloaded_rar_paths[0], user_base_path, RAR_PASSWORD):
-            game_file_status = "Completed"
+            game_file_status = "[green]Completed[/green]"
             dirs_after = set(os.listdir(user_base_path))
             new_dirs = [d for d in (dirs_after - dirs_before) if os.path.isdir(os.path.join(user_base_path, d))]
             if len(new_dirs) == 1:
                 main_game_folder_path = os.path.join(user_base_path, new_dirs[0])
-                print(f"\n[*] Main game folder auto-detected: '{main_game_folder_path}'")
-            else:
-                print("\n[!] Warning: Could not auto-detect the new game folder.")
+                console.print(f"\n[*] Main game folder auto-detected: '[cyan]{main_game_folder_path}[/cyan]'", highlight=False)
+            else: console.print("\n[!] [yellow]Warning: Could not auto-detect new game folder.[/yellow]")
             if CLEANUP_RAR_FILE:
-                print(f"[*] Cleaning up downloaded part(s)...")
+                console.print(f"[*] Cleaning up downloaded part(s)...")
                 for rar_path in downloaded_rar_paths:
-                    try:
-                        os.remove(rar_path)
-                        print(f"  - Removed '{os.path.basename(rar_path)}'")
-                    except Exception as e:
-                        print(f"  - [!] Failed to remove '{os.path.basename(rar_path)}': {e}")
-        else:
-            game_file_status = "Extraction Failed"
-            print("[X] Main game extraction failed. Aborting.")
-            sys.exit(1)
-    else:
-        game_file_status = "Download Failed"
-        print("[X] Main game download failed. Aborting.")
-        sys.exit(1)
-    # ### MODIFICATION END ###
+                    try: os.remove(rar_path); console.print(f"  - Removed '[dim]{os.path.basename(rar_path)}[/dim]'", highlight=False)
+                    except Exception as e: console.print(f"  - [!] [red]Failed to remove '{os.path.basename(rar_path)}': {e}[/red]", highlight=False)
+        else: game_file_status = "[red]Extraction Failed[/red]"; return
+    else: game_file_status = "[red]Download Failed[/red]"; return
     
-    # --- Phase 3: Fix Download --- #
     if fix_url:
-        fix_choice = input("\n" + "="*50 + "\n[?] A fix/update is available. Download and apply it? (y/n): ").lower().strip()
-        
-        if fix_choice in ['y', 'yes']:
-            print_status_header(selected_display_name, selected_source_name, game_file_status)
-            prompt_message = ""
-            if main_game_folder_path:
-                prompt_message = (f"> Enter the path for the fix extraction.\n  (Press Enter to use auto-detected path: {main_game_folder_path}): ")
-            else:
-                invalid_chars = r'[:*?"<>|]'
-                clean_game_name = re.sub(invalid_chars, '', base_game_name)
+        fix_choice = questionary.confirm("\nA fix/update is available. Download and apply it?", default=True).ask()
+        if fix_choice:
+            print_status_header(selected_display_name, selected_source_name, game_file_status, "Pending...")
+            fix_extraction_path = main_game_folder_path
+            if not main_game_folder_path:
+                invalid_chars = r'[:*?"<>|]'; clean_game_name = re.sub(invalid_chars, '', base_game_name)
                 example_path = os.path.join(user_base_path, clean_game_name)
-                prompt_message = (f"> [!] Could not auto-detect game folder.\n  Enter the FULL path for the fix extraction (e.g., {example_path}): ")
-            
-            user_input_path = input(prompt_message).strip()
-            fix_extraction_path = os.path.abspath(user_input_path) if user_input_path else main_game_folder_path
-            
-            if not fix_extraction_path or not os.path.isdir(fix_extraction_path):
-                print(f"[X] ERROR: Invalid path '{fix_extraction_path}'. Aborting fix.")
-                fix_file_status = "Failed"
+                while True:
+                    console.print("\n[!] [yellow]Could not auto-detect game folder.[/yellow]")
+                    prompt = f"> Enter the FULL path for the fix extraction (e.g., {example_path}): "
+                    fix_extraction_path = input(prompt).strip()
+                    if not fix_extraction_path: console.print("[bold red]  [X] No path provided. Aborting fix.[/bold red]"); fix_extraction_path = None; break
+                    if os.path.isdir(fix_extraction_path): break
+                    else: console.print("[bold red]  [X] Invalid path. Please enter an existing directory.[/bold red]")
+            if not fix_extraction_path: fix_file_status = "[red]Cancelled[/red]"
             else:
-                print(f"[*] The fix will be extracted to: '{fix_extraction_path}'")
+                console.print(f"[*] The fix will be extracted to: '[cyan]{fix_extraction_path}[/cyan]'", highlight=False)
                 direct_fix_url, fix_token = fix_url, None
-                if "gofile.io" in fix_url:
-                    direct_fix_url, fix_token = resolve_gofile_link(fix_url)
+                if "gofile.io" in fix_url: direct_fix_url, fix_token = resolve_gofile_link(fix_url)
                 if direct_fix_url:
                     downloaded_fix_path = download_file(direct_fix_url, temp_download_folder, token=fix_token)
                     if downloaded_fix_path and winrar_extraction(WINRAR_PATH, downloaded_fix_path, fix_extraction_path, RAR_PASSWORD):
-                        fix_file_status = "Completed"
+                        fix_file_status = "[green]Completed[/green]"
                         if CLEANUP_RAR_FILE:
-                            print(f"[*] Cleaning up '{os.path.basename(downloaded_fix_path)}'...")
-                            os.remove(downloaded_fix_path)
-                    else:
-                        fix_file_status = "Failed"
-                else:
-                    print("[X] Failed to get direct download link for the fix. Skipping fix.")
-                    fix_file_status = "Failed"
-            
-            input("\nPress Enter to continue...")
-        else:
-            fix_file_status = "Skipped"
-    else:
-        fix_file_status = "Not Available"
+                            try: os.remove(downloaded_fix_path); console.print(f"[*] Cleaning up '[dim]{os.path.basename(downloaded_fix_path)}[/dim]'...", highlight=False)
+                            except Exception as e: console.print(f"  - [!] [red]Failed to remove '{os.path.basename(downloaded_fix_path)}': {e}[/red]", highlight=False)
+                    else: fix_file_status = "[red]Failed[/red]"
+                else: fix_file_status = "[red]Failed[/red]"; console.print("[bold red][X] Failed to get direct download link for the fix.[/bold red]")
+            # FIX: Added a pause for review after the fix process is complete.
+            if fix_file_status != "[red]Cancelled[/red]":
+                console.print("\n[dim]Press Enter to view the final summary...[/dim]")
+                input()
+        else: fix_file_status = "[yellow]Skipped[/yellow]"
+    else: fix_file_status = "[dim]Not Available[/dim]"
 
-    # --- Phase 4: Final Summary --- #
     print_status_header(selected_display_name, selected_source_name, game_file_status, fix_file_status)
 
     try:
         if os.path.exists(temp_download_folder) and not os.listdir(temp_download_folder):
-            print("[*] Cleaning up temporary download directory...")
+            console.print("[*] Cleaning up empty temporary download directory...")
             os.rmdir(temp_download_folder)
-    except Exception as e:
-        print(f"[!] Could not remove temporary directory '{temp_download_folder}': {e}")
+    except Exception as e: console.print(f"[!] [yellow]Could not remove temp directory: {e}[/yellow]")
 
 if __name__ == "__main__":
-    main()
-    print("\n--- ALL TASKS COMPLETED ---")
-    input("Press Enter to exit.")
+    try:
+        main()
+        console.print("\n--- [bold green]ALL TASKS COMPLETED[/bold green] ---")
+    except (KeyboardInterrupt, TypeError, EOFError):
+        console.print("\n\n[bold yellow]Operation cancelled by user. Exiting.[/bold yellow]")
+    except Exception as e:
+        console.print(f"\n\n[bold red]An unexpected fatal error occurred:[/bold red]"); console.print_exception(show_locals=True)
+    finally:
+        if sys.exc_info()[0] in [None, KeyboardInterrupt, TypeError, EOFError]:
+            input("\nPress Enter to exit.")
