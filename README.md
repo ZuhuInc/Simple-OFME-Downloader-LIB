@@ -41,7 +41,7 @@ A command-line utility designed to automate the process of downloading and extra
 
 2.  **Install dependencies:**
     ```bash
-    pip install requests tqdm
+    pip install requests tqdm rich questionary
     ```
 
 3.  **Configure the Script (if needed):**
@@ -66,16 +66,16 @@ The script will guide you through a few simple steps.
 
 | Step | Action | Preview |
 | :--: | :--- | :--- |
-| **1** | **Select Game & Source**<br/><br/>First, choose the game you want to download. Then, select your preferred download host from the next menu. | ![Game & Source](https://i.imgur.com/h0x3N8t.png) |
-| **2** | **Set Path & Download**<br/><br/>Enter the base directory where you want the game extracted. The download will start automatically. | ![Path & Download](https://i.imgur.com/BPIKkMj.png) |
-| **3** | **Apply Fix (Optional)**<br/><br/>After extraction, the script will ask if you want to download and apply an available fix or update. | ![Apply/Download Fix](https://i.imgur.com/jXT3YSw.png) |
-| **4**| **All Done!**<br/><br/>A final summary screen will show the status of all operations. | ![IDone](https://i.imgur.com/NLyvxAO.png) |
+| **1** | **Select Game & Source**<br/><br/>First, choose the game you want to download. Then, select your preferred download host from the next menu. | ![Game & Source](https://i.imgur.com/0m8FBuh.png) |
+| **2** | **Set Path & Download**<br/><br/>Enter the base directory where you want the game extracted. The download will start automatically. | ![Path & Download](https://i.imgur.com/BL17kGE.png) |
+| **3** | **Apply Fix (Optional)**<br/><br/>After extraction, the script will ask if you want to download and apply an available fix or update. | ![Apply/Download Fix](https://i.imgur.com/GQHY6TR.png) |
+| **4**| **All Done!**<br/><br/>A final summary screen will show the status of all operations. | ![IDone](https://i.imgur.com/2Xk6G9S.png) |
 
 ---
 
 ### Libraries Used
 
-*   **External:** [requests](https://pypi.org/project/requests/), [tqdm](https://pypi.org/project/tqdm/)
+*   **External:** [requests](https://pypi.org/project/requests/), [tqdm](https://pypi.org/project/tqdm/), [rich](https://pypi.org/project/rich/), [questionary](https://pypi.org/project/questionary/)
 *   **Standard:** `os`, `sys`, `subprocess`, `shutil`, `re`, `hashlib`
 
 ---
