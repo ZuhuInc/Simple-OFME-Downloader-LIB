@@ -8,41 +8,53 @@
 # ===========================================================
 
 GoFile (PEAK) [1.5.a]
-ApproxSize: 5 GB
+ApproxSize: 5GB
 Description: A co-op climbing game where teamwork is survival.
 MainGame: https://gofile.io/d/zaMqFr
 Fix: https://gofile.io/d/IN9bPX
 
 DropBox (PEAK) [1.5.a]
-ApproxSize: 5 GB
+ApproxSize: 5GB
 Description: A co-op climbing game where teamwork is survival.
 MainGame: https://www.dropbox.com/scl/fi/ftosmm4ga6m8p0kxdenu2/PEAK.v1.5.a-OFME.rar?rlkey=6cvkv6c9bk412kwyt0ngqnui3&st=8n2s5f7e&dl=1
 Fix: https://www.dropbox.com/scl/fi/c1956hdvzgx1238o28n5d/PEAK_Fix_Repair_Steam_V2_Generic.rar?rlkey=032m5z979o5pgxpqdcqazcmrw&st=mvn2h02d&dl=1
 
 GoFile (Crime Simulator) [1.17]
+ApproxSize: 18GB
+Description: A co-op heist game about paying off your debt.
 MainGame: https://gofile.io/d/bxkkkP
 Fix: https://gofile.io/d/yOnTYN
 
 DropBox (Crime Simulator) [1.17]
+ApproxSize: 18GB
+Description: A co-op heist game about paying off your debt.
 MainGame: https://www.dropbox.com/scl/fi/p32ipqfj9dhiz8e5hy98w/Crime.Simulator.v1.17-OFME.rar?rlkey=xdjtev9dnlgco4132qjgzglzl&st=76l5vz46&dl=1
 Fix: https://www.dropbox.com/scl/fi/sf29nqk8jg5zhk5b04g7v/CrimeSimulator_Fix_Repair_Steam_V2_Generic.rar?rlkey=ydopqdk0nyzosxbu3zqenibi4&st=pmlns58e&dl=1
 
 GoFile (Liar's Bar) [0.93]
+Description: Bluff your way to victory in a sketchy online bar.
 MainGame: https://gofile.io/d/4PoEOj
 Fix: https://gofile.io/d/WdQ2tI
 
 GoFile (Buckshot Roulette) [2.1.0]
+Description: Play Russian roulette with a 12-gauge shotgun.
 MainGame: https://gofile.io/d/Ojkfar
 Fix: https://gofile.io/d/vPbiw7
 
 GoFile (Palworld) [0.6.0.75365]
+ApproxSize: 25GB
+Description: Catch 'Pals' and survive in a vast open world.
 MainPart1: https://gofile.io/d/1ReNjK
 MainPart2: https://gofile.io/d/m6h91H
 MainPart3: https://gofile.io/d/bEXgwD
 Fix: https://gofile.io/d/ahXhVx
 
 DropBox (LossLess Scaling) [3.2]
+ApproxSize: 286MB
+Description: A gaming utility for scaling & frame generation.
 MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
 
 GoFile (LossLess Scaling) [3.2]
+ApproxSize: 286MB
+Description: A gaming utility for scaling & frame generation.
 MainGame: https://gofile.io/d/pm3far
