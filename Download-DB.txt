@@ -99,3 +99,18 @@ GoFile (Another Try 2) [0.0.1.8]
 Description: The virus has devastated cities and lands.
 Maingame: https://gofile.io/d/tPib4s
 Fix: https://gofile.io/d/fQN6R7
+
+Both (Content Warning) [1.17.b]
+Description: Get famous or die trying!
+Maingame: https://gofile.io/d/ndFwsS
+Fix: https://www.dropbox.com/scl/fi/mbyynm4cbjjaijewl32uf/ContentWarning_Fix_Repair_Steam_V4_Generic.rar?rlkey=nhjxedfk9l5ixt2uz23h7o5uj&st=m1t9376j&dl=1
+
+GoFile (Sons of The Forest) [Build 21012025]
+Description: Scary Cannibalism
+Maingame: https://gofile.io/d/t7vCy3
+Fix: https://gofile.io/d/oTrZON
+
+GoFile (SCP: 5K) [0.16.0.72]
+Description: SCP: Pandemic
+Mainpart1: https://gofile.io/d/sMQ0pf
+Mainpart2: https://gofile.io/d/WXiSbG
