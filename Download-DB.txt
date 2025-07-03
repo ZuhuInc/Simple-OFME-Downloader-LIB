@@ -95,7 +95,7 @@ ApproxSize: 0.3GB
 Description: A gaming utility for scaling & frame generation.
 MainGame: https://gofile.io/d/pm3far
 
-GoFile (Another Try 2)
+GoFile (Another Try 2) [0.0.1.8]
 Description: The virus has devastated cities and lands.
 Maingame: https://gofile.io/d/tPib4s
 Fix: https://gofile.io/d/fQN6R7
