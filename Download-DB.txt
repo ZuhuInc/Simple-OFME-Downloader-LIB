@@ -52,7 +52,7 @@ MainPart3: https://gofile.io/d/bEXgwD
 Fix: https://gofile.io/d/ahXhVx
 
 GoFile (Chaos Express Delivery) [22022025]
-Description: Deliver goods fast with friends in wild city chaos.
+Description: Deliver with friends in a chaotic open city.
 MainGame: https://gofile.io/d/5wATUX
 Fix: https://gofile.io/d/XsXH04
 
@@ -62,7 +62,7 @@ MainGame: https://gofile.io/d/bXRlGF
 Fix: https://gofile.io/d/fZkdTE
 
 GoFile (Backrooms Extractions) [0.1.79]
-Description: Extract agents and survive deadly Backrooms horror.
+Description: Extract agents and survive creepy liminal spaces.
 MainGame: https://gofile.io/d/EINMCG
 Fix: https://gofile.io/d/GHBxxO
 
