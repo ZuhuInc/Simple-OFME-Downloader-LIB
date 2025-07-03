@@ -52,24 +52,35 @@ MainPart3: https://gofile.io/d/bEXgwD
 Fix: https://gofile.io/d/ahXhVx
 
 GoFile (Chaos Express Delivery) [22022025]
+Description: Deliver goods fast with friends in wild city chaos.
 MainGame: https://gofile.io/d/5wATUX
 Fix: https://gofile.io/d/XsXH04
 
 GoFile (The Anomaly Project) [23012025]
+Description: Your goal is simple, spot anomalies to escape.
 MainGame: https://gofile.io/d/bXRlGF
 Fix: https://gofile.io/d/fZkdTE
 
 GoFile (Backrooms Extractions) [0.1.79]
+Description: Extract agents and survive deadly Backrooms horror.
 MainGame: https://gofile.io/d/EINMCG
 Fix: https://gofile.io/d/GHBxxO
 
 GoFile (Carry The Glass) [11112024]
+Description: Carry glass with a friend. Don’t break it.
 MainGame: https://gofile.io/d/FxcZwe
 Fix: https://gofile.io/d/QiSv5i
 
 GoFile (House Flipper 2) [08082025]
+Description: Renovate, build & flip homes now in online co-op.
 MainGame: https://gofile.io/d/P0XtAg
 Fix: https://gofile.io/d/bMFYuW
+
+GoFile (PowerWash Simulator) [04032025]
+Description: Wash away grime in the ultimate chill sim.
+MainPart1: https://gofile.io/d/BC4ZP4
+MainPart2: https://gofile.io/d/iSJRTO
+Fix: https://gofile.io/d/jqHN9i
 
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
