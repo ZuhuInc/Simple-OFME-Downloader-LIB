@@ -51,6 +51,26 @@ MainPart2: https://gofile.io/d/m6h91H
 MainPart3: https://gofile.io/d/bEXgwD
 Fix: https://gofile.io/d/ahXhVx
 
+GoFile (Chaos Express Delivery) [22022025]
+MainGame: https://gofile.io/d/5wATUX
+Fix: https://gofile.io/d/XsXH04
+
+GoFile (The Anomaly Project) [23012025]
+MainGame: https://gofile.io/d/bXRlGF
+Fix: https://gofile.io/d/fZkdTE
+
+GoFile (Backrooms Extractions) [0.1.79]
+MainGame: https://gofile.io/d/EINMCG
+Fix: https://gofile.io/d/GHBxxO
+
+GoFile (Carry The Glass) [11112024]
+MainGame: https://gofile.io/d/FxcZwe
+Fix: https://gofile.io/d/QiSv5i
+
+GoFile (House Flipper 2) [08082025]
+MainGame: https://gofile.io/d/P0XtAg
+Fix: https://gofile.io/d/bMFYuW
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: A gaming utility for scaling & frame generation.
