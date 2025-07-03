@@ -62,6 +62,7 @@ MainGame: https://gofile.io/d/bXRlGF
 Fix: https://gofile.io/d/fZkdTE
 
 GoFile (Backrooms Extractions) [0.1.79]
+ApproxSize: 6GB
 Description: Extract agents and survive creepy liminal spaces.
 MainGame: https://gofile.io/d/EINMCG
 Fix: https://gofile.io/d/GHBxxO
