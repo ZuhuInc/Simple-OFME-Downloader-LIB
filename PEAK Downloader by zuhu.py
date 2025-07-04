@@ -1,5 +1,5 @@
 """
-Simple Zuhu Downloader V1.4.6
+Simple Zuhu Downloader V1.4.7
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -32,7 +32,6 @@ def clear_screen():
 def print_status_header(game_name, source_name=None, game_status=None, fix_status=None):
     clear_screen()
     console.print("--- [bold yellow]Zuhu's Downloader Status[/bold yellow] ---")
-    # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
     console.print(f"[bold]Game:[/]       [cyan]{game_name}[/cyan]", highlight=False)
     if source_name:
         console.print(f"[bold]Source:[/]     [green]{source_name}[/green]", highlight=False)
@@ -67,7 +66,6 @@ def resolve_gofile_link(gofile_url):
         if data.get("type") == "folder":
             for child_id, child_data in data.get("children", {}).items():
                 if child_data.get("type") == "file":
-                    # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
                     console.print(f"[green][V] Found file '{child_data.get('name', 'Unknown')}' in folder.[/green]", highlight=False); return child_data.get("link"), account_token
             console.print("[bold red][X] ERROR: Folder found, but no files within.[/bold red]"); return None, None
         elif data.get("type") == "file":
@@ -113,17 +111,16 @@ def download_file(url, destination_folder, token=None):
         os.makedirs(destination_folder, exist_ok=True)
         local_filename = url.split('/')[-1].split('?')[0] or "downloaded_file"
         local_filepath = os.path.join(destination_folder, local_filename)
-        # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
         console.print(f"[*] Starting download: [cyan]{local_filename}[/cyan]", highlight=False)
         with requests.get(url, stream=True, headers=headers) as r:
             r.raise_for_status()
             total_size = int(r.headers.get('content-length', 0))
-            with tqdm.tqdm(total=total_size, unit='iB', unit_scale=True, desc="Downloading", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]") as progress_bar:
+            # CHANGED: Readded download rate
+            with tqdm.tqdm(total=total_size, unit='iB', unit_scale=True, desc="Downloading", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}, {rate_fmt}]") as progress_bar:
                 with open(local_filepath, 'wb') as f:
                     for chunk in r.iter_content(chunk_size=8192): progress_bar.update(len(chunk)); f.write(chunk)
         if total_size != 0 and os.path.getsize(local_filepath) != total_size:
             console.print("[bold red][X] ERROR: Downloaded size mismatch.[/bold red]"); return None
-        # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
         console.print(f"[green][V] Download complete:[/] {local_filepath}", highlight=False); return local_filepath
     except Exception as e:
         console.print(f"[bold red][X] ERROR during download: {e}[/bold red]"); return None
@@ -134,7 +131,6 @@ def winrar_extraction(winrar_path, rar_path, destination_folder, password):
         console.print(f"[bold red][X] CRITICAL ERROR: WinRAR.exe not found at '{winrar_path}'.[/bold red]"); return False
     os.makedirs(destination_folder, exist_ok=True)
     command = [winrar_path, "x", f"-p{password}", "-ibck", "-o+", os.path.abspath(rar_path), os.path.abspath(destination_folder) + os.sep]
-    # FIX: Added highlight=False to prevent rich from auto-coloring numbers in the name
     console.print(f"[*] Extracting '[cyan]{os.path.basename(rar_path)}[/cyan]' to '[green]{destination_folder}[/green]'...", highlight=False)
     try:
         subprocess.run(command, check=True, capture_output=True, text=True)
@@ -261,7 +257,6 @@ def main():
                             except Exception as e: console.print(f"  - [!] [red]Failed to remove '{os.path.basename(downloaded_fix_path)}': {e}[/red]", highlight=False)
                     else: fix_file_status = "[red]Failed[/red]"
                 else: fix_file_status = "[red]Failed[/red]"; console.print("[bold red][X] Failed to get direct download link for the fix.[/bold red]")
-            # FIX: Added a pause for review after the fix process is complete.
             if fix_file_status != "[red]Cancelled[/red]":
                 console.print("\n[dim]Press Enter to view the final summary...[/dim]")
                 input()
