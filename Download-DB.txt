@@ -114,3 +114,8 @@ GoFile (SCP: 5K) [0.16.0.72]
 Description: SCP: Pandemic
 Mainpart1: https://gofile.io/d/sMQ0pf
 Mainpart2: https://gofile.io/d/WXiSbG
+
+GoFile (The Blackout Club) [Build 13082021]
+Desciption: Teenage friends investigating a monstrous secret that lurks beneath their small town.
+Maingame: https://gofile.io/d/UBB63M
+Fix: https://gofile.io/d/ctTt5q
