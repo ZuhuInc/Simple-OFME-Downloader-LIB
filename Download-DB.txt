@@ -13,10 +13,10 @@ Description: A co-op climbing game where teamwork is survival.
 MainGame: https://gofile.io/d/x0NwFa
 Fix: https://gofile.io/d/IN9bPX
 
-DropBox (PEAK) [1.6.a]
+DropBox (PEAK) [1.7.a]
 ApproxSize: 5GB
 Description: A co-op climbing game where teamwork is survival.
-MainGame: https://www.dropbox.com/scl/fi/ni7qbsy7ij3zdud2q86mg/PEAK.v1.6.a-OFME.rar?rlkey=li52zr62f4dph9vizvera6ac9&st=uazzy3jp&dl=1
+MainGame: https://www.dropbox.com/scl/fi/60srq0exnqzu01dt73ss8/PEAK.v1.7.a-OFME.rar?rlkey=mufuw8v4x7gh62c36kwrno1gf&st=fzqyz1d8&dl=1
 Fix: https://www.dropbox.com/scl/fi/c1956hdvzgx1238o28n5d/PEAK_Fix_Repair_Steam_V2_Generic.rar?rlkey=032m5z979o5pgxpqdcqazcmrw&st=mvn2h02d&dl=1
 
 GoFile (Crime Simulator) [1.17]
