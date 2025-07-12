@@ -7,10 +7,10 @@
 # Sections are grouped by source, application name & version.
 # ===========================================================
 
-GoFile (PEAK) [1.6.a]
+GoFile (PEAK) [1.7.a]
 ApproxSize: 5GB
 Description: A co-op climbing game where teamwork is survival.
-MainGame: https://gofile.io/d/X5aoqW
+MainGame: https://gofile.io/d/x0NwFa
 Fix: https://gofile.io/d/IN9bPX
 
 DropBox (PEAK) [1.6.a]
