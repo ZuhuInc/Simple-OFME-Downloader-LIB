@@ -119,3 +119,8 @@ GoFile (The Blackout Club) [Build 13082021]
 Desciption: Teenage friends investigating a monstrous secret that lurks beneath their small town.
 Maingame: https://gofile.io/d/UBB63M
 Fix: https://gofile.io/d/ctTt5q
+
+GoFile (Granny Escape Together) [1.0.2]
+Description: Granny is not the only danger that awaits you in the house.
+Maingame: https://gofile.io/d/cHPQPj
+Fix: https://gofile.io/d/pLM7JX
