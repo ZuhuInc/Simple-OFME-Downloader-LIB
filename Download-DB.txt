@@ -124,3 +124,9 @@ GoFile (Granny Escape Together) [1.0.2]
 Description: Granny is not the only danger that awaits you in the house.
 Maingame: https://gofile.io/d/cHPQPj
 Fix: https://gofile.io/d/pLM7JX
+
+GoFile (Raft) [1.09]
+Description: You have to survive in the open ocean.
+Maingame: https://gofile.io/d/jTe5NR
+# timelimited
+Fix: https://gofile.io/d/SHvJKh
