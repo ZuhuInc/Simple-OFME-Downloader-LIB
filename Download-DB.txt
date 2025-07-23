@@ -130,3 +130,8 @@ Description: You have to survive in the open ocean.
 Maingame: https://gofile.io/d/jTe5NR
 # timelimited
 Fix: https://gofile.io/d/SHvJKh
+
+GoFile (The Long Drive) [Build 26112024]
+Description: All he needs to do is travel in his own car.
+Maingame: https://gofile.io/d/niHqrm
+Fix: https://gofile.io/d/sdiXlk
