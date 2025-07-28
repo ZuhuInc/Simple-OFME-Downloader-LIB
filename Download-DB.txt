@@ -150,3 +150,8 @@ Gofile (The Backrooms : Last Expedition) [1.2]
 Description:
 Maingame: https://gofile.io/d/MfG530
 Fix: https://gofile.io/d/ojRMeL
+
+Gofile (Mage Arena) [0.6.2]
+Description:
+Maingame: https://gofile.io/d/SVHFey
+Fix: https://gofile.io/d/ypsM5c
