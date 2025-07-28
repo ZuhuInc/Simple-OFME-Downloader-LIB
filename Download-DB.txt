@@ -145,3 +145,8 @@ Gofile (Liar's Bar) [0.93]
 Description: Test your skills in Liar's Dice and Liar's Deck of Cards, where lies and bluff are the keys to victory.
 Maingame: https://gofile.io/d/4PoEOj
 Fix: https://gofile.io/d/WdQ2tI
+
+Gofile (The Backrooms : Last Expedition) [1.2]
+Description:
+Maingame: https://gofile.io/d/MfG530
+Fix: https://gofile.io/d/ojRMeL
