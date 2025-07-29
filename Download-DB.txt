@@ -144,3 +144,13 @@ Gofile (Mage Arena) [0.6.2]
 Description:
 Maingame: https://gofile.io/d/SVHFey
 Fix: https://gofile.io/d/ypsM5c
+
+GoFile (Ready or Not) [16072025]
+Mainpart1: https://gofile.io/d/OcWxsr
+Mainpart2: https://gofile.io/d/UXgBBE
+Mainpart3: https://gofile.io/d/iFFxvt
+Mainpart4: https://gofile.io/d/vi5RIS
+Mainpart5: https://gofile.io/d/2sLv1P
+Mainpart6: https://gofile.io/d/3idkuc
+Mainpart7: https://gofile.io/d/9lKjAQ
+Fix: https://gofile.io/d/KUh6j2
