@@ -161,3 +161,7 @@ Mainpart2: https://gofile.io/d/hyyvad
 Mainpart3: https://gofile.io/d/ATADo9
 Mainpart4: https://gofile.io/d/PYTcfk
 Fix: https://gofile.io/d/QmcL37
+
+GoFile (Abiotic Factor) [1.0.0.20061]
+Mainpart: https://gofile.io/d/cdbYUa
+Fix: https://gofile.io/d/7kAzni
