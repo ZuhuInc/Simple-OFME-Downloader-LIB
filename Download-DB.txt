@@ -13,17 +13,12 @@ Description: A co-op climbing game where teamwork is survival.
 MainGame: https://gofile.io/d/rVl17h
 Fix: https://gofile.io/d/IN9bPX
 
-GoFile (Crime Simulator) [1.17]
+GoFile (Crime Simulator) [1.19g]
 ApproxSize: 18GB
 Description: A co-op heist game about paying off your debt.
-MainGame: https://gofile.io/d/bxkkkP
+MainPart1: https://gofile.io/d/9Aonf3
+MainPart2: https://gofile.io/d/ezHYHp
 Fix: https://gofile.io/d/yOnTYN
-
-DropBox (Crime Simulator) [1.17]
-ApproxSize: 18GB
-Description: A co-op heist game about paying off your debt.
-MainGame: https://www.dropbox.com/scl/fi/p32ipqfj9dhiz8e5hy98w/Crime.Simulator.v1.17-OFME.rar?rlkey=xdjtev9dnlgco4132qjgzglzl&st=hk01azd5&dl=1
-Fix: https://www.dropbox.com/scl/fi/sf29nqk8jg5zhk5b04g7v/CrimeSimulator_Fix_Repair_Steam_V2_Generic.rar?rlkey=ydopqdk0nyzosxbu3zqenibi4&st=pmlns58e&dl=1
 
 GoFile (Liar's Bar) [0.93]
 ApproxSize: 10GB
