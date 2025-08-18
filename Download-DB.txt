@@ -7,10 +7,10 @@
 # Sections are grouped by source, application name & version.
 # ===========================================================
 
-GoFile (PEAK) [1.22.a]
+GoFile (PEAK) [1.23.b]
 ApproxSize: 5GB
 Description: A co-op climbing game where teamwork is survival.
-MainGame: https://gofile.io/d/rVl17h
+MainGame: https://gofile.io/d/BrEiBw
 Fix: https://gofile.io/d/IN9bPX
 
 GoFile (Crime Simulator) [1.19g]
