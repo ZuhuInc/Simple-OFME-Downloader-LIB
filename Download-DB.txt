@@ -90,11 +90,12 @@ Maingame: https://gofile.io/d/tPib4s
 Fix: https://gofile.io/d/fQN6R7
 
 Both (Content Warning) [1.17.b]
+ApproxSize: 1GB
 Description: Get famous or die trying!
 Maingame: https://gofile.io/d/ndFwsS
 Fix: https://www.dropbox.com/scl/fi/mbyynm4cbjjaijewl32uf/ContentWarning_Fix_Repair_Steam_V4_Generic.rar?rlkey=nhjxedfk9l5ixt2uz23h7o5uj&st=m1t9376j&dl=1
 
-GoFile (Sons of The Forest) [Build 21012025]
+GoFile (Sons of The Forest) [21012025]
 Description: Scary Cannibalism
 Maingame: https://gofile.io/d/t7vCy3
 Fix: https://gofile.io/d/oTrZON
@@ -104,7 +105,7 @@ Description: SCP: Pandemic
 Mainpart1: https://gofile.io/d/sMQ0pf
 Mainpart2: https://gofile.io/d/WXiSbG
 
-GoFile (The Blackout Club) [Build 13082021]
+GoFile (The Blackout Club) [13082021]
 Desciption: Teenage friends investigating a monstrous secret that lurks beneath their small town.
 Maingame: https://gofile.io/d/UBB63M
 Fix: https://gofile.io/d/ctTt5q
@@ -120,7 +121,7 @@ Maingame: https://gofile.io/d/jTe5NR
 # timelimited
 Fix: https://gofile.io/d/SHvJKh
 
-GoFile (The Long Drive) [Build 26112024]
+GoFile (The Long Drive) [26112024]
 Description: All he needs to do is travel in his own car.
 Maingame: https://gofile.io/d/niHqrm
 Fix: https://gofile.io/d/sdiXlk
@@ -136,11 +137,12 @@ Maingame: https://gofile.io/d/MfG530
 Fix: https://gofile.io/d/ojRMeL
 
 Gofile (Mage Arena) [0.6.2]
-Description:
+ApproxSize: 1GB
 Maingame: https://gofile.io/d/SVHFey
 Fix: https://gofile.io/d/ypsM5c
 
 GoFile (Ready or Not) [28072025]
+ApproxSize: 38GB
 Mainpart1: https://gofile.io/d/DF6UtH
 Mainpart2: https://gofile.io/d/98xQLe
 Mainpart3: https://gofile.io/d/zoktZC
@@ -158,9 +160,11 @@ Mainpart4: https://gofile.io/d/PYTcfk
 Fix: https://gofile.io/d/QmcL37
 
 GoFile (Abiotic Factor) [1.0.0.20061]
+ApproxSize: 7GB
 Maingame: https://gofile.io/d/cdbYUa
 Fix: https://gofile.io/d/7kAzni
 
 GoFile (Backroom Company) [05082025]
+ApproxSize: 4GB
 Maingame: https://gofile.io/d/nwTK3P
 Fix: https://gofile.io/d/uR7fQG
