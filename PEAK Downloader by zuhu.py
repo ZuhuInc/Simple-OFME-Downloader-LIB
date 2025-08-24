@@ -1,5 +1,5 @@
 """
-Simple Zuhu Downloader V1.4.7
+Simple Zuhu Downloader V1.4.8
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -13,6 +13,7 @@ import shutil
 import re
 import hashlib
 import questionary
+import json
 from rich.console import Console
 from rich.table import Table
 
@@ -24,6 +25,50 @@ CLEANUP_RAR_FILE = True
 # --- End of Configuration --- #
 
 console = Console()
+
+# --- Data Management --- #
+DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
+DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
+
+def load_downloaded_games():
+    if not os.path.exists(DATA_FOLDER):
+        os.makedirs(DATA_FOLDER)
+    if not os.path.exists(DATA_FILE):
+        return {}
+    try:
+        with open(DATA_FILE, 'r') as f:
+            content = f.read()
+            if not content:
+                return {}
+            return json.loads(content)
+    except (json.JSONDecodeError, IOError):
+        return {}
+
+def save_downloaded_game(game_name, version, location):
+    """Saves a downloaded game's information to the JSON file."""
+    data = load_downloaded_games()
+    data[game_name] = {'version': version, 'location': location}
+    with open(DATA_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
+
+def display_downloaded_games_table():
+    """Displays a table of downloaded games."""
+    clear_screen()
+    games_data = load_downloaded_games()
+    if not games_data:
+        console.print("[yellow]No downloaded games found.[/yellow]")
+        return
+
+    table = Table(title="[bold yellow]Downloaded Games[/bold yellow]", show_header=True, header_style="bold magenta")
+    table.add_column("Game Name", min_width=20, style="cyan")
+    table.add_column("Version", style="yellow")
+    table.add_column("Location", max_width=70)
+
+    for name, data in games_data.items():
+        table.add_row(name, data.get('version', 'N/A'), data.get('location', 'N/A'))
+
+    console.print(table)
+
 
 # --- UI Helper Functions --- #
 def clear_screen():
@@ -115,7 +160,6 @@ def download_file(url, destination_folder, token=None):
         with requests.get(url, stream=True, headers=headers) as r:
             r.raise_for_status()
             total_size = int(r.headers.get('content-length', 0))
-            # CHANGED: Readded download rate
             with tqdm.tqdm(total=total_size, unit='iB', unit_scale=True, desc="Downloading", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}, {rate_fmt}]") as progress_bar:
                 with open(local_filepath, 'wb') as f:
                     for chunk in r.iter_content(chunk_size=8192): progress_bar.update(len(chunk)); f.write(chunk)
@@ -145,37 +189,87 @@ def winrar_extraction(winrar_path, rar_path, destination_folder, password):
     except Exception as e:
         console.print(f"[bold red][X] An unexpected error during extraction: {e}[/bold red]"); return False
 
-def display_game_table(games):
+def display_game_table(games, downloaded_games):
+    """Displays the game table with color-coding based on download status."""
     table = Table(title="[bold yellow]Zuhu's Game Downloader[/bold yellow]", show_header=True, header_style="bold magenta")
     table.add_column("ID", style="dim", width=4)
-    table.add_column("Game Name", min_width=20, style="cyan")
+    table.add_column("Game Name", min_width=20)
     table.add_column("Version", style="yellow")
     table.add_column("Description", max_width=50)
     table.add_column("Size", justify="right")
     table.add_column("Sources", style="green")
+
     game_display_names = list(games.keys())
     for i, name in enumerate(game_display_names):
         game_data = games[name]
+        base_name = game_data['base_name']
+        remote_version = game_data['version']
+
+        # --- Color Logic ---
+        if base_name in downloaded_games:
+            local_version = downloaded_games[base_name].get('version', 'N/A')
+            if local_version == remote_version:
+                display_name = f"[bold green]{base_name}[/bold green]"  # Up-to-date
+            else:
+                display_name = f"[bold yellow]{base_name}[/bold yellow]" # Needs update
+        else:
+            display_name = f"[bold red]{base_name}[/bold red]"          # Not downloaded
+
         sources_list = ", ".join(game_data['sources'].keys())
         first_source_data = list(game_data['sources'].values())[0]
-        table.add_row(str(i + 1), game_data['base_name'], game_data['version'], first_source_data.get('Description', 'N/A'), first_source_data.get('ApproxSize', 'N/A'), sources_list)
+        table.add_row(
+            str(i + 1),
+            display_name,
+            remote_version,
+            first_source_data.get('Description', 'N/A'),
+            first_source_data.get('ApproxSize', 'N/A'),
+            sources_list
+        )
     console.print(table)
+    console.print("\n[bold green]Green:[/] Up-to-date   [bold yellow]Yellow:[/] Update available   [bold red]Red:[/] Not downloaded")
+
 
 def main():
+    while True:
+        clear_screen()
+        action = questionary.select(
+            "What would you like to do?",
+            choices=[
+                "Download a new game",
+                "View downloaded games",
+                "Exit"
+            ],
+            use_indicator=True
+        ).ask()
+
+        if action == "Download a new game":
+            download_new_game()
+        elif action == "View downloaded games":
+            display_downloaded_games_table()
+            input("\nPress Enter to return to the main menu.")
+        elif action is None:
+            break
+        else:
+            break
+
+def download_new_game():
     games = fetch_links_from_github(GITHUB_LINKS_URL)
     if not games: return
     
-    display_game_table(games)
+    downloaded_games = load_downloaded_games()
+    display_game_table(games, downloaded_games)
     
     game_display_names = list(games.keys())
-    choice_str = questionary.text("Enter the ID of the game you want to download:", validate=lambda text: True if text.isdigit() and 1 <= int(text) <= len(game_display_names) else f"Please enter a number between 1 and {len(game_display_names)}.").ask()
+    choice_str = questionary.text("\nEnter the ID of the game you want to download:", validate=lambda text: True if text.isdigit() and 1 <= int(text) <= len(game_display_names) else f"Please enter a number between 1 and {len(game_display_names)}.").ask()
     if not choice_str: return
         
     selected_display_name = game_display_names[int(choice_str) - 1]
-    base_game_name = games[selected_display_name]['base_name']
+    game_info = games[selected_display_name]
+    base_game_name = game_info['base_name']
+    game_version = game_info['version']
     console.print(f"\n[bold]You selected:[/] [bright_cyan]{selected_display_name}[/bright_cyan]", highlight=False)
 
-    sources_for_game = games[selected_display_name]['sources']
+    sources_for_game = game_info['sources']
     source_names = list(sources_for_game.keys())
     selected_source_name = source_names[0] if len(source_names) == 1 else questionary.select(f"Choose a download source for '{selected_display_name}':", choices=source_names, use_indicator=True).ask()
     if len(source_names) == 1: console.print(f"[bold]Auto-selected source:[/] [green]{selected_source_name}[/green]")
@@ -216,10 +310,32 @@ def main():
             game_file_status = "[green]Completed[/green]"
             dirs_after = set(os.listdir(user_base_path))
             new_dirs = [d for d in (dirs_after - dirs_before) if os.path.isdir(os.path.join(user_base_path, d))]
+            
+            main_game_folder_path = None
             if len(new_dirs) == 1:
                 main_game_folder_path = os.path.join(user_base_path, new_dirs[0])
                 console.print(f"\n[*] Main game folder auto-detected: '[cyan]{main_game_folder_path}[/cyan]'", highlight=False)
-            else: console.print("\n[!] [yellow]Warning: Could not auto-detect new game folder.[/yellow]")
+            else:
+                console.print("\n[!] [yellow]Warning: Could not auto-detect the new game folder.[/yellow]")
+                invalid_chars = r'[:*?"<>|]'
+                clean_game_name = re.sub(invalid_chars, '', base_game_name)
+                example_path = os.path.join(user_base_path, clean_game_name)
+                while True:
+                    prompt = f"> Please enter the FULL path to the extracted game folder (e.g., {example_path}): "
+                    user_provided_path = input(prompt).strip()
+                    if not user_provided_path:
+                        console.print("[bold red]  [X] No path provided. Game information will not be saved.[/bold red]")
+                        break 
+                    if os.path.isdir(user_provided_path):
+                        main_game_folder_path = user_provided_path
+                        break
+                    else:
+                        console.print("[bold red]  [X] Invalid path. Please enter an existing directory.[/bold red]")
+            
+            if main_game_folder_path:
+                save_downloaded_game(base_game_name, game_version, main_game_folder_path)
+                console.print(f"[bold green][V] Game information saved.[/bold green]")
+
             if CLEANUP_RAR_FILE:
                 console.print(f"[*] Cleaning up downloaded part(s)...")
                 for rar_path in downloaded_rar_paths:
@@ -233,17 +349,10 @@ def main():
         if fix_choice:
             print_status_header(selected_display_name, selected_source_name, game_file_status, "Pending...")
             fix_extraction_path = main_game_folder_path
-            if not main_game_folder_path:
-                invalid_chars = r'[:*?"<>|]'; clean_game_name = re.sub(invalid_chars, '', base_game_name)
-                example_path = os.path.join(user_base_path, clean_game_name)
-                while True:
-                    console.print("\n[!] [yellow]Could not auto-detect game folder.[/yellow]")
-                    prompt = f"> Enter the FULL path for the fix extraction (e.g., {example_path}): "
-                    fix_extraction_path = input(prompt).strip()
-                    if not fix_extraction_path: console.print("[bold red]  [X] No path provided. Aborting fix.[/bold red]"); fix_extraction_path = None; break
-                    if os.path.isdir(fix_extraction_path): break
-                    else: console.print("[bold red]  [X] Invalid path. Please enter an existing directory.[/bold red]")
-            if not fix_extraction_path: fix_file_status = "[red]Cancelled[/red]"
+            if not fix_extraction_path:
+                console.print("\n[!] [yellow]Cannot apply fix because the main game folder is unknown.[/yellow]")
+                console.print("[!] [yellow]Please run the fix manually.[/yellow]")
+                fix_file_status = "[red]Skipped (Folder Unknown)[/red]"
             else:
                 console.print(f"[*] The fix will be extracted to: '[cyan]{fix_extraction_path}[/cyan]'", highlight=False)
                 direct_fix_url, fix_token = fix_url, None
@@ -257,9 +366,6 @@ def main():
                             except Exception as e: console.print(f"  - [!] [red]Failed to remove '{os.path.basename(downloaded_fix_path)}': {e}[/red]", highlight=False)
                     else: fix_file_status = "[red]Failed[/red]"
                 else: fix_file_status = "[red]Failed[/red]"; console.print("[bold red][X] Failed to get direct download link for the fix.[/bold red]")
-            if fix_file_status != "[red]Cancelled[/red]":
-                console.print("\n[dim]Press Enter to view the final summary...[/dim]")
-                input()
         else: fix_file_status = "[yellow]Skipped[/yellow]"
     else: fix_file_status = "[dim]Not Available[/dim]"
 
@@ -270,15 +376,17 @@ def main():
             console.print("[*] Cleaning up empty temporary download directory...")
             os.rmdir(temp_download_folder)
     except Exception as e: console.print(f"[!] [yellow]Could not remove temp directory: {e}[/yellow]")
+    
+    console.print("\n[dim]Press Enter to return to the main menu...[/dim]")
+    input()
+
 
 if __name__ == "__main__":
     try:
         main()
-        console.print("\n--- [bold green]ALL TASKS COMPLETED[/bold green] ---")
+        console.print("\n--- [bold green]Exiting... Goodbye![/bold green] ---")
     except (KeyboardInterrupt, TypeError, EOFError):
         console.print("\n\n[bold yellow]Operation cancelled by user. Exiting.[/bold yellow]")
     except Exception as e:
         console.print(f"\n\n[bold red]An unexpected fatal error occurred:[/bold red]"); console.print_exception(show_locals=True)
-    finally:
-        if sys.exc_info()[0] in [None, KeyboardInterrupt, TypeError, EOFError]:
-            input("\nPress Enter to exit.")
+        input("\nPress Enter to exit.")
