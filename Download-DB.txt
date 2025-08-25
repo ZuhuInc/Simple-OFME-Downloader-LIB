@@ -91,6 +91,7 @@ Fix: https://gofile.io/d/jqHN9i
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: A gaming utility for scaling & frame generation.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LossLessScaling.jpg
 MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
 
 GoFile (LossLess Scaling) [3.2]
