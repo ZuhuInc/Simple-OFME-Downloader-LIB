@@ -17,6 +17,7 @@ Fix: https://gofile.io/d/IN9bPX
 GoFile (Crime Simulator) [1.19g]
 ApproxSize: 18GB
 Description: A co-op heist game about paying off your debt.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CrimeSimulator.png
 MainPart1: https://gofile.io/d/9Aonf3
 MainPart2: https://gofile.io/d/ezHYHp
 Fix: https://gofile.io/d/yOnTYN
@@ -24,53 +25,65 @@ Fix: https://gofile.io/d/yOnTYN
 GoFile (Liar's Bar) [0.93]
 ApproxSize: 10GB
 Description: Bluff your way to victory in a sketchy online bar.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LiarsBar.jpeg
 MainGame: https://gofile.io/d/4PoEOj
 Fix: https://gofile.io/d/WdQ2tI
 
 GoFile (Buckshot Roulette) [2.1.0]
 ApproxSize: 1.5GB
 Description: Play Russian roulette with a 12-gauge shotgun.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BuckshotRoulette.jpg
 MainGame: https://gofile.io/d/Ojkfar
 Fix: https://gofile.io/d/vPbiw7
 
 GoFile (Palworld) [0.6.0.75365]
 ApproxSize: 25GB
 Description: Catch 'Pals' and survive in a vast open world.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PalWorld.jpg
 MainPart1: https://gofile.io/d/1ReNjK
 MainPart2: https://gofile.io/d/m6h91H
 MainPart3: https://gofile.io/d/bEXgwD
 Fix: https://gofile.io/d/ahXhVx
 
 GoFile (Chaos Express Delivery) [22022025]
+ApproxSize: 5GB
 Description: Deliver with friends in a chaotic open city.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ChoasExpress.jpg
 MainGame: https://gofile.io/d/5wATUX
 Fix: https://gofile.io/d/XsXH04
 
 GoFile (The Anomaly Project) [23012025]
+ApproxSize: 2GB
 Description: Your goal is simple, spot anomalies to escape.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheAnomalyProject.jpg
 MainGame: https://gofile.io/d/bXRlGF
 Fix: https://gofile.io/d/fZkdTE
 
 GoFile (Backrooms Extractions) [0.1.79]
 ApproxSize: 6GB
 Description: Extract agents and survive creepy liminal spaces.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BackroomsExtractions.jpg
 MainGame: https://gofile.io/d/EINMCG
 Fix: https://gofile.io/d/GHBxxO
 
 GoFile (Carry The Glass) [11112024]
+ApproxSize: 1GB
 Description: Carry glass with a friend. Don’t break it.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CarryTheGlass.jpg
 MainGame: https://gofile.io/d/FxcZwe
 Fix: https://gofile.io/d/QiSv5i
 
 GoFile (House Flipper 2) [08082025]
 ApproxSize: 15GB
 Description: Renovate, build & flip homes now in online co-op.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/HouseFlipper2.jpg
 MainGame: https://gofile.io/d/P0XtAg
 Fix: https://gofile.io/d/bMFYuW
 
 GoFile (PowerWash Simulator) [04032025]
 ApproxSize: 19GB
 Description: Wash away grime in the ultimate chill sim.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PowerWashSimulator.jpg
 MainPart1: https://gofile.io/d/BC4ZP4
 MainPart2: https://gofile.io/d/iSJRTO
 Fix: https://gofile.io/d/jqHN9i
