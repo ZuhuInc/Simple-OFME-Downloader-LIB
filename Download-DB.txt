@@ -10,6 +10,7 @@
 GoFile (PEAK) [1.23.b]
 ApproxSize: 5GB
 Description: A co-op climbing game where teamwork is survival.
+Thumbnail: https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/blob/main/Assets/PEAK.png?raw=true
 MainGame: https://gofile.io/d/BrEiBw
 Fix: https://gofile.io/d/IN9bPX
 
