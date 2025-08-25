@@ -97,31 +97,37 @@ MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.
 GoFile (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: A gaming utility for scaling & frame generation.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LossLessScaling.jpg
 MainGame: https://gofile.io/d/pm3far
 
 GoFile (Another Try 2) [0.0.1.8]
 Description: The virus has devastated cities and lands.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AnotherTry2.jpg
 Maingame: https://gofile.io/d/tPib4s
 Fix: https://gofile.io/d/fQN6R7
 
 Both (Content Warning) [1.17.b]
 ApproxSize: 1GB
 Description: Get famous or die trying!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ContentWarning.jpg
 Maingame: https://gofile.io/d/ndFwsS
 Fix: https://www.dropbox.com/scl/fi/mbyynm4cbjjaijewl32uf/ContentWarning_Fix_Repair_Steam_V4_Generic.rar?rlkey=nhjxedfk9l5ixt2uz23h7o5uj&st=m1t9376j&dl=1
 
 GoFile (Sons of The Forest) [21012025]
 Description: Scary Cannibalism
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SonsOfTheForest.jpg
 Maingame: https://gofile.io/d/t7vCy3
 Fix: https://gofile.io/d/oTrZON
 
 GoFile (SCP: 5K) [0.16.0.72]
 Description: SCP: Pandemic
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SCP5K.jpg
 Mainpart1: https://gofile.io/d/sMQ0pf
 Mainpart2: https://gofile.io/d/WXiSbG
 
 GoFile (The Blackout Club) [13082021]
 Desciption: Teenage friends investigating a monstrous secret that lurks beneath their small town.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheBlackoutClub.jpg
 Maingame: https://gofile.io/d/UBB63M
 Fix: https://gofile.io/d/ctTt5q
 
@@ -132,22 +138,26 @@ Fix: https://gofile.io/d/pLM7JX
 
 GoFile (Raft) [1.09]
 Description: You have to survive in the open ocean.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Raft.jpg
 Maingame: https://gofile.io/d/jTe5NR
 # timelimited
 Fix: https://gofile.io/d/SHvJKh
 
 GoFile (The Long Drive) [26112024]
 Description: All he needs to do is travel in his own car.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheLongDrive.jpg
 Maingame: https://gofile.io/d/niHqrm
 Fix: https://gofile.io/d/sdiXlk
 
 Gofile (Grounded) [1.4.7.4815]
 Description: Survive as a small kid in a HUGE backyard. Goodluck if u hate insects!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded.jpg
 Maingame: https://gofile.io/d/lGMDpn
 Fix: https://gofile.io/d/GcLFSe
 
 Gofile (The Backrooms : Last Expedition) [1.2]
 Description:
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheBackroomsLastExpedition.jpg
 Maingame: https://gofile.io/d/MfG530
 Fix: https://gofile.io/d/ojRMeL
 
@@ -158,6 +168,7 @@ Fix: https://gofile.io/d/ypsM5c
 
 GoFile (Ready or Not) [28072025]
 ApproxSize: 38GB
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ReadyOrNot.jpg
 Mainpart1: https://gofile.io/d/DF6UtH
 Mainpart2: https://gofile.io/d/98xQLe
 Mainpart3: https://gofile.io/d/zoktZC
@@ -168,6 +179,7 @@ Mainpart7: https://gofile.io/d/DuvAVl
 Fix: https://gofile.io/d/KUh6j2
 
 GoFile (Grounded 2) [1947890]
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded2.jpg
 Mainpart1: https://gofile.io/d/jxmLey
 Mainpart2: https://gofile.io/d/hyyvad
 Mainpart3: https://gofile.io/d/ATADo9
@@ -176,10 +188,12 @@ Fix: https://gofile.io/d/QmcL37
 
 GoFile (Abiotic Factor) [1.0.0.20061]
 ApproxSize: 7GB
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Abiotic Factor.jpg
 Maingame: https://gofile.io/d/cdbYUa
 Fix: https://gofile.io/d/7kAzni
 
 GoFile (Backroom Company) [05082025]
 ApproxSize: 4GB
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BackroomCompany.jpg
 Maingame: https://gofile.io/d/nwTK3P
 Fix: https://gofile.io/d/uR7fQG
