@@ -7,11 +7,11 @@
 # Sections are grouped by source, application name & version.
 # ===========================================================
 
-GoFile (PEAK) [1.23.b]
+GoFile (PEAK) [1.25.a]
 ApproxSize: 5GB
 Description: A co-op climbing game where teamwork is survival.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PEAK.png
-MainGame: https://gofile.io/d/BrEiBw
+MainGame: https://gofile.io/d/VlQpWh
 Fix: https://gofile.io/d/IN9bPX
 
 GoFile (Crime Simulator) [1.19g]
