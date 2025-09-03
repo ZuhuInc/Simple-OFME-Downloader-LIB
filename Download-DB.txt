@@ -197,3 +197,9 @@ ApproxSize: 4GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BackroomCompany.jpg
 Maingame: https://gofile.io/d/nwTK3P
 Fix: https://gofile.io/d/uR7fQG
+
+GoFile (BMX Streets) [1.0.0.136.0]
+ApproxSize: 30GB
+Thumbnail:https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BMX-Streets.jpg
+Maingame: https://gofile.io/d/zmAcUd
+Fix: https://gofile.io/d/ZZFEHK
