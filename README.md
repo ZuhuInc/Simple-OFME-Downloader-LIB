@@ -41,7 +41,7 @@ A command-line utility designed to automate the process of downloading and extra
 
 2.  **Install dependencies:**
     ```bash
-    pip install requests tqdm rich questionary
+    pip install requests PyQt6
     ```
 
 3.  **Configure the Script (if needed):**
@@ -52,9 +52,9 @@ A command-line utility designed to automate the process of downloading and extra
     ```
 4. **Run the Script:**
     ```bash
-    python main.py 
+    Python PEAK Downloader by zuhu.py 
     ```
-    *(Replace `main.py` with your script's actual filename)*
+    *(Replace `PEAK Downloader by zuhu.py` with the script's name u saved it as)*
 
 </details>
 
@@ -66,17 +66,17 @@ The script will guide you through a few simple steps.
 
 | Step | Action | Preview |
 | :--: | :--- | :--- |
-| **1** | **Select Game & Source**<br/><br/>First, choose the game you want to download. Then, select your preferred download host from the next menu. | ![Game & Source](https://i.imgur.com/0m8FBuh.png) |
-| **2** | **Set Path & Download**<br/><br/>Enter the base directory where you want the game extracted. The download will start automatically. | ![Path & Download](https://i.imgur.com/BL17kGE.png) |
-| **3** | **Apply Fix (Optional)**<br/><br/>After extraction, the script will ask if you want to download and apply an available fix or update. | ![Apply/Download Fix](https://i.imgur.com/GQHY6TR.png) |
-| **4**| **All Done!**<br/><br/>A final summary screen will show the status of all operations. | ![IDone](https://i.imgur.com/2Xk6G9S.png) |
+| **1** | **Select Game & Source**<br/><br/>First, choose the game you want to download. Then, select your preferred download host from the next menu. | <img width="1157" height="742" alt="image" src="https://github.com/user-attachments/assets/7b6c5ecd-3e0e-42ae-8d05-e35befbbfcac" /> |
+| **2** | **Set Path & Download**<br/><br/>Enter the base directory where you want the game extracted. The download will start automatically. | <img width="1157" height="742" alt="image" src="https://github.com/user-attachments/assets/2e4f7ae4-15cd-478f-8613-5c846eae5193" /> |
+| **3** | **Apply Fix (Optional)**<br/><br/>After extraction, the script will ask if you want to download and apply an available fix or update. | <img width="1157" height="742" alt="image" src="https://github.com/user-attachments/assets/9d8f08bc-0433-4e74-a7a6-4c0b2e6ba14c" /> |
+
 
 ---
 
 ### Libraries Used
 
-*   **External:** [requests](https://pypi.org/project/requests/), [tqdm](https://pypi.org/project/tqdm/), [rich](https://pypi.org/project/rich/), [questionary](https://pypi.org/project/questionary/)
-*   **Standard:** `os`, `sys`, `subprocess`, `shutil`, `re`, `hashlib`
+*   **External:** [requests](https://pypi.org/project/requests/), [PyQt6](https://pypi.org/project/PyQt6/)
+*   **Standard:** `os`, `sys`, `subprocess`, `json`, `re`, `hashlib`, `time`
 
 ---
 
