@@ -97,6 +97,14 @@ MainPart1: https://gofile.io/d/BC4ZP4
 MainPart2: https://gofile.io/d/iSJRTO
 Fix: https://gofile.io/d/jqHN9i
 
+GoFile (PowerWash Simulator 2) [1.1.059]
+ApproxSize: 19GB
+Description: PowerWash Simulator is back, bubbling with fresh locations, soap-erior equipment and splashy features. Effortlessly transform soiled surroundings into clean, serene scenes, solo or with pals. Satisfaction is a spray away!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PowerWashSimulator2.jpg
+MainPart1: https://gofile.io/d/TaaF6U
+MainPart2: https://gofile.io/d/DyyLLW
+Fix: https://gofile.io/d/BFsoRi
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: A gaming utility for scaling & frame generation.
