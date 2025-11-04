@@ -9,7 +9,7 @@
 
 GoFile (PEAK) [1.35.a]
 ApproxSize: 5GB
-Description: A co-op climbing game where teamwork is survival.
+Description: PEAK is a co-op climbing game where the slightest mistake can spell your doom. Either solo or as a group of lost nature scouts, your only hope of rescue from a mysterious island is to scale the mountain at its center. Do you have what it takes to reach the PEAK?
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PEAK.png
 MainGame: https://gofile.io/d/syXAwI
 Fix: https://gofile.io/d/6yPbUV
@@ -23,7 +23,7 @@ Fix: https://gofile.io/d/my0z9j
 
 GoFile (Crime Simulator) [1.21]
 ApproxSize: 18GB
-Description: A co-op heist game about paying off your debt.
+Description: You’re out of jail, but the debt isn’t gone. Sneak, steal, and break into houses solo or in 4-player co-op. Use lockpicks, sleeping gas, and brute force to complete jobs, outsmart security, and make enough money before time runs out. Will you pay back what you owe, or lose everything?
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CrimeSimulator.png
 MainPart1: https://gofile.io/d/EhqGzt
 MainPart2: https://gofile.io/d/IOUViL
@@ -31,21 +31,21 @@ Fix: https://gofile.io/d/yOnTYN
 
 GoFile (Liar's Bar) [0.956]
 ApproxSize: 10GB
-Description: Bluff your way to victory in a sketchy online bar.
+Description: Dive into this multiplayer online experience set in a sketchy bar where the games are as dangerous as the patrons. Join a table of 4 and test your skills in Liar's Dice and Liar's Deck, where lying and bluffing are key to victory. Ready for a night at Liar's Bar?
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LiarsBar.jpeg
 MainGame: https://gofile.io/d/b8kAGD
 Fix: https://gofile.io/d/WdQ2tI
 
 GoFile (Buckshot Roulette) [2.1.0]
 ApproxSize: 1.5GB
-Description: Play Russian roulette with a 12-gauge shotgun.
+Description: Play Russian roulette with a 12-gauge shotgun. Four enter. One leaves. Roll the dice with your life. Good luck!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BuckshotRoulette.jpg
 MainGame: https://gofile.io/d/Ojkfar
 Fix: https://gofile.io/d/vPbiw7
 
 GoFile (Palworld) [0.6.9.82048]
 ApproxSize: 25GB
-Description: Catch 'Pals' and survive in a vast open world.
+Description: Fight, farm, build and work alongside mysterious creatures called "Pals" in this completely new multiplayer, open world survival and crafting game!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PalWorld.jpg
 MainPart1: https://gofile.io/d/Maw9R0
 MainPart2: https://gofile.io/d/t8Fd37
@@ -56,35 +56,35 @@ Fix: https://gofile.io/d/ahXhVx
 
 GoFile (Chaos Express Delivery) [22022025]
 ApproxSize: 5GB
-Description: Deliver with friends in a chaotic open city.
+Description: Deliver goods with your friends in open-world city. Manage and upgrade your delivery point, acquire new ways of delivery and become the best.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ChoasExpress.jpg
 MainGame: https://gofile.io/d/5wATUX
 Fix: https://gofile.io/d/XsXH04
 
 GoFile (The Anomaly Project) [23012025]
 ApproxSize: 2GB
-Description: Your goal is simple, spot anomalies to escape.
+Description: Your goal is simple, spot anomalies to escape. Play alone or together with up to 8 players in online co-op. Make the right decisions to advance to the next level, or risk being reset to the beginning!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheAnomalyProject.jpg
 MainGame: https://gofile.io/d/bXRlGF
 Fix: https://gofile.io/d/fZkdTE
 
 GoFile (Backrooms Extractions) [0.1.79]
 ApproxSize: 6GB
-Description: Extract agents and survive creepy liminal spaces.
+Description: Cooperate with up to 6 players to explore, search, and extract lost agents within the Backrooms. Solve puzzles, unlock tools, survive against entities, and progress through increasingly dangerous levels.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BackroomsExtractions.jpg
 MainGame: https://gofile.io/d/EINMCG
 Fix: https://gofile.io/d/GHBxxO
 
 GoFile (Carry The Glass) [11112024]
 ApproxSize: 1GB
-Description: Carry glass with a friend. Don’t break it.
+Description: Team up as two quirky construction workers in this fun 2-player co-op platformer! Carry a fragile glass window through colorful levels filled with challenges. Communicate and coordinate to dodge obstacles and solve puzzles. Can you finish the job without breaking the glass?
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CarryTheGlass.jpg
 MainGame: https://gofile.io/d/FxcZwe
 Fix: https://gofile.io/d/QiSv5i
 
 GoFile (House Flipper 2) [11092025]
 ApproxSize: 15GB
-Description: Renovate, build & flip homes now in online co-op.
+Description: Clean your worries away with this relaxing renovation simulator! Buy, fix, sell, and become a local legend. Or grab your power tools and build anything from scratch! With the online 2-4 players co-op mode, you can play both in sandbox and story mode together.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/HouseFlipper2.jpg
 MainPart1: https://gofile.io/d/IDkFay
 MainPart2: https://gofile.io/d/ZYvheT
@@ -93,7 +93,7 @@ Fix: https://gofile.io/d/wpxVAI
 
 GoFile (PowerWash Simulator) [04032025]
 ApproxSize: 19GB
-Description: Wash away grime in the ultimate chill sim.
+Description: Release the Pressure with PowerWash Simulator! Wash away your worries with the soothing sounds of high-pressure water. Fire up your power washer and blast away every speck of dirt and grime you can find, all with the simple satisfaction of power-washing to a sparkling finish.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PowerWashSimulator.jpg
 MainPart1: https://gofile.io/d/BC4ZP4
 MainPart2: https://gofile.io/d/iSJRTO
@@ -109,31 +109,31 @@ Fix: https://gofile.io/d/BFsoRi
 
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
-Description: A gaming utility for scaling & frame generation.
+Description: All-in-one gaming utility for frame generation and scaling
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LossLessScaling.jpg
 MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
 
 GoFile (Another Try 2) [0.0.1.8]
-Description: The virus has devastated cities and lands.
+Description: The virus has devastated cities and lands. Most of the population died, the rest turned into the walking dead. You're one of the last survivors. Do whatever it takes to last another day.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AnotherTry2.jpg
 Maingame: https://gofile.io/d/tPib4s
 Fix: https://gofile.io/d/fQN6R7
 
 Both (Content Warning) [1.17.b]
 ApproxSize: 1GB
-Description: Get famous or die trying!
+Description: Film your friends doing scary things to become SpöökTube famous! (strongly advised to not go alone)
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ContentWarning.jpg
 Maingame: https://gofile.io/d/ndFwsS
 Fix: https://www.dropbox.com/scl/fi/mbyynm4cbjjaijewl32uf/ContentWarning_Fix_Repair_Steam_V4_Generic.rar?rlkey=nhjxedfk9l5ixt2uz23h7o5uj&st=m1t9376j&dl=1
 
 GoFile (Sons of The Forest) [21012025]
-Description: Scary Cannibalism
+Description: Sent to find a missing billionaire on a remote island, you find yourself in a cannibal-infested hellscape. Craft, build, and struggle to survive, alone or with friends, in this terrifying new open-world survival horror simulator.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SonsOfTheForest.jpg
 Maingame: https://gofile.io/d/t7vCy3
 Fix: https://gofile.io/d/oTrZON
 
 GoFile (SCP: 5K) [0.17.0.154]
-Description: SCP: Pandemic
+Description: SCP: 5K is a co-op or singleplayer tactical horror FPS project that puts players in the midst of a conspiracy where the SCP Foundation has turned on humanity. Enjoy Early Access as we continue to 
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SCP5K.jpg
 Mainpart1: https://gofile.io/d/jCTjJp
 Mainpart2: https://gofile.io/d/RBHPjD
@@ -143,46 +143,49 @@ MainPart5: https://gofile.io/d/QnLZal
 Fix: https://gofile.io/d/ohI52u
 
 GoFile (The Blackout Club) [13082021]
-Description: Teenage friends investigating a monstrous secret that lurks beneath their small town.
+Description: The Blackout Club is a first-person co-op horror game centered around a group of teenage friends investigating a monstrous secret beneath the skin of their small town. 1-4 players explore procedurally-generated missions against a fearsome enemy you can only see with your eyes closed.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheBlackoutClub.jpg
 Maingame: https://gofile.io/d/UBB63M
 Fix: https://gofile.io/d/ctTt5q
 
 GoFile (Granny Escape Together) [1.0.2]
-Description: Granny is not the only danger that awaits you in the house.
+Description: This is a creepy co-op horror game. In which you find yourself locked in a crazy Granny's house. But Granny is not the only danger that awaits you in the house, someone else creepy lives in the basement. You have five days to get out of the house!
 Maingame: https://gofile.io/d/cHPQPj
 Fix: https://gofile.io/d/pLM7JX
 
 GoFile (Raft) [1.1.05]
-Description: You have to survive in the open ocean.
+Description: Raft™ throws you and your friends into an epic oceanic adventure! Alone or together, players battle to survive a perilous voyage across a vast sea! Gather debris, scavenge reefs and build your own floating home, but be wary of the man-eating sharks!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Raft.jpg
 Maingame: https://gofile.io/d/ja55Ky
 Fix: https://gofile.io/d/KHug24
 
 GoFile (The Long Drive) [26112024]
-Description: All he needs to do is travel in his own car.
+Description: Random generated open world semi-post apocalyptic survival car driving game.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheLongDrive.jpg
 Maingame: https://gofile.io/d/niHqrm
 Fix: https://gofile.io/d/sdiXlk
 
 Gofile (Grounded) [1.4.7.4815]
+Description: The world is a vast, beautiful and dangerous place – especially when you have been shrunk to the size of an ant. Can you thrive alongside the hordes of giant insects, fighting to survive the perils of the backyard?
 Description: Survive as a small kid in a HUGE backyard. Goodluck if u hate insects!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded.jpg
 Maingame: https://gofile.io/d/lGMDpn
 Fix: https://gofile.io/d/GcLFSe
 
 Gofile (The Backrooms: Last Expedition) [1.2]
-Description:
+Description: "The Backrooms: Last Expedition" is a cooperative horror game designed for 1 to 4 players. Its main objective is to create an enjoyable gaming experience for friends. Players will navigate through terrifying levels, filled with various entities and dangers, as they strive to escape.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheBackroomsLastExpedition.jpg
 Maingame: https://gofile.io/d/MfG530
 Fix: https://gofile.io/d/ojRMeL
 
 Gofile (Mage Arena) [0.7.6]
+Description: A co-op PvP experience about using your voice to cast spells in the Mage Arena to settle an ages-old feud between sorcerers and warlocks.
 ApproxSize: 1GB
 Maingame: https://gofile.io/d/LBgx7P
 Fix: https://gofile.io/d/ypsM5c
 
 GoFile (Ready or Not) [14102025]
+Description: Ready or Not is an intense, tactical, first-person shooter that depicts a modern-day world in which SWAT police units are called to defuse hostile and confronting situations.
 ApproxSize: 60GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ReadyOrNot.jpg
 Mainpart1: https://gofile.io/d/vNtyth
@@ -195,6 +198,7 @@ Mainpart7: https://gofile.io/d/k3Oqx1
 Fix: https://gofile.io/d/aazujB
 
 GoFile (Grounded 2) [2148553]
+Description: Shrunk again, but the world is much larger. In this open-world, single-player or co-op survival adventure, craft weapons and armor, build your base, and traverse the playground on your buggy. But something else is out there—and it hasn’t forgotten you.
 ApproxSize: 40GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded2.jpg
 Mainpart1: https://gofile.io/d/70YBIZ
@@ -204,24 +208,28 @@ Mainpart4: https://gofile.io/d/md9QyV
 Fix: https://gofile.io/d/Ou6xyo
 
 GoFile (Abiotic Factor) [1.0.0.21035]
+Description: Abiotic Factor is a survival crafting experience for 1-6 players set in the depths of an underground research facility. Caught between paranormal containment failure, a military crusade, and chaos from a dozen realms, the world’s greatest minds must survive against the universe’s biggest threats.
 ApproxSize: 7GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Abiotic Factor.jpg
 Maingame: https://gofile.io/d/4dlwZJ
 Fix: https://gofile.io/d/m2sGOA
 
 GoFile (Backroom Company) [05082025]
+Description: A cooperative horror game about working inside the corporation "The Backrooms". Fulfill contracts and also earn extra money by selling stuff.
 ApproxSize: 4GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BackroomCompany.jpg
 Maingame: https://gofile.io/d/nwTK3P
 Fix: https://gofile.io/d/uR7fQG
 
 GoFile (BMX Streets) [1.0.0.136.0]
+Description: Ready to hit the streets? BMX Streets brings the essence of BMX riding to your fingertips. Experience the next generation of BMX gaming with realistic physics, massive amounts of customization and gorgeous maps. Practice, experiment and explore to find your own unique style and master the streets.
 ApproxSize: 30GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BMX-Streets.jpg
 Maingame: https://gofile.io/d/zmAcUd
 Fix: https://gofile.io/d/ZZFEHK
 
 GoFile (BeamNG Drive) [0.37.5.0.18733]
+Description: A dynamic soft-body physics vehicle simulator capable of doing just about anything.
 ApproxSize: 55GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BEAMNG.png
 Mainpart1: https://gofile.io/d/GDp4FO
@@ -233,6 +241,7 @@ Mainpart6: https://gofile.io/d/Rjo4U2
 Fix: https://gofile.io/d/PeVq9C
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [v1.5.1]
+Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
 ApproxSize: 155GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Stalker2.jpg
 MainGame: https://gofile.io/d/LGyqjs
