@@ -245,3 +245,9 @@ Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemie
 ApproxSize: 155GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Stalker2.jpg
 MainGame: https://gofile.io/d/LGyqjs
+
+GoFile (Dispatch) [1.0.15411]
+Description: Dispatch is a superhero workplace comedy where choices matter. Manage a dysfunctional team of misfit heroes and strategize who to send to emergencies around the city, all while balancing office politics, personal relationships, and your own quest to become a hero. Episodes 1 - 4 out now.
+ApproxSize: 7GB
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Dispatch.jpg
+MainGame: https://gofile.io/d/rt3sBv
