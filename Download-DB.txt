@@ -207,12 +207,12 @@ Mainpart3: https://gofile.io/d/1wH5mr
 Mainpart4: https://gofile.io/d/md9QyV
 Fix: https://gofile.io/d/Ou6xyo
 
-GoFile (Abiotic Factor) [1.0.0.21035]
+GoFile (Abiotic Factor) [1.0.0.21184]
 Description: Abiotic Factor is a survival crafting experience for 1-6 players set in the depths of an underground research facility. Caught between paranormal containment failure, a military crusade, and chaos from a dozen realms, the world’s greatest minds must survive against the universe’s biggest threats.
 ApproxSize: 7GB
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Abiotic Factor.jpg
-Maingame: https://gofile.io/d/4dlwZJ
-Fix: https://gofile.io/d/m2sGOA
+Maingame: https://gofile.io/d/NOrCDi
+Fix: https://gofile.io/d/3C4A9f
 
 GoFile (Backroom Company) [05082025]
 Description: A cooperative horror game about working inside the corporation "The Backrooms". Fulfill contracts and also earn extra money by selling stuff.
