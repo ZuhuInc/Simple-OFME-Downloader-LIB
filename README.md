@@ -14,12 +14,12 @@ A command-line utility designed to automate the process of downloading and extra
 > ### Easiest Method: Download the Executable (.exe)
 > This is the recommended way for most users and **does not require a Python installation.**
 >
-> 1.  Go to the [**Releases Page**](https://github.com/ZuhuInc/Simple-OFME-Downloader/releases).
+> 1.  Go to the [**Releases Page**](https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases).
 > 2.  Download the latest `.exe` file from the **Assets** section.
 > 3.  **Important:** You still need to have **WinRAR** installed for the extractor to work.
 > 4.  Run the downloaded file and follow the on-screen instructions!
 >
-> [**➡️ Go to the Releases Page to Download**](https://github.com/ZuhuInc/Simple-OFME-Downloader/releases)
+> [**➡️ Go to the Releases Page to Download**](https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases)
 
 ---
 
@@ -52,9 +52,9 @@ A command-line utility designed to automate the process of downloading and extra
     ```
 4. **Run the Script:**
     ```bash
-    Python PEAK Downloader by zuhu.py 
+    OFME-DWNLDR.py
     ```
-    *(Replace `PEAK Downloader by zuhu.py` with the script's name u saved it as)*
+    *(Replace `OFME-DWNLDR.py` with the script's name u saved it as)*
 
 </details>
 
@@ -73,10 +73,50 @@ The script will guide you through a few simple steps.
 
 ---
 
+### For Developers: To check for game updates
+
+<details>
+<summary>Click here for instructions on running The update checker from code</summary>
+
+#### Prerequisites
+*   **Python 3.6+**
+*   **Browser** Brave must be installed unless changed to another browser.
+
+#### Installation Steps
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/ZuhuInc/Simple-OFME-Downloader
+    cd Simple-OFME-Downloader
+    ```
+2.  **Install dependencies:**
+    ```bash
+    pip install requests selenium seleniumbase
+    ```
+3.  **Configure the Script (if needed):**
+    Open the main Python script and ensure the `Browser` variable points to your `Browser.exe` file.
+    ```python
+    # Make sure this path & browsername is correct for your system
+    brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
+    &
+    driver2 = Driver(browser='brave', uc = True)
+    ```
+    4. **Run the Script:**
+    ```bash
+    OFME-VC.py
+    ```
+    *(Replace `OFME-VC.py` with the script's name u saved it as)*
+
+> ### The script might not run the first time cause **seleniumbase** installs a GUI.
+
+</details>
+
+
+---
+
 ### Libraries Used
 
-*   **External:** [requests](https://pypi.org/project/requests/), [PyQt6](https://pypi.org/project/PyQt6/)
-*   **Standard:** `os`, `sys`, `subprocess`, `json`, `re`, `hashlib`, `time`
+*   **External:** [requests](https://pypi.org/project/requests/), [PyQt6](https://pypi.org/project/PyQt6/) [Selenium](https://pypi.org/project/selenium/) [Seleniumbase](https://pypi.org/project/seleniumbase/)
+*   **Standard:** `os`, `sys`, `subprocess`, `json`, `re`, `hashlib`, `time`, `getpass`
 
 ---
 
