@@ -85,7 +85,7 @@ The script will guide you through a few simple steps.
 This project is kept up-to-date by the following awesome people.
 
 *   **[ZuhuInc](https://github.com/ZuhuInc)**
-*   **[BramTurf](https://github.com/BramTurf)**
+*   **[TurfBoy27](https://github.com/Turfboy27)**
 *   **[lceqx](https://github.com/lceqx)**
 
 ---
