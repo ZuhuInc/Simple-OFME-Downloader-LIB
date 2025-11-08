@@ -120,13 +120,6 @@ MainPart1: https://gofile.io/d/TaaF6U
 MainPart2: https://gofile.io/d/DyyLLW
 Fix: https://gofile.io/d/BFsoRi
 
-DropBox (LossLess Scaling) [3.2]
-ApproxSize: 0.3GB
-Description: All-in-one gaming utility for frame generation and scaling
-Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LossLessScaling.jpg
-Origin: https://steamrip.com/lossless-scaling-free-download/
-MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
-
 GoFile (Another Try 2) [0.0.1.8]
 ApproxSize: 6GB
 Description: The virus has devastated cities and lands. Most of the population died, the rest turned into the walking dead. You're one of the last survivors. Do whatever it takes to last another day.
@@ -288,9 +281,16 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/s-t-a-l-k-e-r-2-heart-of-chornobyl-free-download/
 MainGame: https://gofile.io/d/LGyqjs
 
-GoFile (Dispatch) [1.0.15487]
+GoFile (Dispatch) [1.0.15681]
 ApproxSize: 7GB
 Description: Dispatch is a superhero workplace comedy where choices matter. Manage a dysfunctional team of misfit heroes and strategize who to send to emergencies around the city, all while balancing office politics, personal relationships, and your own quest to become a hero. Episodes 1 - 4 out now.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Dispatch.jpg
 Origin: https://steamrip.com/dispatch-free-download/
-MainGame: https://gofile.io/d/s4530V
+MainGame: https://gofile.io/d/m35kmT
+
+DropBox (LossLess Scaling) [3.2]
+ApproxSize: 0.3GB
+Description: All-in-one gaming utility for frame generation and scaling
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LossLessScaling.jpg
+Origin: https://steamrip.com/lossless-scaling-free-download/
+MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
