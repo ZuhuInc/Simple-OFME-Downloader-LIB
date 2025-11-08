@@ -135,7 +135,7 @@ Origin: https://online-fix.me/games/survival/17773-another-try-2-po-seti.html
 MainGame: https://gofile.io/d/tPib4s
 Fix: https://gofile.io/d/fQN6R7
 
-GoFile (Content Warning) [1.17.b]
+Both (Content Warning) [1.17.b]
 ApproxSize: 1GB
 Description: Film your friends doing scary things to become SpöökTube famous! (strongly advised to not go alone)
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ContentWarning.jpg
