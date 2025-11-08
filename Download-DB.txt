@@ -156,8 +156,8 @@ ApproxSize: 30GB
 Description: SCP: 5K is a co-op or singleplayer tactical horror FPS project that puts players in the midst of a conspiracy where the SCP Foundation has turned on humanity. Enjoy Early Access as we continue to 
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SCP5K.jpg
 Origin: https://online-fix.me/games/horror/17222-scp-5k-po-seti.html
-Mainpart1: https://gofile.io/d/jCTjJp
-Mainpart2: https://gofile.io/d/RBHPjD
+MainPart1: https://gofile.io/d/jCTjJp
+MainPart2: https://gofile.io/d/RBHPjD
 MainPart3: https://gofile.io/d/cwCxPs
 MainPart4: https://gofile.io/d/KAEEqq
 MainPart5: https://gofile.io/d/QnLZal
@@ -168,7 +168,7 @@ ApproxSize: 15GB
 Description: The Blackout Club is a first-person co-op horror game centered around a group of teenage friends investigating a monstrous secret beneath the skin of their small town. 1-4 players explore procedurally-generated missions against a fearsome enemy you can only see with your eyes closed.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheBlackoutClub.jpg
 Origin: https://online-fix.me/games/shooter/16218-the-blackout-club-po-seti.html
-Maingame: https://gofile.io/d/UBB63M
+MainGame: https://gofile.io/d/UBB63M
 Fix: https://gofile.io/d/ctTt5q
 
 GoFile (Granny Escape Together) [1.0.2]
@@ -195,7 +195,7 @@ Origin: https://online-fix.me/games/racing/16474-the-long-drive-po-seti.html
 MainGame: https://gofile.io/d/niHqrm
 Fix: https://gofile.io/d/sdiXlk
 
-Gofile (Grounded) [1.4.7.4815]
+GoFile (Grounded) [1.4.7.4815]
 ApproxSize: 11GB
 Description: The world is a vast, beautiful and dangerous place – especially when you have been shrunk to the size of an ant. Can you thrive alongside the hordes of giant insects, fighting to survive the perils of the backyard?
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded.jpg
@@ -203,7 +203,7 @@ Origin: https://online-fix.me/games/shooter/16437-grounded-po-seti.html
 MainGame: https://gofile.io/d/lGMDpn
 Fix: https://gofile.io/d/GcLFSe
 
-Gofile (The Backrooms: Last Expedition) [1.2]
+GoFile (The Backrooms: Last Expedition) [1.2]
 ApproxSize: 10GB
 Description: "The Backrooms: Last Expedition" is a cooperative horror game designed for 1 to 4 players. Its main objective is to create an enjoyable gaming experience for friends. Players will navigate through terrifying levels, filled with various entities and dangers, as they strive to escape.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheBackroomsLastExpedition.jpg
@@ -211,7 +211,7 @@ Origin: https://online-fix.me/games/horror/17690-the-backrooms-last-expedition-p
 MainGame: https://gofile.io/d/MfG530
 Fix: https://gofile.io/d/ojRMeL
 
-Gofile (Mage Arena) [0.7.6]
+GoFile (Mage Arena) [0.7.6]
 ApproxSize: 1GB
 Description: A co-op PvP experience about using your voice to cast spells in the Mage Arena to settle an ages-old feud between sorcerers and warlocks.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/MageArena.jpg
