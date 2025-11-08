@@ -8,10 +8,19 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import requests
 from seleniumbase import Driver
+import os
+import getpass
 
+
+driver1 = webdriver.Chrome(options = options)
+driver2 = Driver(browser='brave', uc = True)
+os.system('cls')
 username = input("Enter your username: ")
-password = input("Enter your password: ")
-driver = Driver(browser='brave', uc = True)
+password = getpass.getpass("Enter your password: ")
+brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
+options = Options()
+options.binary_location = brave_path
+
 
 url = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 response = requests.get(url)
@@ -47,13 +56,14 @@ if current_game:
 
 counter = 0
 game_update = {}
+
 for game in games:
     if 'https://online-fix.me/' in game['Origin']:
-        driver.get(game['Origin'])
+        driver1.get(game['Origin'])
         if counter == 0:
-            search = driver.find_element(By.NAME, 'login_name')
+            search = driver1.find_element(By.NAME, 'login_name')
             search.send_keys(username)
-            search = driver.find_element(By.NAME, 'login_password')
+            search = driver1.find_element(By.NAME, 'login_password')
             search.send_keys(password)
             time.sleep(0.5)
             search.send_keys(Keys.RETURN)
@@ -61,7 +71,7 @@ for game in games:
             pass
         time.sleep(0.5)
         try:
-            select_version = WebDriverWait(driver, 10).until(
+            select_version = WebDriverWait(driver1, 10).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "quote")))
             version = select_version.find_element(By.TAG_NAME, 'b').text.replace('Версия игры: ', '')
         except:
@@ -69,9 +79,9 @@ for game in games:
 
     elif 'https://steamrip.com/' in game['Origin']:
         url = game['Origin']
-        driver.uc_open_with_reconnect(url,4)
-        driver.uc_gui_click_captcha()
-        version = driver.find_element(By.TAG_NAME, 'h1').text.split('(')[1].replace(')','')
+        driver2.uc_open_with_reconnect(url,4)
+        driver2.uc_gui_click_captcha()
+        version = driver2.find_element(By.TAG_NAME, 'h1').text.split('(')[1].replace(')','')
         pass
     else:
         continue
@@ -88,7 +98,8 @@ for game in games:
         game_update[game['Name']] = version, game['Version']
 
 
-driver.quit()
+driver1.quit()
+driver2.quit()
 print(game_update)
     
 
