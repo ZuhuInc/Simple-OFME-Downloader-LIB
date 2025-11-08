@@ -124,7 +124,7 @@ DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LossLessScaling.jpg
-Origin: 
+Origin: https://steamrip.com/lossless-scaling-free-download/
 MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
 
 GoFile (Another Try 2) [0.0.1.8]
@@ -224,13 +224,13 @@ ApproxSize: 60GB
 Description: Ready or Not is an intense, tactical, first-person shooter that depicts a modern-day world in which SWAT police units are called to defuse hostile and confronting situations.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ReadyOrNot.jpg
 Origin: https://online-fix.me/games/officialservers/16889-ready-or-not-po-seti.html
-Mainpart1: https://gofile.io/d/vNtyth
-Mainpart2: https://gofile.io/d/xHUJy1
-Mainpart3: https://gofile.io/d/MigRZL
-Mainpart4: https://gofile.io/d/BULKib
-Mainpart5: https://gofile.io/d/7NYltf
-Mainpart6: https://gofile.io/d/DEQhvr
-Mainpart7: https://gofile.io/d/k3Oqx1
+MainPart1: https://gofile.io/d/vNtyth
+MainPart2: https://gofile.io/d/xHUJy1
+MainPart3: https://gofile.io/d/MigRZL
+MainPart4: https://gofile.io/d/BULKib
+MainPart5: https://gofile.io/d/7NYltf
+MainPart6: https://gofile.io/d/DEQhvr
+MainPart7: https://gofile.io/d/k3Oqx1
 Fix: https://gofile.io/d/aazujB
 
 GoFile (Grounded 2) [2148553]
@@ -238,10 +238,10 @@ ApproxSize: 40GB
 Description: Shrunk again, but the world is much larger. In this open-world, single-player or co-op survival adventure, craft weapons and armor, build your base, and traverse the playground on your buggy. But something else is out there—and it hasn’t forgotten you.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded2.jpg
 Origin: https://online-fix.me/games/officialservers/17827-grounded-2-po-seti.html
-Mainpart1: https://gofile.io/d/70YBIZ
-Mainpart2: https://gofile.io/d/Ngk3Xf
-Mainpart3: https://gofile.io/d/1wH5mr
-Mainpart4: https://gofile.io/d/md9QyV
+MainPart1: https://gofile.io/d/70YBIZ
+MainPart2: https://gofile.io/d/Ngk3Xf
+MainPart3: https://gofile.io/d/1wH5mr
+MainPart4: https://gofile.io/d/md9QyV
 Fix: https://gofile.io/d/Ou6xyo
 
 GoFile (Abiotic Factor) [1.0.0.21184]
@@ -273,24 +273,24 @@ ApproxSize: 55GB
 Description: A dynamic soft-body physics vehicle simulator capable of doing just about anything.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BEAMNG.png
 Origin: https://online-fix.me/games/racing/16506-beamng-drive-po-seti.html
-Mainpart1: https://gofile.io/d/GDp4FO
-Mainpart2: https://gofile.io/d/z8bfcr
-Mainpart3: https://gofile.io/d/w7RTa6
-Mainpart4: https://gofile.io/d/Fk6VUE
-Mainpart5: https://gofile.io/d/wuAzPw
-Mainpart6: https://gofile.io/d/Rjo4U2
+MainPart1: https://gofile.io/d/GDp4FO
+MainPart2: https://gofile.io/d/z8bfcr
+MainPart3: https://gofile.io/d/w7RTa6
+MainPart4: https://gofile.io/d/Fk6VUE
+MainPart5: https://gofile.io/d/wuAzPw
+MainPart6: https://gofile.io/d/Rjo4U2
 Fix: https://gofile.io/d/PeVq9C
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [v1.5.1]
 ApproxSize: 155GB
 Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Stalker2.jpg
-Origin: 
+Origin: https://steamrip.com/s-t-a-l-k-e-r-2-heart-of-chornobyl-free-download/
 MainGame: https://gofile.io/d/LGyqjs
 
 GoFile (Dispatch) [1.0.15487]
 ApproxSize: 7GB
 Description: Dispatch is a superhero workplace comedy where choices matter. Manage a dysfunctional team of misfit heroes and strategize who to send to emergencies around the city, all while balancing office politics, personal relationships, and your own quest to become a hero. Episodes 1 - 4 out now.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Dispatch.jpg
-Origin: 
+Origin: https://steamrip.com/dispatch-free-download/
 MainGame: https://gofile.io/d/s4530V
