@@ -11,15 +11,15 @@ from seleniumbase import Driver
 import os
 import getpass
 
-
+options = Options()
+brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
+options.binary_location = brave_path
 driver1 = webdriver.Chrome(options = options)
 driver2 = Driver(browser='brave', uc = True)
 os.system('cls')
 username = input("Enter your username: ")
 password = getpass.getpass("Enter your password: ")
-brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
-options = Options()
-options.binary_location = brave_path
+
 
 
 url = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
