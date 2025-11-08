@@ -233,15 +233,15 @@ MainPart6: https://gofile.io/d/DEQhvr
 MainPart7: https://gofile.io/d/k3Oqx1
 Fix: https://gofile.io/d/aazujB
 
-GoFile (Grounded 2) [2148553]
+GoFile (Grounded 2) [0.2.0.1.2181664]
 ApproxSize: 40GB
 Description: Shrunk again, but the world is much larger. In this open-world, single-player or co-op survival adventure, craft weapons and armor, build your base, and traverse the playground on your buggy. But something else is out there—and it hasn’t forgotten you.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded2.jpg
 Origin: https://online-fix.me/games/officialservers/17827-grounded-2-po-seti.html
-MainPart1: https://gofile.io/d/70YBIZ
-MainPart2: https://gofile.io/d/Ngk3Xf
-MainPart3: https://gofile.io/d/1wH5mr
-MainPart4: https://gofile.io/d/md9QyV
+MainPart1: https://gofile.io/d/yP5wXE
+MainPart2: https://gofile.io/d/zKU4Br
+MainPart3: https://gofile.io/d/ynRDjS
+MainPart4: https://gofile.io/d/ReoZNL
 Fix: https://gofile.io/d/Ou6xyo
 
 GoFile (Abiotic Factor) [1.0.0.21184]
