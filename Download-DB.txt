@@ -281,7 +281,7 @@ MainPart5: https://gofile.io/d/wuAzPw
 MainPart6: https://gofile.io/d/Rjo4U2
 Fix: https://gofile.io/d/PeVq9C
 
-GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [v1.5.1]
+GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.5.1]
 ApproxSize: 155GB
 Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Stalker2.jpg
