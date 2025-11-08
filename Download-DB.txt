@@ -143,6 +143,7 @@ Maingame: https://gofile.io/d/ndFwsS
 Fix: https://www.dropbox.com/scl/fi/mbyynm4cbjjaijewl32uf/ContentWarning_Fix_Repair_Steam_V4_Generic.rar?rlkey=nhjxedfk9l5ixt2uz23h7o5uj&st=m1t9376j&dl=1
 
 GoFile (Sons of The Forest) [21012025]
+ApproxSize: 20GB
 Description: Sent to find a missing billionaire on a remote island, you find yourself in a cannibal-infested hellscape. Craft, build, and struggle to survive, alone or with friends, in this terrifying new open-world survival horror simulator.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SonsOfTheForest.jpg
 Origin: https://online-fix.me/games/survival/17220-sons-of-the-forest-po-seti.html
@@ -150,6 +151,7 @@ Maingame: https://gofile.io/d/t7vCy3
 Fix: https://gofile.io/d/oTrZON
 
 GoFile (SCP: 5K) [0.17.0.154]
+ApproxSize: 30GB
 Description: SCP: 5K is a co-op or singleplayer tactical horror FPS project that puts players in the midst of a conspiracy where the SCP Foundation has turned on humanity. Enjoy Early Access as we continue to 
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SCP5K.jpg
 Origin: https://online-fix.me/games/horror/17222-scp-5k-po-seti.html
@@ -161,6 +163,7 @@ MainPart5: https://gofile.io/d/QnLZal
 Fix: https://gofile.io/d/ohI52u
 
 GoFile (The Blackout Club) [13082021]
+ApproxSize: 15GB
 Description: The Blackout Club is a first-person co-op horror game centered around a group of teenage friends investigating a monstrous secret beneath the skin of their small town. 1-4 players explore procedurally-generated missions against a fearsome enemy you can only see with your eyes closed.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheBlackoutClub.jpg
 Origin: https://online-fix.me/games/shooter/16218-the-blackout-club-po-seti.html
@@ -168,12 +171,14 @@ Maingame: https://gofile.io/d/UBB63M
 Fix: https://gofile.io/d/ctTt5q
 
 GoFile (Granny Escape Together) [1.0.2]
+ApproxSize: 5GB
 Description: This is a creepy co-op horror game. In which you find yourself locked in a crazy Granny's house. But Granny is not the only danger that awaits you in the house, someone else creepy lives in the basement. You have five days to get out of the house!
 Origin: https://online-fix.me/games/horror/17653-granny-escape-together.html
 Maingame: https://gofile.io/d/cHPQPj
 Fix: https://gofile.io/d/pLM7JX
 
 GoFile (Raft) [1.1.05]
+ApproxSize: 10GB
 Description: Raft™ throws you and your friends into an epic oceanic adventure! Alone or together, players battle to survive a perilous voyage across a vast sea! Gather debris, scavenge reefs and build your own floating home, but be wary of the man-eating sharks!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Raft.jpg
 Origin: https://online-fix.me/games/survival/16179-raft-po-seti.html
@@ -181,6 +186,7 @@ Maingame: https://gofile.io/d/ja55Ky
 Fix: https://gofile.io/d/KHug24
 
 GoFile (The Long Drive) [26112024]
+ApproxSize: 1GB
 Description: Random generated open world semi-post apocalyptic survival car driving game.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheLongDrive.jpg
 Origin: https://online-fix.me/games/racing/16474-the-long-drive-po-seti.html
@@ -188,6 +194,7 @@ Maingame: https://gofile.io/d/niHqrm
 Fix: https://gofile.io/d/sdiXlk
 
 Gofile (Grounded) [1.4.7.4815]
+ApproxSize: 11GB
 Description: The world is a vast, beautiful and dangerous place – especially when you have been shrunk to the size of an ant. Can you thrive alongside the hordes of giant insects, fighting to survive the perils of the backyard?
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded.jpg
 Origin: https://online-fix.me/games/shooter/16437-grounded-po-seti.html
@@ -195,6 +202,7 @@ Maingame: https://gofile.io/d/lGMDpn
 Fix: https://gofile.io/d/GcLFSe
 
 Gofile (The Backrooms: Last Expedition) [1.2]
+ApproxSize: 10GB
 Description: "The Backrooms: Last Expedition" is a cooperative horror game designed for 1 to 4 players. Its main objective is to create an enjoyable gaming experience for friends. Players will navigate through terrifying levels, filled with various entities and dangers, as they strive to escape.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheBackroomsLastExpedition.jpg
 Origin: https://online-fix.me/games/horror/17690-the-backrooms-last-expedition-po-seti.html
@@ -202,15 +210,15 @@ Maingame: https://gofile.io/d/MfG530
 Fix: https://gofile.io/d/ojRMeL
 
 Gofile (Mage Arena) [0.7.6]
-Description: A co-op PvP experience about using your voice to cast spells in the Mage Arena to settle an ages-old feud between sorcerers and warlocks.
 ApproxSize: 1GB
+Description: A co-op PvP experience about using your voice to cast spells in the Mage Arena to settle an ages-old feud between sorcerers and warlocks.
 Origin: https://online-fix.me/games/fighting/17825-mage-arena-po-seti.html
 Maingame: https://gofile.io/d/LBgx7P
 Fix: https://gofile.io/d/ypsM5c
 
 GoFile (Ready or Not) [14102025]
-Description: Ready or Not is an intense, tactical, first-person shooter that depicts a modern-day world in which SWAT police units are called to defuse hostile and confronting situations.
 ApproxSize: 60GB
+Description: Ready or Not is an intense, tactical, first-person shooter that depicts a modern-day world in which SWAT police units are called to defuse hostile and confronting situations.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ReadyOrNot.jpg
 Origin: https://online-fix.me/games/officialservers/16889-ready-or-not-po-seti.html
 Mainpart1: https://gofile.io/d/vNtyth
@@ -223,8 +231,8 @@ Mainpart7: https://gofile.io/d/k3Oqx1
 Fix: https://gofile.io/d/aazujB
 
 GoFile (Grounded 2) [2148553]
-Description: Shrunk again, but the world is much larger. In this open-world, single-player or co-op survival adventure, craft weapons and armor, build your base, and traverse the playground on your buggy. But something else is out there—and it hasn’t forgotten you.
 ApproxSize: 40GB
+Description: Shrunk again, but the world is much larger. In this open-world, single-player or co-op survival adventure, craft weapons and armor, build your base, and traverse the playground on your buggy. But something else is out there—and it hasn’t forgotten you.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded2.jpg
 Origin: https://online-fix.me/games/officialservers/17827-grounded-2-po-seti.html
 Mainpart1: https://gofile.io/d/70YBIZ
@@ -234,32 +242,32 @@ Mainpart4: https://gofile.io/d/md9QyV
 Fix: https://gofile.io/d/Ou6xyo
 
 GoFile (Abiotic Factor) [1.0.0.21184]
-Description: Abiotic Factor is a survival crafting experience for 1-6 players set in the depths of an underground research facility. Caught between paranormal containment failure, a military crusade, and chaos from a dozen realms, the world’s greatest minds must survive against the universe’s biggest threats.
 ApproxSize: 7GB
+Description: Abiotic Factor is a survival crafting experience for 1-6 players set in the depths of an underground research facility. Caught between paranormal containment failure, a military crusade, and chaos from a dozen realms, the world’s greatest minds must survive against the universe’s biggest threats.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Abiotic Factor.jpg
 Origin: https://online-fix.me/games/survival/17505-abiotic-factor-po-seti.html
 Maingame: https://gofile.io/d/NOrCDi
 Fix: https://gofile.io/d/3C4A9f
 
 GoFile (Backroom Company) [05082025]
-Description: A cooperative horror game about working inside the corporation "The Backrooms". Fulfill contracts and also earn extra money by selling stuff.
 ApproxSize: 4GB
+Description: A cooperative horror game about working inside the corporation "The Backrooms". Fulfill contracts and also earn extra money by selling stuff.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BackroomCompany.jpg
 Origin: https://online-fix.me/games/adventures/17836-backroom-company-po-seti.html
 Maingame: https://gofile.io/d/nwTK3P
 Fix: https://gofile.io/d/uR7fQG
 
 GoFile (BMX Streets) [1.0.0.136.0]
-Description: Ready to hit the streets? BMX Streets brings the essence of BMX riding to your fingertips. Experience the next generation of BMX gaming with realistic physics, massive amounts of customization and gorgeous maps. Practice, experiment and explore to find your own unique style and master the streets.
 ApproxSize: 30GB
+Description: Ready to hit the streets? BMX Streets brings the essence of BMX riding to your fingertips. Experience the next generation of BMX gaming with realistic physics, massive amounts of customization and gorgeous maps. Practice, experiment and explore to find your own unique style and master the streets.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BMX-Streets.jpg
 Origin: https://online-fix.me/games/officialservers/17732-bmx-streets-po-seti.html
 Maingame: https://gofile.io/d/zmAcUd
 Fix: https://gofile.io/d/ZZFEHK
 
 GoFile (BeamNG Drive) [0.37.5.0.18733]
-Description: A dynamic soft-body physics vehicle simulator capable of doing just about anything.
 ApproxSize: 55GB
+Description: A dynamic soft-body physics vehicle simulator capable of doing just about anything.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BEAMNG.png
 Origin: https://online-fix.me/games/racing/16506-beamng-drive-po-seti.html
 Mainpart1: https://gofile.io/d/GDp4FO
@@ -271,15 +279,15 @@ Mainpart6: https://gofile.io/d/Rjo4U2
 Fix: https://gofile.io/d/PeVq9C
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [v1.5.1]
-Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
 ApproxSize: 155GB
+Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Stalker2.jpg
 Origin: 
 MainGame: https://gofile.io/d/LGyqjs
 
 GoFile (Dispatch) [1.0.15487]
-Description: Dispatch is a superhero workplace comedy where choices matter. Manage a dysfunctional team of misfit heroes and strategize who to send to emergencies around the city, all while balancing office politics, personal relationships, and your own quest to become a hero. Episodes 1 - 4 out now.
 ApproxSize: 7GB
+Description: Dispatch is a superhero workplace comedy where choices matter. Manage a dysfunctional team of misfit heroes and strategize who to send to emergencies around the city, all while balancing office politics, personal relationships, and your own quest to become a hero. Episodes 1 - 4 out now.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Dispatch.jpg
 Origin: 
 MainGame: https://gofile.io/d/s4530V
