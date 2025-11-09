@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5-Beta.7
+Zuhu's OFME GUI Downloader V1.5.1-Beta.8
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -15,8 +15,9 @@ import hashlib
 from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QHBoxLayout, QScrollArea, QGridLayout, QSizePolicy,
                              QGraphicsOpacityEffect, QStackedWidget, QPushButton,
-                             QProgressBar, QLineEdit, QFormLayout)
-from PyQt6.QtGui import QPixmap, QFontDatabase, QFont
+                             QProgressBar, QLineEdit, QFormLayout, QTabWidget,
+                             QPlainTextEdit)
+from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer
 
 # --- CONFIGURATION ---
@@ -26,9 +27,11 @@ DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
 FONT_URL = "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/raw/main/Assets/pixelmix.ttf"
 RAR_PASSWORD = "online-fix.me"
 WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
+DEFAULT_DOWNLOAD_PATH = "" 
 
 # --- STYLING ---
 STYLESHEET = """
+    QWidget { background-color: #2c2c2c; }
     QProgressBar {
         border: 1px solid #5A5A5A; border-radius: 5px; text-align: center;
         background-color: #404040; height: 12px;
@@ -43,6 +46,15 @@ STYLESHEET = """
         border: 1px solid #5A5A5A; background-color: #404040;
         padding: 5px; color: #cccccc; min-height: 20px;
     }
+    QScrollArea { border: none; }
+    QTabWidget::pane { border: 1px solid #5A5A5A; }
+    QTabBar::tab { 
+        background-color: #404040; color: #cccccc; padding: 8px; 
+        border: 1px solid #5A5A5A; border-bottom: none;
+    }
+    QTabBar::tab:selected { background-color: #2c2c2c; }
+    QTabBar::tab:!selected { background-color: #404040; }
+    QPlainTextEdit { color: #cccccc; background-color: #333333; border: 1px solid #5A5A5A; }
 """
 
 # --- STATUS DEFINITIONS ---
@@ -53,6 +65,69 @@ STATUS_INFO = {
     GameStatus.UPDATE_AVAILABLE: {'color': '#ffd700', 'text': 'UPDATE AVAILABLE'},
     GameStatus.NOT_DOWNLOADED: {'color': '#ff4500', 'text': 'NOT DOWNLOADED'}
 }
+
+# --- CONSOLE REDIRECTION ---
+class ConsoleStream(QObject):
+    _text_written = pyqtSignal(str)
+    def write(self, text): self._text_written.emit(str(text))
+    def flush(self): pass
+
+# --- SETTINGS AND CONSOLE PAGE ---
+class SettingsPage(QWidget):
+    back_requested = pyqtSignal()
+    def __init__(self, main_font):
+        super().__init__()
+        self.main_font = main_font
+        layout = QVBoxLayout(self); layout.setContentsMargins(20, 20, 20, 20); layout.setSpacing(15)
+        
+        header_layout = QHBoxLayout()
+        back_button = QPushButton("« Back to Library"); back_button.setFont(self.main_font)
+        back_button.setStyleSheet("padding: 2px 8px;"); back_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        back_button.clicked.connect(self.back_requested.emit)
+        header_layout.addWidget(back_button, 0, Qt.AlignmentFlag.AlignLeft); header_layout.addStretch()
+        layout.addLayout(header_layout)
+
+        tabs = QTabWidget(); layout.addWidget(tabs, 1)
+        
+        # Console Tab
+        console_widget = QWidget(); console_layout = QVBoxLayout(console_widget)
+        self.console_output = QPlainTextEdit(); self.console_output.setReadOnly(True)
+        console_font = QFont("pixelmix", 12); self.console_output.setFont(console_font)
+        console_layout.addWidget(self.console_output)
+        tabs.addTab(console_widget, "Console")
+        
+        # Settings Tab
+        settings_widget = QWidget(); settings_layout = QVBoxLayout(settings_widget)
+        form_layout = QFormLayout(); form_layout.setSpacing(10)
+        self.winrar_path_edit = QLineEdit(WINRAR_PATH); self.winrar_path_edit.setFont(self.main_font)
+        self.download_path_edit = QLineEdit(DEFAULT_DOWNLOAD_PATH); self.download_path_edit.setFont(self.main_font)
+        self.data_folder_label = QLabel(DATA_FOLDER); self.data_folder_label.setFont(self.main_font); self.data_folder_label.setStyleSheet("color: #cccccc;")
+        form_layout.addRow(QLabel("WinRAR Path:", font=self.main_font, styleSheet="color: #cccccc;"), self.winrar_path_edit)
+        form_layout.addRow(QLabel("Default Download Path:", font=self.main_font, styleSheet="color: #cccccc;"), self.download_path_edit)
+        form_layout.addRow(QLabel("Data Folder:", font=self.main_font, styleSheet="color: #cccccc;"), self.data_folder_label)
+        settings_layout.addLayout(form_layout)
+        settings_layout.addStretch()
+        save_button = QPushButton("Save Settings"); save_button.setFont(self.main_font); save_button.clicked.connect(self.save_settings)
+        settings_layout.addWidget(save_button, 0, Qt.AlignmentFlag.AlignRight)
+        tabs.addTab(settings_widget, "Settings")
+        
+    def append_to_console(self, text):
+        self.console_output.moveCursor(QTextCursor.MoveOperation.End); self.console_output.insertPlainText(text)
+        
+    def save_settings(self):
+        global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH
+        # Save WinRAR Path
+        new_winrar_path = self.winrar_path_edit.text()
+        if os.path.exists(new_winrar_path):
+            WINRAR_PATH = new_winrar_path; print(f"Settings saved. WinRAR path set to: {WINRAR_PATH}")
+        else: print(f"ERROR: WinRAR path does not exist: {new_winrar_path}")
+        # Save Default Download Path
+        new_download_path = self.download_path_edit.text()
+        if os.path.isdir(new_download_path) or not new_download_path:
+            DEFAULT_DOWNLOAD_PATH = new_download_path
+            print(f"Settings saved. Default download path set to: '{DEFAULT_DOWNLOAD_PATH}'")
+        else: print(f"ERROR: Default download path is not a valid directory: {new_download_path}")
+
 
 # --- DATA AND ASSET MANAGEMENT ---
 class DataManager:
@@ -114,10 +189,10 @@ class AssetManager:
 
 # --- CLICKABLE GAME WIDGET ---
 class GameWidget(QWidget):
-    clicked = pyqtSignal(dict)
+    clicked = pyqtSignal(dict) 
     def __init__(self, game_data, asset_manager, pixel_font):
         super().__init__()
-        self.game_data = game_data; self._pixmap = None; self.setFixedSize(200, 300)
+        self.game_data = game_data; self._pixmap = None; self.setFixedSize(200, 300) 
         self.status = game_data.get('status', GameStatus.NOT_DOWNLOADED)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         status_info = STATUS_INFO[self.status]; border_color = status_info['color']
@@ -203,7 +278,7 @@ class DownloadManager(QObject):
     def _resolve_gofile_link(self, gofile_url):
         self.status_update.emit("Resolving GoFile link...")
         try:
-            headers = {"User-Agent": "Mozilla/5.0"}; token_response = requests.post("https://api.gofile.io/accounts", headers=headers).json()
+            headers = {"User-Agent": "Mozilla/50"}; token_response = requests.post("https://api.gofile.io/accounts", headers=headers).json()
             if token_response.get("status") != "ok": return None, None
             account_token = token_response["data"]["token"]; content_id = gofile_url.split("/")[-1]; hashed_password = hashlib.sha256(RAR_PASSWORD.encode()).hexdigest()
             api_url = f"https://api.gofile.io/contents/{content_id}"; params = {'wt': '4fd6sg89d7s6', 'password': hashed_password}
@@ -260,7 +335,8 @@ class GameDetailsWidget(QWidget):
         right_panel = QWidget(); right_layout = QVBoxLayout(right_panel)
         top_panel_layout.addWidget(right_panel, 1)
         back_button = QPushButton("« Back to Library"); back_button.setFont(self.pixel_font)
-        back_button.setCursor(Qt.CursorShape.PointingHandCursor); back_button.clicked.connect(self.back_requested.emit)
+        back_button.setStyleSheet("padding: 2px 8px;"); back_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        back_button.clicked.connect(self.back_requested.emit)
         info_panel = QWidget(); info_layout = QVBoxLayout(info_panel)
         self.game_name_label = self._create_info_label(); self.sources_label = self._create_info_label()
         self.size_label = self._create_info_label(); self.version_label = self._create_info_label()
@@ -312,16 +388,16 @@ class GameDetailsWidget(QWidget):
             scaled_pixmap = pixmap.scaled(self.thumbnail_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             self.thumbnail_label.setPixmap(scaled_pixmap)
         else: self.thumbnail_label.clear(); self.thumbnail_label.setText("No Image")
-        self.location_bar.clear(); self.location_bar.setPlaceholderText("Select a base download folder...")
+        self.location_bar.setText(DEFAULT_DOWNLOAD_PATH); self.location_bar.setPlaceholderText("Select a base download folder...")
     def start_or_cancel_download(self):
         if self.worker_thread and self.worker_thread.isRunning():
             self.worker.stop(); self.download_button.setText("DOWNLOAD"); return
-
+        
         base_path = self.location_bar.text()
         if self._is_fix_download: base_path = self.fix_path
-
+            
         if not os.path.isdir(base_path): self.status_label.setText("Invalid location path!"); return
-
+        
         self.download_button.setText("CANCEL")
         self.worker_thread = QThread()
         self.worker = DownloadManager(self.current_game_data, base_path, self._is_fix_download)
@@ -345,29 +421,50 @@ class GameDetailsWidget(QWidget):
         self.fix_prompt_widget.setVisible(False)
         self.download_button.setText("APPLY FIX"); self.download_button.setEnabled(True)
         self._is_fix_download = True
-    def on_fix_no(self):
+    def on_fix_no(self): 
         self.fix_prompt_widget.setVisible(False)
         self.download_button.setText("FINISHED"); self.download_button.setEnabled(False)
     def update_progress(self, value, stats_text): self.download_progress.setValue(value); self.stats_label.setText(stats_text)
 
 # --- MAIN LAUNCHER WINDOW ---
 class GameLauncher(QWidget):
-    def __init__(self, data_manager, asset_manager):
+    def __init__(self):
         super().__init__()
-        self.data_manager = data_manager; self.asset_manager = asset_manager
-        self.pixel_font = QFont("Arial", 12); self.game_widgets = []; self.status_buttons = {}
+        
+        # --- Critical Startup Sequence ---
+        # 1. Setup console stream and buffer for initial messages
+        self.console_stream = ConsoleStream()
+        self.console_buffer = []
+        self.console_stream._text_written.connect(self.console_buffer.append)
+        sys.stdout = self.console_stream
+        sys.stderr = self.console_stream
+        
+        # 2. Initialize core components (their prints will be buffered)
+        self.asset_manager = AssetManager()
+        self.data_manager = DataManager()
+        
+        # 3. Initialize UI
+        self.pixel_font = QFont("Arial", 12)
+        self.game_widgets = []
+        self.status_buttons = {}
         self.current_filter = None
         self.initUI()
+        
     def initUI(self):
-        self.setWindowTitle("Zuhu's OFME Download GUI 1.5-Beta.7"); self.setMinimumSize(640, 480)
-        self.resize(1155, 710); self.setStyleSheet(STYLESHEET + "QWidget { background-color: #2c2c2c; }")
+        self.setWindowTitle("Zuhu's OFME Download GUI 1.5-Beta.13"); self.setMinimumSize(640, 480)
+        self.resize(1155, 735)
+        self.setStyleSheet(STYLESHEET)
         self._load_font()
+        
         main_layout = QVBoxLayout(self); main_layout.setContentsMargins(10, 10, 10, 10)
         self.reflow_timer = QTimer(self); self.reflow_timer.setSingleShot(True)
         self.reflow_timer.setInterval(50); self.reflow_timer.timeout.connect(self._reflow_games)
+        
         self.stack = QStackedWidget(); main_layout.addWidget(self.stack)
+        
+        # Page 0: Game Grid
         grid_page = QWidget(); grid_page_layout = QVBoxLayout(grid_page)
-        scroll_area = QScrollArea(); scroll_area.setWidgetResizable(True); scroll_area.setStyleSheet("QScrollArea { border: none; }")
+        scroll_area = QScrollArea(); scroll_area.setWidgetResizable(True)
         self.games_container = QWidget(); self.games_layout = QGridLayout(self.games_container)
         self.games_layout.setSpacing(15); self.games_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         for game_data in self.data_manager.games:
@@ -375,14 +472,29 @@ class GameLauncher(QWidget):
             widget.clicked.connect(self.show_game_details); self.game_widgets.append(widget)
         scroll_area.setWidget(self.games_container); grid_page_layout.addWidget(scroll_area)
         grid_page_layout.addLayout(self._create_status_legend())
+        
+        # Page 1: Game Details
         self.details_page = GameDetailsWidget(self.asset_manager, self.pixel_font, self.data_manager)
         self.details_page.back_requested.connect(self.show_game_grid)
         self.details_page.refresh_library.connect(self.refresh_game_statuses)
-        self.stack.addWidget(grid_page); self.stack.addWidget(self.details_page)
+        
+        # Page 2: Settings
+        self.settings_page = SettingsPage(self.pixel_font)
+        self.settings_page.back_requested.connect(self.show_game_grid)
+        
+        # --- Finalize Console Redirection ---
+        # 4. Dump buffer to console and switch to live updates
+        initial_console_text = "".join(self.console_buffer)
+        self.settings_page.append_to_console(initial_console_text)
+        self.console_stream._text_written.disconnect(self.console_buffer.append)
+        self.console_stream._text_written.connect(self.settings_page.append_to_console)
+
+        self.stack.addWidget(grid_page); self.stack.addWidget(self.details_page); self.stack.addWidget(self.settings_page)
+        
     def resizeEvent(self, event): super().resizeEvent(event); self.reflow_timer.start()
     def showEvent(self, event): super().showEvent(event); self._reflow_games()
-    def show_game_details(self, game_data):
-        self.details_page.set_game_data(game_data); self.stack.setCurrentWidget(self.details_page)
+    def show_game_details(self, game_data): self.details_page.set_game_data(game_data); self.stack.setCurrentWidget(self.details_page)
+    def show_settings_page(self): self.stack.setCurrentWidget(self.settings_page)
     def show_game_grid(self): self.stack.setCurrentIndex(0)
     def refresh_game_statuses(self):
         self.data_manager.games = self.data_manager._determine_game_statuses()
@@ -417,7 +529,23 @@ class GameLauncher(QWidget):
         for status_id, info in STATUS_INFO.items():
             button = StatusButton(info['text'], info['color'], status_id, self.pixel_font)
             button.clicked.connect(self._on_filter_changed); legend_layout.addWidget(button); self.status_buttons[status_id] = button
-        legend_layout.addStretch(); return legend_layout
+        legend_layout.addStretch()
+        settings_button = QPushButton("\u2699")
+        font = QFont(self.pixel_font); font.setPointSize(14)
+        settings_button.setFont(font)
+        settings_button.setFixedSize(38, 38)
+        settings_button.setStyleSheet("""
+            QPushButton { 
+                border: 1px solid #5A5A5A; background-color: #404040; 
+                border-radius: 19px; 
+                padding: 0px;
+            }
+            QPushButton:hover { background-color: #505050; }
+        """)
+        settings_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        settings_button.clicked.connect(self.show_settings_page)
+        legend_layout.addWidget(settings_button)
+        return legend_layout
     def _on_filter_changed(self, status_id):
         if self.current_filter == status_id: self.current_filter = None
         else: self.current_filter = status_id
@@ -428,6 +556,5 @@ class GameLauncher(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    data_manager = DataManager(); asset_manager = AssetManager()
-    main_window = GameLauncher(data_manager, asset_manager); main_window.show()
+    main_window = GameLauncher(); main_window.show()
     sys.exit(app.exec())
