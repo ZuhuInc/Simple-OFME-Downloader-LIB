@@ -12,7 +12,7 @@ import re
 import time
 import subprocess
 import hashlib
-from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout, 
+from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QHBoxLayout, QScrollArea, QGridLayout, QSizePolicy,
                              QGraphicsOpacityEffect, QStackedWidget, QPushButton,
                              QProgressBar, QLineEdit, QFormLayout)
@@ -114,10 +114,10 @@ class AssetManager:
 
 # --- CLICKABLE GAME WIDGET ---
 class GameWidget(QWidget):
-    clicked = pyqtSignal(dict) 
+    clicked = pyqtSignal(dict)
     def __init__(self, game_data, asset_manager, pixel_font):
         super().__init__()
-        self.game_data = game_data; self._pixmap = None; self.setFixedSize(200, 300) 
+        self.game_data = game_data; self._pixmap = None; self.setFixedSize(200, 300)
         self.status = game_data.get('status', GameStatus.NOT_DOWNLOADED)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         status_info = STATUS_INFO[self.status]; border_color = status_info['color']
@@ -126,11 +126,11 @@ class GameWidget(QWidget):
         thumbnail_path = asset_manager.get_asset(game_data.get('Thumbnail'))
         if thumbnail_path and os.path.exists(thumbnail_path):
             self._pixmap = QPixmap(thumbnail_path); self.content_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.content_label.setStyleSheet(f"QLabel {{ background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 10px; }}")
+            self.content_label.setStyleSheet(f"QLabel {{ background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 0px; }}")
         else:
             self.content_label.setText(game_data.get('name', 'Unknown')); self.content_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.content_label.setFont(QFont(pixel_font.family(), 20, QFont.Weight.Bold)); self.content_label.setWordWrap(True)
-            self.content_label.setStyleSheet(f"QLabel {{ color: #cccccc; background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 10px; padding: 5px; }}")
+            self.content_label.setStyleSheet(f"QLabel {{ color: #cccccc; background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 0px; padding: 5px; }}")
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton: self.clicked.emit(self.game_data)
         super().mousePressEvent(event)
@@ -305,7 +305,7 @@ class GameDetailsWidget(QWidget):
         self.size_label.setText(game_data.get('ApproxSize', 'N/A')); self.version_label.setText(game_data.get('version', 'N/A'))
         self.description_label.setText(game_data.get('Description', 'No description available.'))
         status = game_data.get('status', GameStatus.NOT_DOWNLOADED); border_color = STATUS_INFO[status]['color']
-        self.thumbnail_label.setStyleSheet(f"background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 10px;")
+        self.thumbnail_label.setStyleSheet(f"background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 0px;")
         thumbnail_path = self.asset_manager.get_asset(game_data.get('Thumbnail'))
         if thumbnail_path:
             pixmap = QPixmap(thumbnail_path)
@@ -316,12 +316,12 @@ class GameDetailsWidget(QWidget):
     def start_or_cancel_download(self):
         if self.worker_thread and self.worker_thread.isRunning():
             self.worker.stop(); self.download_button.setText("DOWNLOAD"); return
-        
+
         base_path = self.location_bar.text()
         if self._is_fix_download: base_path = self.fix_path
-            
+
         if not os.path.isdir(base_path): self.status_label.setText("Invalid location path!"); return
-        
+
         self.download_button.setText("CANCEL")
         self.worker_thread = QThread()
         self.worker = DownloadManager(self.current_game_data, base_path, self._is_fix_download)
@@ -345,7 +345,7 @@ class GameDetailsWidget(QWidget):
         self.fix_prompt_widget.setVisible(False)
         self.download_button.setText("APPLY FIX"); self.download_button.setEnabled(True)
         self._is_fix_download = True
-    def on_fix_no(self): 
+    def on_fix_no(self):
         self.fix_prompt_widget.setVisible(False)
         self.download_button.setText("FINISHED"); self.download_button.setEnabled(False)
     def update_progress(self, value, stats_text): self.download_progress.setValue(value); self.stats_label.setText(stats_text)
@@ -392,9 +392,9 @@ class GameLauncher(QWidget):
                     widget.status = game['status']
                     status_info = STATUS_INFO[widget.status]; border_color = status_info['color']
                     if not widget._pixmap:
-                         widget.content_label.setStyleSheet(f"QLabel {{ color: #cccccc; background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 10px; padding: 5px; }}")
+                         widget.content_label.setStyleSheet(f"QLabel {{ color: #cccccc; background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 0px; padding: 5px; }}")
                     else:
-                         widget.content_label.setStyleSheet(f"QLabel {{ background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 10px; }}")
+                         widget.content_label.setStyleSheet(f"QLabel {{ background-color: #3c3c3c; border: 3px solid {border_color}; border-radius: 0px; }}")
                     break
         print("Game statuses refreshed.")
     def _reflow_games(self):
