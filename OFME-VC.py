@@ -20,8 +20,6 @@ os.system('cls')
 username = input("Enter your username: ")
 password = getpass.getpass("Enter your password: ")
 
-
-
 url = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 response = requests.get(url)
 lines = response.text.splitlines()
@@ -50,7 +48,6 @@ for line in lines:
             key, value = line.split(":", 1)
             current_game[key.strip()] = value.strip()
 
-
 if current_game:
     games.append(current_game)
 
@@ -76,7 +73,6 @@ for game in games:
             version = select_version.find_element(By.TAG_NAME, 'b').text.replace('Версия игры: ', '')
         except:
             print("Version not found")
-
     elif 'https://steamrip.com/' in game['Origin']:
         url = game['Origin']
         driver2.uc_open_with_reconnect(url,4)
@@ -97,9 +93,6 @@ for game in games:
     if version != game['Version']:
         game_update[game['Name']] = version, game['Version']
 
-
 driver1.quit()
 driver2.quit()
 print(game_update)
-    
-
