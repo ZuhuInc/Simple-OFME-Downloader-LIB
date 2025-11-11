@@ -282,6 +282,14 @@ MainPart5: https://gofile.io/d/wuAzPw
 MainPart6: https://gofile.io/d/Rjo4U2
 Fix: https://gofile.io/d/PeVq9C
 
+GoFile (Mimesis) [0.2.4]
+ApproxSize: 3GB
+Description: 4 Player co-op survival horror game. When the cursed rain falls, 'Mimesis' appear, perfectly imitating your teammates, bringing a new level of tension you've never experienced before.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Mimesis.jpg
+Origin: https://online-fix.me/games/adventures/17920-mimesis-po-seti.html
+MainGame: https://gofile.io/d/ej1tjb
+Fix: https://gofile.io/d/Hk6VoQ
+
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.5.1]
 ApproxSize: 155GB
 Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
