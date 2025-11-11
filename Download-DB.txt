@@ -20,8 +20,8 @@ ApproxSize: 1GB
 Description: A co-op adventure about driving your Recreational Vehicle home.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/RvThereYet.jpg
 Origin: https://online-fix.me/games/adventures/17913-rv-there-yet-po-seti.html
-MainGame: https://gofile.io/d/khXWrj
-Fix: https://gofile.io/d/xHVjsW
+MainPart1: https://gofile.io/d/khXWrj
+MainPart2: https://gofile.io/d/xHVjsW
 
 GoFile (Schedule I) [0.4.1f5]
 ApproxSize: 8GB
