@@ -1,16 +1,16 @@
-from selenium import webdriver
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
-import time
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import requests
+from selenium.webdriver.common.by import By
 from seleniumbase import Driver
-import os
+from selenium import webdriver
+import requests
 import getpass
+import time
 import json
+import os
 
 options = Options()
 brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
