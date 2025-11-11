@@ -28,6 +28,8 @@ if os.path.exists(DATA_FILE):
         credentials = json.load(f)
     username = credentials.get('username')
     password = credentials.get('password')
+    print(f"Logged in as: {username}")
+    print("-" * 60)
 else:
     username = input("Enter your username: ")
     password = getpass.getpass("Enter your password: ")
@@ -114,5 +116,5 @@ for game in games:
 
 driver1.quit()
 driver2.quit()
-print("-" * 20)
+print("-" * 60)
 print(f'Games That need a update: {game_update}')
