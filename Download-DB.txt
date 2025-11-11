@@ -7,12 +7,12 @@
 # Sections are grouped by source, application name & version.
 # ===========================================================
 
-GoFile (PEAK) [1.42.a]
+GoFile (PEAK) [1.43.a]
 ApproxSize: 5GB
 Description: PEAK is a co-op climbing game where the slightest mistake can spell your doom. Either solo or as a group of lost nature scouts, your only hope of rescue from a mysterious island is to scale the mountain at its center. Do you have what it takes to reach the PEAK?
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PEAK.png
 Origin: https://online-fix.me/games/adventures/17801-peak-po-seti.html
-MainGame: https://gofile.io/d/mXcm0w
+MainGame: https://gofile.io/d/AP0gfA
 Fix: https://gofile.io/d/6yPbUV
 
 GoFile (RV There Yet) [1.0.14520]
