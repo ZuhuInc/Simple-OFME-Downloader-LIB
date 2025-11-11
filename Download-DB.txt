@@ -321,7 +321,7 @@ GoFile (Card Shop Simulator Multiplayer) [0.040]
 ApproxSize: 5GB
 Description: You and your friends are going to compete to see whose card shop can earn more money! Starting from a humble little shop, decorate your store, hire staff, formulate marketing strategies. Finally, use the coolest cards to engage in card battles, and win away your friends' precious cards!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CardshopSimulatorMP.jfif
-Origin: https://online-fix.me/games/survival/17683-the-headliners-po-seti.html
+Origin: https://online-fix.me/games/simulator/17808-card-shop-simulator-multiplayer-po-seti.html
 MainGame: https://gofile.io/d/3GRmEb
 Fix: https://gofile.io/d/rqDeTW
 
