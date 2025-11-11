@@ -10,6 +10,7 @@ import requests
 from seleniumbase import Driver
 import os
 import getpass
+import json
 
 options = Options()
 brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
@@ -17,8 +18,26 @@ options.binary_location = brave_path
 driver1 = webdriver.Chrome(options = options)
 driver2 = Driver(browser='brave', uc = True)
 os.system('cls')
-username = input("Enter your username: ")
-password = getpass.getpass("Enter your password: ")
+
+DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
+DATA_FILE = os.path.join(DATA_FOLDER, 'Login.json')
+os.makedirs(DATA_FOLDER, exist_ok=True)
+
+if os.path.exists(DATA_FILE):
+    with open(DATA_FILE, 'r') as f:
+        credentials = json.load(f)
+    username = credentials.get('username')
+    password = credentials.get('password')
+else:
+    username = input("Enter your username: ")
+    password = getpass.getpass("Enter your password: ")
+    save_choice = input("Save login for future use? (Y/N): ")
+    if save_choice.lower() in ['y', 'yes']:
+        with open(DATA_FILE, 'w') as f:
+            json.dump({'username': username, 'password': password}, f, indent=4)
+        print(f"Credentials saved to {DATA_FILE}")
+    else:
+        print("Credentials will not be saved.")
 
 url = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 response = requests.get(url)
@@ -95,4 +114,5 @@ for game in games:
 
 driver1.quit()
 driver2.quit()
-print(game_update)
+print("-" * 20)
+print(f'Games That need a update: {game_update}')
