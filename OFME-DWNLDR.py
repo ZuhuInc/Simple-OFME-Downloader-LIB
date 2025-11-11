@@ -291,30 +291,13 @@ class DownloadManager(QObject):
             if not downloaded_path: self.finished.emit(False, "Download failed.", ""); return
             downloaded_paths.append(downloaded_path)
         if not self._is_running: self.finished.emit(False, "Download cancelled.", ""); return
-        self.status_update.emit("Extracting files..."); dirs_before = set(os.listdir(self.base_path))
+        self.status_update.emit("Extracting files...");
         if self._winrar_extraction(downloaded_paths[0], self.base_path):
             self.status_update.emit("Cleaning up...")
             for path in downloaded_paths:
                 try: os.remove(path)
                 except OSError as e: print(f"Could not remove {path}: {e}")
-            
-            final_path = self.base_path
-            if not self.apply_fix:
-                dirs_after = set(os.listdir(self.base_path))
-                new_dirs = [d for d in (dirs_after - dirs_before) if os.path.isdir(os.path.join(self.base_path, d))]
-                if len(new_dirs) == 1:
-                    final_path = os.path.join(self.base_path, new_dirs[0])
-                else:
-                    clean_name = re.sub(r'[<>:"/\\|?*]', '', self.game_data['name'])
-                    assumed_path = os.path.join(self.base_path, clean_name)
-                    if os.path.isdir(assumed_path):
-                        final_path = assumed_path
-                        print(f"Auto-detection failed, but found matching folder name: {final_path}")
-                    else:
-                        print(f"Warning: Could not auto-detect new game folder. Saving base path.")
-                        final_path = self.base_path # Fallback
-
-            self.finished.emit(True, "Completed!", final_path)
+            self.finished.emit(True, "Completed!", self.base_path)
         else:
             self.finished.emit(False, "Extraction Failed!", "")
             
@@ -448,7 +431,7 @@ class GameDetailsWidget(QWidget):
             self.game_install_path = self.data_manager.local_data.get(game_name_key, {}).get('location', '')
             if status == GameStatus.UPDATE_AVAILABLE:
                 self.download_button.setText("UPDATE")
-            else: # UP_TO_DATE
+            else:
                 self.download_button.setText("RE-DOWNLOAD")
     
     def start_or_cancel_download(self):
@@ -456,6 +439,7 @@ class GameDetailsWidget(QWidget):
             self.worker.stop(); self.download_button.setText("DOWNLOAD"); return
         
         path_for_extraction = ""
+
         if self._is_fix_download:
             path_for_extraction = self.game_install_path
         else:
@@ -473,7 +457,7 @@ class GameDetailsWidget(QWidget):
         self.worker.progress.connect(self.update_progress); self.worker.status_update.connect(self.status_label.setText)
         self.worker_thread.start()
 
-    def on_download_finished(self, success, message, final_path):
+    def on_download_finished(self, success, message, extraction_path):
         self.status_label.setText(message)
         if success:
             if self._is_fix_download:
@@ -481,10 +465,13 @@ class GameDetailsWidget(QWidget):
                 self.download_button.setEnabled(False)
                 return
 
-            self.data_manager.save_downloaded_game(self.current_game_data['name'], self.current_game_data['version'], final_path)
+            # Construct the final path by joining the base extraction path with the game name
+            final_game_path = os.path.join(extraction_path, self.current_game_data['name'])
+            
+            self.data_manager.save_downloaded_game(self.current_game_data['name'], self.current_game_data['version'], final_game_path)
             self.refresh_library.emit()
             if self.current_game_data.get('Fix'):
-                self.game_install_path = final_path
+                self.game_install_path = final_game_path
                 self.fix_prompt_widget.setVisible(True)
                 self.location_bar.setVisible(False)
                 self.fix_label.setText(f"Apply fix to: {self.game_install_path}?")
@@ -497,15 +484,14 @@ class GameDetailsWidget(QWidget):
             self.download_button.setEnabled(True)
             self.set_game_data(self.current_game_data)
 
+    ### FIX IS HERE: 'Yes' button now triggers the download directly ###
     def on_fix_yes(self):
         self.fix_prompt_widget.setVisible(False)
-        self.location_bar.setVisible(False) # Keep location hidden during fix
         self._is_fix_download = True
-        self.start_or_cancel_download()
+        self.start_or_cancel_download() # Immediately start the download
         
     def on_fix_no(self): 
         self.fix_prompt_widget.setVisible(False)
-        self.location_bar.setVisible(False) # Keep location hidden
         self.download_button.setText("UP-TO-DATE"); self.download_button.setEnabled(False)
     def update_progress(self, value, stats_text): self.download_progress.setValue(value); self.stats_label.setText(stats_text)
 
