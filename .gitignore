@@ -205,3 +205,5 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+downloaded_files/driver_fixing.lock
+downloaded_files/pipfinding.lock
