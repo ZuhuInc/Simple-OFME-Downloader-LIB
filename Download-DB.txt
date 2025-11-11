@@ -290,6 +290,43 @@ Origin: https://online-fix.me/games/adventures/17920-mimesis-po-seti.html
 MainGame: https://gofile.io/d/ej1tjb
 Fix: https://gofile.io/d/Hk6VoQ
 
+GoFile (Bodycam) [19052025]
+ApproxSize: 50GB
+Description: Bodycam is the first ultra-realistic multiplayer, first-person shooter game made using the latest technologies of the next-gen game engine Unreal Engine 5. Get ready to dive into fast-paced Bodycam actions, where every bullet counts and every choice can decide over the victory or loss of your team.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BodyCam.jpg
+Origin: https://online-fix.me/games/shooter/17452-bodycam-po-seti.html
+MainPart1: https://gofile.io/d/D2d7Cx
+MainPart2: https://gofile.io/d/EOWrUf
+MainPart3: https://gofile.io/d/fbGnXr
+MainPart4: https://gofile.io/d/8XClfr
+MainPart5: https://gofile.io/d/K8Zvwm
+MainPart6: https://gofile.io/d/raumQX
+MainPart7: https://gofile.io/d/vzKVst
+MainPart8: https://gofile.io/d/TtW9cz
+MainPart9: https://gofile.io/d/vtCCl9
+MainPart10: https://gofile.io/d/Wi0E4e
+MainPart11: https://gofile.io/d/7NiNTR
+MainPart12: https://gofile.io/d/QWLpkI
+Fix: https://gofile.io/d/RKSOMa
+
+GoFile (The Headliners) [1.2.1]
+ApproxSize: 9GB
+Description: Co-op horror game where you play in teams of 1 to 8 reckless journalists, ready to explore a city overrun by deadly creatures to snap spectacular footage. Your only goal: make the headlines without becoming one.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheHeadliners.jpg
+Origin: https://online-fix.me/games/survival/17683-the-headliners-po-seti.html
+MainGame: https://gofile.io/d/glT07S
+Fix: https://gofile.io/d/0wG9ra
+
+GoFile (Card Shop Simulator Multiplayer) [0.040]
+ApproxSize: 5GB
+Description: You and your friends are going to compete to see whose card shop can earn more money! Starting from a humble little shop, decorate your store, hire staff, formulate marketing strategies. Finally, use the coolest cards to engage in card battles, and win away your friends' precious cards!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CardshopSimulatorMP.jfif
+Origin: https://online-fix.me/games/survival/17683-the-headliners-po-seti.html
+MainGame: https://gofile.io/d/3GRmEb
+Fix: https://gofile.io/d/rqDeTW
+
+
+
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.5.1]
 ApproxSize: 155GB
 Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
