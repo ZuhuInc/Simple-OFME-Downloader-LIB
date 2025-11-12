@@ -671,7 +671,7 @@ class GameDetailsWidget(QWidget):
 class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuhu's OFME Download GUI 1.5-Beta.9")
+        self.setWindowTitle("Zuhu's OFME Download GUI 1.5.2")
         self.setMinimumSize(640, 480); self.resize(1130, 725)
         self.setStyleSheet(STYLESHEET)
 
