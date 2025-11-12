@@ -546,7 +546,8 @@ class GameDetailsWidget(QWidget):
         else:
             game_name_key = game_data.get('name', '').upper()
             self.final_game_path = self.data_manager.local_data.get(game_name_key, {}).get('location', '')
-            self.location_bar.setVisible(False)
+            self.location_bar.setText(DEFAULT_DOWNLOAD_PATH)
+            self.location_bar.setVisible(True)
             if status == GameStatus.UPDATE_AVAILABLE: self.download_button.setText("UPDATE")
             else: self.download_button.setText("RE-DOWNLOAD")
 
