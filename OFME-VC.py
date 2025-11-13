@@ -119,20 +119,22 @@ for game in games:
 driver1.quit()
 driver2.quit()
 print("-" * 60)
-print(f'Games That need a update: {game_update}')
 
 num_updates = len(game_update)
 
 if num_updates > 0:
     notif_title = "Game Updates Found!"
     notif_message = f"{num_updates} game(s) need an update. Check the console for details."
+    print(f'Games That need a update: {game_update}')
 else:
     notif_title = "Update Check Complete"
     notif_message = "All your games are up to date!"
+    print(f'There are no games that need a update.')
 
 notification.notify(
     title=notif_title,
     message=notif_message,
     app_name="OFME-VC",
+    app_icon=ICO_PATH,
     timeout=15  
 )
