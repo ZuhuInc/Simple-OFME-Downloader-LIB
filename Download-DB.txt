@@ -325,6 +325,27 @@ Origin: https://online-fix.me/games/simulator/17808-card-shop-simulator-multipla
 MainGame: https://gofile.io/d/3GRmEb
 Fix: https://gofile.io/d/rqDeTW
 
+GoFile (Ghost of Tsushima DC) [27102025.040]
+ApproxSize: 75GB
+Description: A storm is coming. Venture into the complete Ghost of Tsushima DIRECTOR’S CUT on PC; forge your own path through this open-world action adventure and uncover its hidden wonders. Brought to you by Sucker Punch Productions, Nixxes Software and PlayStation Studios.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/GhostOfTsushimaDC.jpg
+Origin: https://online-fix.me/games/officialservers/17514-ghost-of-tsushima-directors-cut-po-seti.html
+MainPart1: https://gofile.io/d/YX6eIH
+MainPart2: https://gofile.io/d/VmOR2g
+MainPart3: https://gofile.io/d/OGWTO9
+MainPart4: https://gofile.io/d/oiwLZm
+MainPart5: https://gofile.io/d/xyYsz9
+MainPart6: https://gofile.io/d/SS0tE8
+MainPart7: https://gofile.io/d/hrFj2f
+MainPart8: https://gofile.io/d/b5xHP8
+MainPart9: https://gofile.io/d/3UL393
+MainPart10: https://gofile.io/d/GffkXI
+MainPart11: https://gofile.io/d/k2IeHA
+MainPart12: https://gofile.io/d/YqaSS8
+MainPart13: https://gofile.io/d/83LrXc
+Fix: https://gofile.io/d/DOedqX
+
+
 
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.5.1]
