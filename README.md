@@ -90,7 +90,7 @@ The script will guide you through a few simple steps.
     ```
 2.  **Install dependencies:**
     ```bash
-    pip install requests selenium seleniumbase
+    pip install requests selenium seleniumbase plyer
     ```
 3.  **Configure the Script (if needed):**
     Open the main Python script and ensure the `Browser` variable points to your `Browser.exe` file.
@@ -115,7 +115,7 @@ The script will guide you through a few simple steps.
 
 ### Libraries Used
 
-*   **External:** [requests](https://pypi.org/project/requests/), [PyQt6](https://pypi.org/project/PyQt6/) [Selenium](https://pypi.org/project/selenium/) [Seleniumbase](https://pypi.org/project/seleniumbase/)
+*   **External:** [requests](https://pypi.org/project/requests/), [PyQt6](https://pypi.org/project/PyQt6/) [Selenium](https://pypi.org/project/selenium/) [Seleniumbase](https://pypi.org/project/seleniumbase/) [plyer](https://pypi.org/project/plyer/)
 *   **Standard:** `os`, `sys`, `subprocess`, `json`, `re`, `hashlib`, `time`, `getpass`
 
 ---
