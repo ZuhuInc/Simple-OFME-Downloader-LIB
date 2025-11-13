@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.2
+Zuhu's OFME GUI Downloader V1.5.3-Beta.2
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -23,6 +23,7 @@ from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSl
 # --- CONFIGURATION ---
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
+ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-DWND-ICO.ico"
 ICON_PATH = os.path.join(DATA_FOLDER, 'cache', 'OFME-DWND-ICO.ico')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
 SETTINGS_FILE = os.path.join(DATA_FOLDER, 'Settings.json')
@@ -674,7 +675,7 @@ class GameDetailsWidget(QWidget):
 class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuhu's OFME Download GUI 1.5.2")
+        self.setWindowTitle("Zuhu's OFME Download GUI 1.5.3-Beta.2")
 
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
@@ -707,6 +708,18 @@ class GameLauncher(QWidget):
         self.console_stream._text_written.connect(self.console_buffer.append)
         sys.stdout = self.console_stream; sys.stderr = self.console_stream
         load_settings()
+        
+        self.asset_manager = AssetManager()
+        self.loading_label.setText("Initializing...")
+        QApplication.processEvents() 
+        self.asset_manager.get_asset(ICON_URL) 
+
+        if os.path.exists(ICON_PATH):
+            self.setWindowIcon(QIcon(ICON_PATH))
+            QApplication.instance().setWindowIcon(QIcon(ICON_PATH))
+            print(f"Successfully set window icon.")
+        else:
+            print(f"ERROR: Could not download or find icon at: {ICON_PATH}")
 
         self.loading_label.setText("Fetching game database...")
         QApplication.processEvents()
