@@ -11,17 +11,19 @@ import re
 import time
 import subprocess
 import hashlib
+import ctypes
 from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QHBoxLayout, QScrollArea, QGridLayout, QSizePolicy,
                              QGraphicsOpacityEffect, QStackedWidget, QPushButton,
                              QProgressBar, QLineEdit, QFormLayout, QTabWidget,
                              QPlainTextEdit, QFileDialog)
-from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor
+from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot
 
 # --- CONFIGURATION ---
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
+ICON_PATH = os.path.join(DATA_FOLDER, 'cache', 'OFME-DWND-ICO.ico')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
 SETTINGS_FILE = os.path.join(DATA_FOLDER, 'Settings.json')
 FONT_URL = "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/raw/main/Assets/pixelmix.ttf"
@@ -673,6 +675,12 @@ class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Zuhu's OFME Download GUI 1.5.2")
+
+        if os.path.exists(ICON_PATH):
+            self.setWindowIcon(QIcon(ICON_PATH))
+        else:
+            print(f"Warning: Icon file not found at {ICON_PATH}")
+
         self.setMinimumSize(640, 480); self.resize(1130, 725)
         self.setStyleSheet(STYLESHEET)
 
@@ -847,7 +855,17 @@ class GameLauncher(QWidget):
         self._reflow_games()
 
 if __name__ == '__main__':
+    myappid = 'OFME-DWNLDR'
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except AttributeError:
+        pass
     app = QApplication(sys.argv)
+    if os.path.exists(ICON_PATH):
+        app.setWindowIcon(QIcon(ICON_PATH))
+        print(f"Successfully loaded icon from: {ICON_PATH}")
+    else:
+        print(f"ERROR: Icon file not found at the specified path: {ICON_PATH}")
     main_window = GameLauncher()
     main_window.show()
     sys.exit(app.exec())
