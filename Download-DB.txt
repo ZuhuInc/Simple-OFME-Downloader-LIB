@@ -245,20 +245,20 @@ MainPart3: https://gofile.io/d/ynRDjS
 MainPart4: https://gofile.io/d/ReoZNL
 Fix: https://gofile.io/d/Ou6xyo
 
-GoFile (Abiotic Factor) [1.0.0.21184]
+GoFile (Abiotic Factor) [1.1.0.22148]
 ApproxSize: 7GB
 Description: Abiotic Factor is a survival crafting experience for 1-6 players set in the depths of an underground research facility. Caught between paranormal containment failure, a military crusade, and chaos from a dozen realms, the world’s greatest minds must survive against the universe’s biggest threats.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Abiotic Factor.jpg
 Origin: https://online-fix.me/games/survival/17505-abiotic-factor-po-seti.html
-MainPart1: https://gofile.io/d/NOrCDi
-Fix: https://gofile.io/d/3C4A9f
+MainGame: https://gofile.io/d/ESEtAN
+Fix: https://gofile.io/d/LZjgnE
 
 GoFile (Backroom Company) [05082025]
 ApproxSize: 4GB
 Description: A cooperative horror game about working inside the corporation "The Backrooms". Fulfill contracts and also earn extra money by selling stuff.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BackroomCompany.jpg
 Origin: https://online-fix.me/games/adventures/17836-backroom-company-po-seti.html
-MainPart1: https://gofile.io/d/nwTK3P
+MainGame: https://gofile.io/d/nwTK3P
 Fix: https://gofile.io/d/uR7fQG
 
 GoFile (BMX Streets) [1.0.0.136.0]
@@ -266,7 +266,7 @@ ApproxSize: 30GB
 Description: Ready to hit the streets? BMX Streets brings the essence of BMX riding to your fingertips. Experience the next generation of BMX gaming with realistic physics, massive amounts of customization and gorgeous maps. Practice, experiment and explore to find your own unique style and master the streets.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BMX-Streets.jpg
 Origin: https://online-fix.me/games/officialservers/17732-bmx-streets-po-seti.html
-MainPart1: https://gofile.io/d/zmAcUd
+MainGame: https://gofile.io/d/zmAcUd
 Fix: https://gofile.io/d/ZZFEHK
 
 GoFile (BeamNG Drive) [0.37.5.0.18733]
@@ -287,7 +287,7 @@ ApproxSize: 3GB
 Description: 4 Player co-op survival horror game. When the cursed rain falls, 'Mimesis' appear, perfectly imitating your teammates, bringing a new level of tension you've never experienced before.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Mimesis.jpg
 Origin: https://online-fix.me/games/adventures/17920-mimesis-po-seti.html
-MainPart1: https://gofile.io/d/ej1tjb
+MainGame: https://gofile.io/d/ej1tjb
 Fix: https://gofile.io/d/Hk6VoQ
 
 GoFile (Bodycam) [19052025]
