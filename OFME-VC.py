@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from seleniumbase import Driver
 from selenium import webdriver
+from plyer import notification
 import requests
 import getpass
 import time
@@ -21,6 +22,7 @@ os.system('cls')
 
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Login.json')
+ICO_PATH = os.path.join(DATA_FOLDER, 'cache', 'OFME-VC-ICO.ico')
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
 if os.path.exists(DATA_FILE):
@@ -118,3 +120,19 @@ driver1.quit()
 driver2.quit()
 print("-" * 60)
 print(f'Games That need a update: {game_update}')
+
+num_updates = len(game_update)
+
+if num_updates > 0:
+    notif_title = "Game Updates Found!"
+    notif_message = f"{num_updates} game(s) need an update. Check the console for details."
+else:
+    notif_title = "Update Check Complete"
+    notif_message = "All your games are up to date!"
+
+notification.notify(
+    title=notif_title,
+    message=notif_message,
+    app_name="OFME-VC",
+    timeout=15  
+)
