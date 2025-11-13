@@ -20,11 +20,23 @@ driver1 = webdriver.Chrome(options = options)
 driver2 = Driver(browser='brave', uc = True)
 os.system('cls')
 
+ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-VC-ICO.ico"
+DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Login.json')
 ICO_PATH = os.path.join(DATA_FOLDER, 'cache', 'OFME-VC-ICO.ico')
-os.makedirs(DATA_FOLDER, exist_ok=True)
+CACHE_FOLDER = os.path.join(DATA_FOLDER, 'cache')
+os.makedirs(CACHE_FOLDER, exist_ok=True)
 
+if not os.path.exists(ICO_PATH):
+    try:
+        response = requests.get(ICON_URL, timeout=15)
+        response.raise_for_status() 
+        with open(ICO_PATH, 'wb') as f:
+            f.write(response.content)
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Could not download the icon. {e}")
+        
 if os.path.exists(DATA_FILE):
     with open(DATA_FILE, 'r') as f:
         credentials = json.load(f)
@@ -43,8 +55,7 @@ else:
     else:
         print("Credentials will not be saved.")
 
-url = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
-response = requests.get(url)
+response = requests.get(DB_URL)
 lines = response.text.splitlines()
 
 games = []
@@ -97,8 +108,8 @@ for game in games:
         except:
             print("Version not found")
     elif 'https://steamrip.com/' in game['Origin']:
-        url = game['Origin']
-        driver2.uc_open_with_reconnect(url,4)
+        Origin_URL = game['Origin']
+        driver2.uc_open_with_reconnect(Origin_URL,4)
         driver2.uc_gui_click_captcha()
         version = driver2.find_element(By.TAG_NAME, 'h1').text.split('(')[1].replace(')','')
         pass
