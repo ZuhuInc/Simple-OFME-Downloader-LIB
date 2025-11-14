@@ -4,6 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 from seleniumbase import Driver
 from selenium import webdriver
 from plyer import notification
@@ -14,6 +15,7 @@ import json
 import os
 
 options = Options()
+options.add_argument("--headless=new") 
 brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
 options.binary_location = brave_path
 driver1 = webdriver.Chrome(options = options)
@@ -42,8 +44,7 @@ if os.path.exists(DATA_FILE):
         credentials = json.load(f)
     username = credentials.get('username')
     password = credentials.get('password')
-    print(f"Logged in as: {username}")
-    print("-" * 60)
+    print(f"Using saved credentials for: {username}")
 else:
     username = input("Enter your username: ")
     password = getpass.getpass("Enter your password: ")
@@ -97,9 +98,29 @@ for game in games:
             search = driver1.find_element(By.NAME, 'login_password')
             search.send_keys(password)
             time.sleep(0.5)
-            search.send_keys(Keys.RETURN)
+            search.send_keys(Keys.RETURN)            
+            try:
+                WebDriverWait(driver1, 0.5).until(
+                    EC.presence_of_element_located((By.XPATH, f"//img[@alt='{username}']"))
+                )
+                print(f"Successfully logged in as: {username}")
+                print("-" * 60)
+            except TimeoutException:
+                print("Error logging in. Please check your credentials.")
+                if os.path.exists(DATA_FILE):
+                        try:
+                            os.startfile(DATA_FILE)
+                            print(f"Opening {DATA_FILE}...")
+                        except Exception as e:
+                            print(f"Could not open the file. Please navigate to it manually: {DATA_FILE}")
+                            print(f"Error: {e}")
+                
+                driver1.quit()
+                driver2.quit()
+                sys.exit()
             counter += 1
-            pass
+        
+        driver1.get(game['Origin'])
         time.sleep(0.5)
         try:
             select_version = WebDriverWait(driver1, 10).until(
