@@ -388,6 +388,41 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/cryberpunk-2k77-d7/
 MainGame: https://gofile.io/d/5Pfu7Y
 
+GoFile (Life is Strange: Before the Storm Remastered) [8195842]
+ApproxSize: 25GB
+Description: Life is Strange: Before the Storm is a new three part standalone story adventure set three years before the events of the first game. This time play as Chloe Price, a rebel who forms an unlikely friendship with Rachel Amber in a dramatic new story in the BAFTA award winning franchise.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LifeisStrangeBeforetheStormRemastered.jpg
+Origin: https://steamrip.com/life-is-strange-before-the-storm-remastered-free-download-3y
+MainGame: https://trashbytes.net/dl/bsuXNx82fqLDSxqat-XP-CCvENNpLdouBdPVm-knlHzQoBOoLPlwxC1K6791Uzh1uYejWcszdnVW_dRYCGBCDgxxs0p_jI3wsCg_4LTqpn1gYKSpTtrha19n7kJMMmCxKdJzzT6RUiRe1bGtNEneg1JdYdiDFFcrag?v=1763296505-FLJe2xBFKY6oWNHt2TIIx%2FprYTXxCsFzniS5EmMPkFA%3D
+
+GoFile (Life is Strange Remastered) [8127227]
+ApproxSize: 45GB
+Description: Experience the BAFTA award-winning story of Life is Strange now beautifully remastered with enhanced visuals and vastly improved animation using mocap technology.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LifeisStrangeRemastered.jpg
+Origin: https://steamrip.com/life-is-strange-remastered-free-download-4y
+MainGame: https://trashbytes.net/dl/Ztl-9uHK7u4VUaO5fQ_jb0IpZlH1z6MHgTVutslFLy7jXT1sOSjE4SgePgkxxFEgVh0wBErWAsOASBl5rxYG-3IKzz8H3yKN4e7bRiH6wzr-litk2ERczvvTVpfSWRJWPT7UDuTRB9tqg0dVYIwX?v=1763296521-Ha17FGid%2B3b%2BGSpocA1NTs%2BSPO5GnGK16QF9U06z1Kw%3D
+
+GoFile (Life is Strange 2) [Complete Edition]
+ApproxSize: 40GB
+Description: After a tragic incident, brothers Sean and Daniel Diaz run away from home. Fearing the police, and dealing with Daniel's new telekinetic power, the boys head to Mexico. Each stop on their journey brings new friends and new challenges.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Lifeisstrange2.jpg
+Origin: https://steamrip.com/life-is-strange-2-free-download-i6
+MainGame: https://gofile.io/d/v6DqZB
+
+GoFile (Life is Strange: True Colors) [1.2.124]
+ApproxSize: 30GB
+Description: Alex Chen hides her 'curse': the psychic power of Empathy, the ability to absorb the emotions of others. When her brother dies in a so-called accident, Alex must embrace her power to find the truth.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LifeisstrangeTrueColors.jpg
+Origin: https://steamrip.com/life-is-strange-true-colors-free-download-4n
+MainGame: 
+
+GoFile (Life is Strange: Double Exposure) [1.1.1027899]
+ApproxSize: 30GB
+Description: When Max Caulfield finds her friend Safi dead in the snow, she tears open the way to a parallel timeline. Here, Safi is still alive - and still in danger! With her new power to Shift between two timelines – can Max solve and prevent the same murder?
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LifeisStrangeDoubleExposure.jpg
+Origin: https://steamrip.com/life-is-strange-double-exposure
+MainGame: https://gofile.io/d/vFgzmR
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
