@@ -62,7 +62,7 @@ lines = response.text.splitlines()
 
 games = []
 current_game = {}
-opties = ['GoFile', 'DropBox', 'Both']
+opties = ['GoFile', 'DropBox', 'Both', 'BuzzHeavier']
 for line in lines:
     line = line.strip()
     if not line or line.startswith("#"):
