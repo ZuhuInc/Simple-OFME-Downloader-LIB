@@ -384,7 +384,7 @@ MainGame: https://gofile.io/d/ZKXe7y
 GoFile (Cyberpunk 2077) [2.31]
 ApproxSize: 100GB
 Description: Cyberpunk 2077 is an open-world, action-adventure RPG set in the dark future of Night City — a dangerous megalopolis obsessed with power, glamor, and ceaseless body modification.
-Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CyberPunk2077.jpg
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CyberPunk2077.webm
 Origin: https://steamrip.com/cryberpunk-2k77-d7/
 MainGame: https://gofile.io/d/5Pfu7Y
 
