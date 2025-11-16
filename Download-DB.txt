@@ -423,6 +423,13 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/life-is-strange-double-exposure
 MainGame: https://gofile.io/d/vFgzmR
 
+GoFile (Megabonk) [1.0.19]
+ApproxSize: 1GB
+Description: Smash your way through endless waves of enemies and grow absurdly powerful! Grab loot, level up, unlock characters and upgrade to create unique and crazy builds as you fend off hordes of creatures!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Megabonk.jpg
+Origin: https://steamrip.com/megabonk-free-download
+MainGame: https://gofile.io/d/7WzaIR
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
