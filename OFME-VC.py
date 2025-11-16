@@ -1,10 +1,10 @@
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
 from seleniumbase import Driver
 from selenium import webdriver
 from plyer import notification
@@ -12,6 +12,7 @@ import requests
 import getpass
 import time
 import json
+import sys
 import os
 
 options = Options()
@@ -111,10 +112,9 @@ for game in games:
                         try:
                             os.startfile(DATA_FILE)
                             print(f"Opening {DATA_FILE}...")
-                        except Exception as e:
+                        except Exception as error:
                             print(f"Could not open the file. Please navigate to it manually: {DATA_FILE}")
-                            print(f"Error: {e}")
-                
+                            print(f"Error: {error}")
                 driver1.quit()
                 driver2.quit()
                 sys.exit()
