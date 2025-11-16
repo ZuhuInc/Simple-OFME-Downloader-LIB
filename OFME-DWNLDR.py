@@ -1,7 +1,9 @@
 """
-Zuhu's OFME GUI Downloader V1.5.3-Beta.2
+Zuhu's OFME GUI Downloader V1.5.3
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
+
+--- MODIFIED TO INCLUDE BUZZHEAVIER SUPPORT ---
 """
 import sys
 import os
@@ -310,6 +312,10 @@ class DownloadManager(QObject):
                 direct_url, token = self._resolve_gofile_link(url)
                 if not direct_url:
                     self.finished.emit(False, "Failed to resolve GoFile link.", {}); return
+            elif "buzzheavier.com" in url:
+                direct_url = self._resolve_buzzheavier_link(url)
+                if not direct_url:
+                    self.finished.emit(False, "Failed to resolve BuzzHeavier link.", {}); return
 
             downloaded_path = self._download_file(direct_url, temp_download_folder, token)
             if not downloaded_path:
@@ -326,8 +332,40 @@ class DownloadManager(QObject):
         result_paths = {'main': downloaded_main_paths, 'fix': downloaded_fix_path}
         self.finished.emit(True, "Download complete.", result_paths)
 
+    def _resolve_buzzheavier_link(self, buzzheavier_url):
+        self.status_update.emit("Resolving BuzzHeavier link...")
+        try:
+            session = requests.Session()
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'HX-Request': 'true',
+                'Referer': buzzheavier_url.rstrip('/') + '/'
+            }
+            session.headers.update(headers)
+            download_trigger_url = buzzheavier_url.rstrip('/') + "/download"
+            self.status_update.emit("Downloading From BuzzHeavier...")
+            response = session.get(download_trigger_url, allow_redirects=False, timeout=15)
+
+            if response.status_code >= 400:
+                print(f"ERROR: Server returned status code {response.status_code}")
+                return None
+
+            if 'hx-redirect' in response.headers:
+                final_url = response.headers['hx-redirect']
+                print(f"Successfully extracted final URL from hx-redirect header: {final_url}")
+                if "buzzheavier.com" in final_url:
+                    print("ERROR: Server sent a circular redirect. Anti-bot measure likely triggered.")
+                    return None
+                return final_url
+            else:
+                print(f"ERROR: 'hx-redirect' header not found. Status: {response.status_code}. Headers: {response.headers}")
+                return None
+        except requests.exceptions.RequestException as e:
+            print(f"BuzzHeavier resolution error: {e}")
+            return None
+
     def _resolve_gofile_link(self, gofile_url):
-        self.status_update.emit("Resolving GoFile link...")
+        self.status_update.emit("Downloading From GoFile...")
         try:
             headers = {"User-Agent": "Mozilla/5.0"}; token_response = requests.post("https://api.gofile.io/accounts", headers=headers).json()
             if token_response.get("status") != "ok": return None, None
@@ -346,11 +384,27 @@ class DownloadManager(QObject):
 
     def _download_file(self, url, dest_folder, token):
         headers = {'User-Agent': 'Mozilla/5.0'}
-        if token: headers['Cookie'] = f'accountToken={token}'
-        local_filename = url.split('/')[-1].split('?')[0] or "download.tmp"; local_filepath = os.path.join(dest_folder, local_filename)
+        if token: headers['Cookie'] = f'accountToken={token}'    
         try:
-            with requests.get(url, stream=True, headers=headers) as r:
+            with requests.get(url, stream=True, headers=headers, timeout=(10, 30)) as r:
                 r.raise_for_status()
+                content_type = r.headers.get('Content-Type', '').lower()
+                if 'text/html' in content_type:
+                    print(f"ERROR: Download link returned an HTML page instead of a file. Aborting.")
+                    return None
+                local_filename = ""
+                if "Content-Disposition" in r.headers:
+                    disposition = r.headers['content-disposition']
+                    filenames = re.findall('filename="?([^"]+)"?', disposition)
+                    if filenames:
+                        local_filename = filenames[0]
+                if not local_filename:
+                    final_url = r.url
+                    local_filename = final_url.split('/')[-1].split('?')[0]
+                if not local_filename:
+                    local_filename = "download.tmp"
+                local_filepath = os.path.join(dest_folder, local_filename)
+                print(f"Downloading to: {local_filepath}")
                 total_size = int(r.headers.get('content-length', 0)); bytes_downloaded = 0; start_time = time.time()
                 with open(local_filepath, 'wb') as f:
                     for chunk in r.iter_content(chunk_size=8192):
@@ -361,8 +415,10 @@ class DownloadManager(QObject):
                             speed = bytes_downloaded / elapsed_time if elapsed_time > 0 else 0
                             stats = f"{bytes_downloaded/1024/1024:.2f}MB / {total_size/1024/1024:.2f}MB | {speed/1024/1024:.2f} MB/s | {percentage}%"
                             self.progress.emit(percentage, stats)
-            return local_filepath
-        except Exception as e: print(f"Download error: {e}"); return None
+                return local_filepath
+        except requests.exceptions.RequestException as e:
+            print(f"Download error: {e}")
+            return None
 
 # --- INSTALL MANAGER ---
 class InstallManager(QObject):
@@ -675,7 +731,7 @@ class GameDetailsWidget(QWidget):
 class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuhu's OFME Download GUI 1.5.3-Beta.2")
+        self.setWindowTitle("Zuhu's OFME Download GUI 1.5.3")
 
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
