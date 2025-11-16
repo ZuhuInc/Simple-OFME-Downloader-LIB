@@ -409,12 +409,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/life-is-strange-2-free-download-i6
 MainGame: https://gofile.io/d/v6DqZB
 
-GoFile (Life is Strange: True Colors) [1.2.124]
+BuzzHeavier (Life is Strange: True Colors) [1.2.124]
 ApproxSize: 30GB
-Description: Alex Chen hides her 'curse': the psychic power of Empathy, the ability to absorb the emotions of others. When her brother dies in a so-called accident, Alex must embrace her power to find the truth.
+Description: [TESTING] Alex Chen hides her 'curse': the psychic power of Empathy, the ability to absorb the emotions of others. When her brother dies in a so-called accident, Alex must embrace her power to find the truth.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LifeisstrangeTrueColors.jpg
 Origin: https://steamrip.com/life-is-strange-true-colors-free-download-4n
-MainGame: 
+MainGame: https://buzzheavier.com/uryzqce4x3ob
 
 GoFile (Life is Strange: Double Exposure) [1.1.1027899]
 ApproxSize: 30GB
