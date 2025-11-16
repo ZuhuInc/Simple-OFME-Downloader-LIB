@@ -2,8 +2,6 @@
 Zuhu's OFME GUI Downloader V1.5.3
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
-
---- MODIFIED TO INCLUDE BUZZHEAVIER SUPPORT ---
 """
 import sys
 import os
