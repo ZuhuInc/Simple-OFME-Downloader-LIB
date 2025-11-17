@@ -367,6 +367,17 @@ MainPart14: https://gofile.io/d/xqqpUJ
 MainPart15: https://gofile.io/d/uO3e4L
 Fix: https://gofile.io/d/PeUy8Y
 
+GoFile (SILENT BREATH) [0.99D]
+ApproxSize: 8GB
+Description: Unpredictable horrors lurk around every corner, forcing you to find the missing people while desperately clinging to survival. In this experience even your own mind can become your enemy. Stay vigilant and keep your voice hushed, or risk becoming another victim of the forest's darkness.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SILENTBREATH.jpg
+Origin: https://online-fix.me/games/horror/17946-silent-breath-po-seti.html
+MainPart1: https://gofile.io/d/kb4Gv4
+MainPart2: https://gofile.io/d/UODUIC
+Fix: https://gofile.io/d/10UVWS
+
+
+
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.5.1]
 ApproxSize: 155GB
 Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
