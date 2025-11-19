@@ -478,6 +478,13 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/cloverpit-free-download
 MainGame: https://buzzheavier.com/liksw0ew4pu8
 
+GoFile (SILENT HILL f) [1.1.380371]
+ApproxSize: 50GB
+Description: Hinako's hometown is engulfed in fog, driving her to fight grotesque monsters and solve eerie puzzles. Uncover the disturbing beauty hidden in terror.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SilentHillF.jpg
+Origin: https://steamrip.com/silent-hill-f-free-download
+MainGame: https://gofile.io/d/mBAgcG
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
