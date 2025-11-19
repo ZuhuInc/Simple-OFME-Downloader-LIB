@@ -7,12 +7,12 @@
 # Sections are grouped by source, application name & version.
 # ===========================================================
 
-GoFile (PEAK) [1.44.a]
+GoFile (PEAK) [1.46.a]
 ApproxSize: 5GB
 Description: PEAK is a co-op climbing game where the slightest mistake can spell your doom. Either solo or as a group of lost nature scouts, your only hope of rescue from a mysterious island is to scale the mountain at its center. Do you have what it takes to reach the PEAK?
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PEAK.png
 Origin: https://online-fix.me/games/adventures/17801-peak-po-seti.html
-MainGame: https://gofile.io/d/Hy2zEL
+MainGame: https://gofile.io/d/43xIIf
 Fix: https://gofile.io/d/6yPbUV
 
 GoFile (RV There Yet) [1.0.14520]
@@ -23,12 +23,12 @@ Origin: https://online-fix.me/games/adventures/17913-rv-there-yet-po-seti.html
 MainGame: https://gofile.io/d/khXWrj
 Fix: https://gofile.io/d/xHVjsW
 
-GoFile (Schedule I) [0.4.1f5]
+GoFile (Schedule I) [0.4.1f12]
 ApproxSize: 8GB
 Description: From small-time dope pusher to kingpin - manufacture and distribute a range of drugs throughout the grungy city of Hyland Point. Expand your empire with properties, businesses, employees and more.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Schedule1.jpg
 Origin: https://online-fix.me/games/adventures/17729-schedule-i-po-seti.html
-MainGame: https://gofile.io/d/XndMPh
+MainGame: https://gofile.io/d/IPz0tH
 Fix: https://gofile.io/d/Ta1lFW
 
 GoFile (Crime Simulator) [1.21]
@@ -144,13 +144,15 @@ Origin: https://online-fix.me/games/sandbox/17484-content-warning-po-seti.html
 MainGame: https://gofile.io/d/ndFwsS
 Fix: https://www.dropbox.com/scl/fi/mbyynm4cbjjaijewl32uf/ContentWarning_Fix_Repair_Steam_V4_Generic.rar?rlkey=nhjxedfk9l5ixt2uz23h7o5uj&st=m1t9376j&dl=1
 
-GoFile (Sons of The Forest) [21012025]
+GoFile (Sons of The Forest) [03102025]
 ApproxSize: 20GB
 Description: Sent to find a missing billionaire on a remote island, you find yourself in a cannibal-infested hellscape. Craft, build, and struggle to survive, alone or with friends, in this terrifying new open-world survival horror simulator.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SonsOfTheForest.jpg
 Origin: https://online-fix.me/games/survival/17220-sons-of-the-forest-po-seti.html
-MainGame: https://gofile.io/d/t7vCy3
-Fix: https://gofile.io/d/oTrZON
+MainPart1: https://gofile.io/d/pGEOLS
+MainPart2: https://gofile.io/d/6EBtUm
+MainPart3: https://gofile.io/d/6byd4f
+Fix: https://gofile.io/d/t7vCy3
 
 GoFile (SCP: 5K) [0.17.0.154]
 ApproxSize: 30GB
@@ -345,26 +347,26 @@ MainPart12: https://gofile.io/d/YqaSS8
 MainPart13: https://gofile.io/d/83LrXc
 Fix: https://gofile.io/d/DOedqX
 
-GoFile (INAZUMA ELEVEN Victory Road) [1.2.0]
+GoFile (INAZUMA ELEVEN Victory Road) [1.2.4]
 ApproxSize: 75GB
 Description: The latest entry in the character collection and football simulation RPG series, "Inazuma Eleven!" With an original story featuring new main characters, over 5,400 players from across the series' history to collect and train, as well as exciting online tournaments, you can play the game your way!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/INAZUMAELEVENVictoryRoad.jpg
 Origin: https://online-fix.me/games/officialservers/17939-inazuma-eleven-victory-road-po-seti.html
-MainPart1: https://gofile.io/d/RBHspk
-MainPart2: https://gofile.io/d/w1rZLv
-MainPart3: https://gofile.io/d/cp2epH
-MainPart4: https://gofile.io/d/WDeupe
-MainPart5: https://gofile.io/d/dWsHmP
-MainPart6: https://gofile.io/d/Aj6Lwy
-MainPart7: https://gofile.io/d/FCK9g0
-MainPart8: https://gofile.io/d/z6L28w
-MainPart9: https://gofile.io/d/oBORMo
-MainPart10: https://gofile.io/d/jQGurH
-MainPart11: https://gofile.io/d/SbcfwQ
-MainPart12: https://gofile.io/d/0J1X65
-MainPart13: https://gofile.io/d/LnHIEU
-MainPart14: https://gofile.io/d/xqqpUJ
-MainPart15: https://gofile.io/d/uO3e4L
+MainPart1: https://gofile.io/d/QqYIep
+MainPart2: https://gofile.io/d/oMKkVH
+MainPart3: https://gofile.io/d/IEbr1B
+MainPart4: https://gofile.io/d/ITfIvd
+MainPart5: https://gofile.io/d/nT2XjM
+MainPart6: https://gofile.io/d/emt164
+MainPart7: https://gofile.io/d/nupMPv
+MainPart8: https://gofile.io/d/F4qd4c
+MainPart9: https://gofile.io/d/4hwVQL
+MainPart10: https://gofile.io/d/mMS28o
+MainPart11: https://gofile.io/d/03d9pz
+MainPart12: https://gofile.io/d/2CV8qd
+MainPart13: https://gofile.io/d/oM5lVY
+MainPart14: https://gofile.io/d/W4rlQN
+MainPart15:https://gofile.io/d/lW9O6D
 Fix: https://gofile.io/d/PeUy8Y
 
 GoFile (SILENT BREATH) [0.99D]
@@ -385,12 +387,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/s-t-a-l-k-e-r-2-heart-of-chornobyl-free-download/
 MainGame: https://gofile.io/d/LGyqjs
 
-GoFile (Dispatch) [1.0.16254]
+GoFile (Dispatch) [1.0.16338]
 ApproxSize: 19GB
 Description: Dispatch is a superhero workplace comedy where choices matter. Manage a dysfunctional team of misfit heroes and strategize who to send to emergencies around the city, all while balancing office politics, personal relationships, and your own quest to become a hero. All episodes out now!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Dispatch.jpg
 Origin: https://steamrip.com/dispatch-free-download/
-MainGame: https://gofile.io/d/ZKXe7y
+MainGame: https://gofile.io/d/M5pKvQ
 
 GoFile (Cyberpunk 2077) [2.31]
 ApproxSize: 100GB
@@ -440,6 +442,41 @@ Description: Smash your way through endless waves of enemies and grow absurdly p
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Megabonk.jpg
 Origin: https://steamrip.com/megabonk-free-download
 MainGame: https://gofile.io/d/7WzaIR
+
+BuzzHeavier (Hades) [10929685]
+ApproxSize: 15GB
+Description: Defy the god of the dead as you hack and slash out of the Underworld in this rogue-like dungeon crawler from the creators of Bastion, Transistor, and Pyre.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Hades.jpg
+Origin: https://steamrip.com/hades-free-download-a2/
+MainGame: https://buzzheavier.com/3tanwgo44h51
+
+GoFile (Hades II) [1.133066]
+ApproxSize: 10GB
+Description: Battle beyond the Underworld using dark sorcery to take on the Titan of Time in this bewitching sequel to the award-winning rogue-like dungeon crawler.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Hades2.jpg
+Origin: https://steamrip.com/hades-2-free-download/
+MainGame: https://gofile.io/d/y5FRGB
+
+GoFile (Assetto Corsa EVO) [0.2.2]
+ApproxSize: 100GB
+Description: Assetto Corsa EVO redefines the realism and features of one of the most popular multiplatform driving simulations ever developed. Featuring cars and tracks from different classes spanning across years of motoring history.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/
+Origin: https://steamrip.com/assetto-corsa-evo-free-download/AC-EVO.jpg
+MainGame: https://gofile.io/d/HMMTus
+
+GoFile (Assetto Corsa Rally) [20801254]
+ApproxSize: 50GB
+Description: Assetto Corsa Rally is a high-fidelity rally sim built for precision and challenge. With 3D laser-scanned stages and cars, professional co-driver support, and dynamic conditions, it delivers a demanding, immersive experience where every second behind the wheel counts.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AC-Rally.jpg
+Origin: https://steamrip.com/assetto-corsa-rally-free-download/
+MainGame: https://gofile.io/d/FuClSX
+
+GoFile (CloverPit) [20093847]
+ApproxSize: 1GB
+Description: A rogue-lite slot machine nightmare. Gamble for your life in a never-ending debt simulator!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CloverPit.jpg
+Origin: https://steamrip.com/cloverpit-free-download
+MainGame: https://buzzheavier.com/liksw0ew4pu8
 
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
