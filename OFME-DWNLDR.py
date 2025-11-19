@@ -609,9 +609,17 @@ class GameDetailsWidget(QWidget):
             else: self.download_button.setText("RE-DOWNLOAD")
 
     def start_or_cancel_download(self):
-        if self.worker_thread and self.worker_thread.isRunning():
-            if hasattr(self, 'worker'): self.worker.stop()
-            self.download_button.setText("DOWNLOAD"); return
+        # 1. Check if thread exists and is safely running
+        if self.worker_thread is not None:
+            try:
+                if self.worker_thread.isRunning():
+                    if hasattr(self, 'worker'): self.worker.stop()
+                    self.download_button.setText("DOWNLOAD")
+                    return
+            except RuntimeError:
+                # Handle case where C++ object is gone but Python ref exists
+                self.worker_thread = None
+
         if self.installer_thread and self.installer_thread.isRunning():
             self.status_label.setText("Installation in progress..."); return
 
@@ -629,15 +637,34 @@ class GameDetailsWidget(QWidget):
         self.download_button.setText("CANCEL")
         self.worker_thread = QThread()
         self.worker = DownloadManager(self.current_game_data)
-        self.worker.moveToThread(self.worker_thread); self.worker_thread.started.connect(self.worker.run)
+        self.worker.moveToThread(self.worker_thread)
+        
+        self.worker_thread.started.connect(self.worker.run)
         self.worker.finished.connect(lambda s, m, p: self.on_download_complete(s, m, p, path_to_use, is_new_install))
         self.worker.finished.connect(self.worker_thread.quit)
-        self.worker.finished.connect(self.worker.deleteLater); self.worker_thread.finished.connect(self.worker_thread.deleteLater)
-        self.worker.progress.connect(self.update_progress); self.worker.status_update.connect(self.status_label.setText)
+        self.worker.finished.connect(self.worker.deleteLater)
+        
+        # 2. Connect thread finished signal to cleanup methods
+        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
+        self.worker_thread.finished.connect(self.cleanup_worker_references) # New cleanup connection
+
+        self.worker.progress.connect(self.update_progress)
+        self.worker.status_update.connect(self.status_label.setText)
         self.worker_thread.start()
+
+    def cleanup_worker_references(self):
+        """
+        Only clears the python references when the thread has officially emitted 'finished'.
+        This prevents 'QThread: Destroyed while thread is still running' errors.
+        """
+        self.worker_thread = None
+        self.worker = None
+        print("Worker thread cleaned up successfully.")
 
     def on_download_complete(self, success, message, path_dict, base_path, is_new_install):
         self.status_label.setText(message)
+        # Do NOT set self.worker_thread = None here. We wait for cleanup_worker_references.
+
         if success:
             self.downloaded_file_paths = path_dict
             self.installer_thread = QThread()
@@ -646,20 +673,27 @@ class GameDetailsWidget(QWidget):
                 fix_path=self.downloaded_file_paths.get('fix', ''),
                 install_path=base_path,
                 is_new_install=is_new_install
-)
+            )
             self.installer.moveToThread(self.installer_thread)
             self.installer.main_extraction_finished.connect(self.on_main_extraction_complete)
             self.installer.fix_extraction_finished.connect(self.on_fix_extraction_complete)
             self.installer.cleanup_finished.connect(self.on_cleanup_complete)
             self.installer.status_update.connect(self.status_label.setText)
             self.installer_thread.started.connect(self.installer.start_main_extraction)
+            
             self.installer_thread.finished.connect(self.installer.deleteLater)
             self.installer_thread.finished.connect(self.installer_thread.deleteLater)
+            self.installer_thread.finished.connect(self.cleanup_installer_references) # Add safety for installer too
+
             self.download_button.setText("EXTRACTING..."); self.download_button.setEnabled(False)
             self.download_progress.setValue(0); self.stats_label.setText("")
             self.installer_thread.start()
         else:
             self.set_game_data(self.current_game_data)
+
+    def cleanup_installer_references(self):
+        self.installer_thread = None
+        self.installer = None
 
     def on_main_extraction_complete(self, success, message, detected_path):
         self.status_label.setText(message)
@@ -714,12 +748,12 @@ class GameDetailsWidget(QWidget):
 
         if self.installer_thread and self.installer_thread.isRunning():
             self.installer_thread.quit()
-            self.installer_thread.wait()
+            self.installer_thread.wait() # Wait for thread to finish before references are cleared by connected signal
+        
         self.download_button.setText("UP-TO-DATE")
         self.download_button.setEnabled(False)
         self.downloaded_file_paths = {}
-        self.installer = None
-        self.installer_thread = None
+        # Note: installer references are cleared by cleanup_installer_references via signal
         if not success: self.set_game_data(self.current_game_data)
 
     def update_progress(self, value, stats_text):
