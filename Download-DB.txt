@@ -378,7 +378,21 @@ MainPart1: https://gofile.io/d/kb4Gv4
 MainPart2: https://gofile.io/d/UODUIC
 Fix: https://gofile.io/d/10UVWS
 
+GoFile (What the Fog) [23052024]
+ApproxSize: 5GB
+Description: What the Fog?! You’ve been sucked into a cursed boardgame! Now you and a friend will need to work together to survive. Run, jump, dash, and shoot to escape swarms of angry monsters in this chaotic co-op roguelite from the world of Dead by Daylight.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/WhattheFog.jpg
+Origin: https://online-fix.me/games/shooter/17951-what-the-fog-po-seti.html
+MainGame: https://gofile.io/d/daFLpC
+Fix: https://gofile.io/d/USFWW2
 
+GoFile (Storebound) [ 0.7.3]
+ApproxSize: 8GB 
+Description: A 1-3 co-op horror game. Play as ordinary shoppers trapped in an accursed megastore. Find the exit together at all costs before the employees catch you.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Storebound.jpg
+Origin: https://online-fix.me/games/horror/17950-storebound-po-seti.html
+MainGame: https://gofile.io/d/5ZCmyB
+Fix: https://gofile.io/d/ufDgIp
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.5.1]
 ApproxSize: 155GB
