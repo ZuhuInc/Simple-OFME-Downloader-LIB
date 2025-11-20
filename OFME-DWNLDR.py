@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.3
+Zuhu's OFME GUI Downloader V1.5.4-Beta.2
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -609,7 +609,6 @@ class GameDetailsWidget(QWidget):
             else: self.download_button.setText("RE-DOWNLOAD")
 
     def start_or_cancel_download(self):
-        # 1. Check if thread exists and is safely running
         if self.worker_thread is not None:
             try:
                 if self.worker_thread.isRunning():
@@ -617,19 +616,13 @@ class GameDetailsWidget(QWidget):
                     self.download_button.setText("DOWNLOAD")
                     return
             except RuntimeError:
-                # Handle case where C++ object is gone but Python ref exists
                 self.worker_thread = None
 
         if self.installer_thread and self.installer_thread.isRunning():
             self.status_label.setText("Installation in progress..."); return
 
-        is_new_install = self.current_game_data['status'] == GameStatus.NOT_DOWNLOADED
-        path_to_use = ""
-
-        if is_new_install:
-            path_to_use = self.location_bar.text()
-        else:
-            path_to_use = os.path.dirname(self.final_game_path) if self.final_game_path else ""
+        is_new_install = self.current_game_data['status'] == GameStatus.NOT_DOWNLOADED    
+        path_to_use = self.location_bar.text()
 
         if not os.path.isdir(path_to_use):
             self.status_label.setText("Invalid location path!"); return
@@ -644,9 +637,8 @@ class GameDetailsWidget(QWidget):
         self.worker.finished.connect(self.worker_thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         
-        # 2. Connect thread finished signal to cleanup methods
         self.worker_thread.finished.connect(self.worker_thread.deleteLater)
-        self.worker_thread.finished.connect(self.cleanup_worker_references) # New cleanup connection
+        self.worker_thread.finished.connect(self.cleanup_worker_references)
 
         self.worker.progress.connect(self.update_progress)
         self.worker.status_update.connect(self.status_label.setText)
@@ -663,7 +655,6 @@ class GameDetailsWidget(QWidget):
 
     def on_download_complete(self, success, message, path_dict, base_path, is_new_install):
         self.status_label.setText(message)
-        # Do NOT set self.worker_thread = None here. We wait for cleanup_worker_references.
 
         if success:
             self.downloaded_file_paths = path_dict
@@ -763,7 +754,7 @@ class GameDetailsWidget(QWidget):
 class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuhu's OFME Download GUI 1.5.3")
+        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.2")
 
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
