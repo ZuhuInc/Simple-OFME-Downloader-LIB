@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.4-Beta.2
+Zuhu's OFME GUI Downloader V1.5.4-Beta.3
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -303,15 +303,16 @@ class DownloadManager(QObject):
         for i, url in enumerate(urls_to_download):
             if not self._is_running:
                 self.finished.emit(False, "Download cancelled.", {}); return
+            
+            progress_str = f"({i+1}/{total_downloads})"
             self.status_update.emit(f"Downloading Part {i+1}/{total_downloads}...")
-
             direct_url, token = url, None
             if "gofile.io" in url:
-                direct_url, token = self._resolve_gofile_link(url)
+                direct_url, token = self._resolve_gofile_link(url, progress_str)
                 if not direct_url:
                     self.finished.emit(False, "Failed to resolve GoFile link.", {}); return
             elif "buzzheavier.com" in url:
-                direct_url = self._resolve_buzzheavier_link(url)
+                direct_url = self._resolve_buzzheavier_link(url, progress_str)
                 if not direct_url:
                     self.finished.emit(False, "Failed to resolve BuzzHeavier link.", {}); return
 
@@ -330,8 +331,8 @@ class DownloadManager(QObject):
         result_paths = {'main': downloaded_main_paths, 'fix': downloaded_fix_path}
         self.finished.emit(True, "Download complete.", result_paths)
 
-    def _resolve_buzzheavier_link(self, buzzheavier_url):
-        self.status_update.emit("Resolving BuzzHeavier link...")
+    def _resolve_buzzheavier_link(self, buzzheavier_url, progress_str=""):
+        self.status_update.emit(f"Resolving BuzzHeavier link... {progress_str}")
         try:
             session = requests.Session()
             headers = {
@@ -341,7 +342,7 @@ class DownloadManager(QObject):
             }
             session.headers.update(headers)
             download_trigger_url = buzzheavier_url.rstrip('/') + "/download"
-            self.status_update.emit("Downloading From BuzzHeavier...")
+            self.status_update.emit(f"Downloading From BuzzHeavier... {progress_str}")
             response = session.get(download_trigger_url, allow_redirects=False, timeout=15)
 
             if response.status_code >= 400:
@@ -362,8 +363,8 @@ class DownloadManager(QObject):
             print(f"BuzzHeavier resolution error: {e}")
             return None
 
-    def _resolve_gofile_link(self, gofile_url):
-        self.status_update.emit("Downloading From GoFile...")
+    def _resolve_gofile_link(self, gofile_url, progress_str=""):
+        self.status_update.emit(f"Downloading From GoFile... {progress_str}")
         try:
             headers = {"User-Agent": "Mozilla/5.0"}; token_response = requests.post("https://api.gofile.io/accounts", headers=headers).json()
             if token_response.get("status") != "ok": return None, None
@@ -754,7 +755,7 @@ class GameDetailsWidget(QWidget):
 class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.2")
+        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.3")
 
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
@@ -961,3 +962,4 @@ if __name__ == '__main__':
     main_window = GameLauncher()
     main_window.show()
     sys.exit(app.exec())
+    
