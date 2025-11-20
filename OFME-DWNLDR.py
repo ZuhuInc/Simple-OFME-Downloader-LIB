@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.4-Beta.3
+Zuhu's OFME GUI Downloader V1.5.4-Beta.4
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -16,9 +16,9 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QHBoxLayout, QScrollArea, QGridLayout, QSizePolicy,
                              QGraphicsOpacityEffect, QStackedWidget, QPushButton,
                              QProgressBar, QLineEdit, QFormLayout, QTabWidget,
-                             QPlainTextEdit, QFileDialog)
-from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot
+                             QPlainTextEdit, QFileDialog, QCheckBox)
+from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPainter, QColor, QBrush, QPen
+from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty
 
 # --- CONFIGURATION ---
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
@@ -31,6 +31,8 @@ FONT_URL = "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/raw/main/Asset
 RAR_PASSWORD = "online-fix.me"
 WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
 DEFAULT_DOWNLOAD_PATH = ""
+SHOW_SIZE_IN_GB = True
+SHOW_SPEED_IN_MBPS = True
 
 # --- STYLING ---
 STYLESHEET = """
@@ -63,13 +65,15 @@ STYLESHEET = """
 # --- FUNCTIONS TO LOAD AND SAVE SETTINGS ---
 def load_settings():
     """Loads settings from settings.json if it exists."""
-    global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH
+    global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, 'r') as f:
                 settings = json.load(f)
                 WINRAR_PATH = settings.get('winrar_path', WINRAR_PATH)
                 DEFAULT_DOWNLOAD_PATH = settings.get('default_download_path', DEFAULT_DOWNLOAD_PATH)
+                SHOW_SIZE_IN_GB = settings.get('show_size_in_gb', True)
+                SHOW_SPEED_IN_MBPS = settings.get('show_speed_in_mbps', False)
                 print("Settings loaded from file.")
         except (json.JSONDecodeError, IOError) as e:
             print(f"ERROR: Could not load settings file: {e}. Using defaults.")
@@ -81,7 +85,9 @@ def save_settings_to_file():
     os.makedirs(DATA_FOLDER, exist_ok=True)
     settings = {
         'winrar_path': WINRAR_PATH,
-        'default_download_path': DEFAULT_DOWNLOAD_PATH
+        'default_download_path': DEFAULT_DOWNLOAD_PATH,
+        'show_size_in_gb': SHOW_SIZE_IN_GB,
+        'show_speed_in_mbps': SHOW_SPEED_IN_MBPS
     }
     try:
         with open(SETTINGS_FILE, 'w') as f:
@@ -105,6 +111,54 @@ class ConsoleStream(QObject):
     def write(self, text): self._text_written.emit(str(text))
     def flush(self): pass
 
+# --- CUSTOM TOGGLE SWITCH ---
+class PyToggle(QCheckBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(50, 28)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._bg_color = "#777"
+        self._circle_color = "#DDD"
+        self._active_color = "#00ff7f"
+        self._circle_position = 3
+        self.animation = QPropertyAnimation(self, b"circle_position", self)
+        self.animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        self.animation.setDuration(300)
+        self.stateChanged.connect(self.start_transition)
+
+    def start_transition(self, state):
+        self.animation.stop()
+        if state:
+            self.animation.setEndValue(self.width() - 24)
+        else:
+            self.animation.setEndValue(3)
+        self.animation.start()
+        
+    def hitButton(self, pos):
+        return self.contentsRect().contains(pos)
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if self.isChecked():
+            p.setBrush(QColor(self._active_color))
+        else:
+            p.setBrush(QColor(self._bg_color))
+        p.setPen(Qt.PenStyle.NoPen)
+        rect = QRect(0, 0, self.width(), self.height())
+        p.drawRoundedRect(0, 0, rect.width(), rect.height(), 14, 14)
+        p.setBrush(QColor(self._circle_color))
+        p.drawEllipse(int(self._circle_position), 3, 22, 22)
+        p.end()
+
+    def get_circle_position(self):
+        return self._circle_position
+
+    def set_circle_position(self, pos):
+        self._circle_position = pos
+        self.update()
+
+    circle_position = pyqtProperty(float, get_circle_position, set_circle_position)
+
 # --- SETTINGS AND CONSOLE PAGE ---
 class SettingsPage(QWidget):
     back_requested = pyqtSignal()
@@ -127,15 +181,36 @@ class SettingsPage(QWidget):
         console_font = QFont("pixelmix", 12); self.console_output.setFont(console_font)
         console_layout.addWidget(self.console_output)
         tabs.addTab(console_widget, "Console")
-
         settings_widget = QWidget(); settings_layout = QVBoxLayout(settings_widget)
-        form_layout = QFormLayout(); form_layout.setSpacing(10)
+        form_layout = QFormLayout(); form_layout.setSpacing(15)
+        
         self.winrar_path_edit = QLineEdit(WINRAR_PATH); self.winrar_path_edit.setFont(self.main_font)
         self.download_path_edit = QLineEdit(DEFAULT_DOWNLOAD_PATH); self.download_path_edit.setFont(self.main_font)
-        self.data_folder_label = QLabel(DATA_FOLDER); self.data_folder_label.setFont(self.main_font); self.data_folder_label.setStyleSheet("color: #cccccc;")
+        self.data_folder_label = QLabel(DATA_FOLDER); self.data_folder_label.setFont(self.main_font); self.data_folder_label.setStyleSheet("color: #cccccc;")  
         form_layout.addRow(QLabel("WinRAR Path:", font=self.main_font, styleSheet="color: #cccccc;"), self.winrar_path_edit)
         form_layout.addRow(QLabel("Default Download Path:", font=self.main_font, styleSheet="color: #cccccc;"), self.download_path_edit)
         form_layout.addRow(QLabel("Data Folder:", font=self.main_font, styleSheet="color: #cccccc;"), self.data_folder_label)
+
+        self.speed_toggle = PyToggle()
+        self.speed_toggle.setChecked(SHOW_SPEED_IN_MBPS)
+        self.lbl_speed_status = QLabel("MB/s" if not SHOW_SPEED_IN_MBPS else "Mbps", font=self.main_font, styleSheet="color: #999;")
+        self.speed_toggle.stateChanged.connect(lambda s: self.lbl_speed_status.setText("Mbps" if s else "MB/s"))
+        
+        speed_container = QWidget()
+        speed_layout = QHBoxLayout(speed_container); speed_layout.setContentsMargins(0,0,0,0)
+        speed_layout.addWidget(self.speed_toggle); speed_layout.addWidget(self.lbl_speed_status); speed_layout.addStretch()
+        form_layout.addRow(QLabel("Download Speed (MB/s vs Mbps):", font=self.main_font, styleSheet="color: #cccccc;"), speed_container)
+
+        self.size_toggle = PyToggle()
+        self.size_toggle.setChecked(SHOW_SIZE_IN_GB)
+        self.lbl_size_status = QLabel("GB" if SHOW_SIZE_IN_GB else "MB", font=self.main_font, styleSheet="color: #999;")
+        self.size_toggle.stateChanged.connect(lambda s: self.lbl_size_status.setText("GB" if s else "MB"))
+        
+        size_container = QWidget()
+        size_layout = QHBoxLayout(size_container); size_layout.setContentsMargins(0,0,0,0)
+        size_layout.addWidget(self.size_toggle); size_layout.addWidget(self.lbl_size_status); size_layout.addStretch()
+        form_layout.addRow(QLabel("Download Size (MB vs GB):", font=self.main_font, styleSheet="color: #cccccc;"), size_container)
+
         settings_layout.addLayout(form_layout)
         settings_layout.addStretch()
         save_button = QPushButton("Save Settings"); save_button.setFont(self.main_font); save_button.clicked.connect(self.save_settings)
@@ -146,17 +221,20 @@ class SettingsPage(QWidget):
         self.console_output.moveCursor(QTextCursor.MoveOperation.End); self.console_output.insertPlainText(text)
 
     def save_settings(self):
-        global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH
+        global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS
         new_winrar_path = self.winrar_path_edit.text()
         if os.path.exists(new_winrar_path):
             WINRAR_PATH = new_winrar_path
             print(f"WinRAR path set to: {WINRAR_PATH}")
-        else: print(f"ERROR: WinRAR path does not exist: {new_winrar_path}")
+        else: print(f"ERROR: WinRAR path does not exist: {new_winrar_path}")       
         new_download_path = self.download_path_edit.text()
         if os.path.isdir(new_download_path) or not new_download_path:
             DEFAULT_DOWNLOAD_PATH = new_download_path
             print(f"Default download path set to: '{DEFAULT_DOWNLOAD_PATH}'")
         else: print(f"ERROR: Default download path is not a valid directory: {new_download_path}")
+        SHOW_SPEED_IN_MBPS = self.speed_toggle.isChecked()
+        SHOW_SIZE_IN_GB = self.size_toggle.isChecked()
+        print(f"Display Settings Updated: Speed in {'Mbps' if SHOW_SPEED_IN_MBPS else 'MB/s'}, Size in {'GB' if SHOW_SIZE_IN_GB else 'MB'}")
         save_settings_to_file()
 
 # --- DATA AND ASSET MANAGEMENT ---
@@ -412,7 +490,15 @@ class DownloadManager(QObject):
                         if total_size > 0:
                             percentage = int(100 * bytes_downloaded / total_size); elapsed_time = time.time() - start_time
                             speed = bytes_downloaded / elapsed_time if elapsed_time > 0 else 0
-                            stats = f"{bytes_downloaded/1024/1024:.2f}MB / {total_size/1024/1024:.2f}MB | {speed/1024/1024:.2f} MB/s | {percentage}%"
+                            if SHOW_SIZE_IN_GB:
+                                dl_disp = bytes_downloaded / (1024 * 1024 * 1024);tot_disp = total_size / (1024 * 1024 * 1024);size_unit = "GB"
+                            else:
+                                dl_disp = bytes_downloaded / (1024 * 1024);tot_disp = total_size / (1024 * 1024);size_unit = "MB"
+                            if SHOW_SPEED_IN_MBPS:
+                                speed_disp = (speed * 8) / (1024 * 1024);speed_unit = "Mbps"
+                            else:
+                                speed_disp = speed / (1024 * 1024);speed_unit = "MB/s"
+                            stats = f"{dl_disp:.2f}{size_unit} / {tot_disp:.2f}{size_unit} | {speed_disp:.2f} {speed_unit} | {percentage}%"
                             self.progress.emit(percentage, stats)
                 return local_filepath
         except requests.exceptions.RequestException as e:
@@ -740,12 +826,12 @@ class GameDetailsWidget(QWidget):
 
         if self.installer_thread and self.installer_thread.isRunning():
             self.installer_thread.quit()
-            self.installer_thread.wait() # Wait for thread to finish before references are cleared by connected signal
+            self.installer_thread.wait() 
         
         self.download_button.setText("UP-TO-DATE")
         self.download_button.setEnabled(False)
         self.downloaded_file_paths = {}
-        # Note: installer references are cleared by cleanup_installer_references via signal
+        
         if not success: self.set_game_data(self.current_game_data)
 
     def update_progress(self, value, stats_text):
@@ -755,7 +841,7 @@ class GameDetailsWidget(QWidget):
 class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.3")
+        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.4")
 
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
@@ -962,4 +1048,3 @@ if __name__ == '__main__':
     main_window = GameLauncher()
     main_window.show()
     sys.exit(app.exec())
-    
