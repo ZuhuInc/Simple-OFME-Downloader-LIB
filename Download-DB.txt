@@ -386,7 +386,7 @@ Origin: https://online-fix.me/games/shooter/17951-what-the-fog-po-seti.html
 MainGame: https://gofile.io/d/daFLpC
 Fix: https://gofile.io/d/USFWW2
 
-GoFile (Storebound) [ 0.7.3]
+GoFile (Storebound) [0.7.3]
 ApproxSize: 8GB 
 Description: A 1-3 co-op horror game. Play as ordinary shoppers trapped in an accursed megastore. Find the exit together at all costs before the employees catch you.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Storebound.jpg
@@ -401,12 +401,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/s-t-a-l-k-e-r-2-heart-of-chornobyl-free-download/
 MainGame: https://gofile.io/d/LGyqjs
 
-GoFile (Dispatch) [1.0.16338]
+GoFile (Dispatch) [1.0.16409]
 ApproxSize: 19GB
 Description: Dispatch is a superhero workplace comedy where choices matter. Manage a dysfunctional team of misfit heroes and strategize who to send to emergencies around the city, all while balancing office politics, personal relationships, and your own quest to become a hero. All episodes out now!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Dispatch.jpg
 Origin: https://steamrip.com/dispatch-free-download/
-MainGame: https://gofile.io/d/M5pKvQ
+MainGame: https://gofile.io/d/jiRk2z
 
 GoFile (Cyberpunk 2077) [2.31]
 ApproxSize: 100GB
