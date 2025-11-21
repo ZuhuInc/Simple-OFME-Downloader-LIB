@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.4-Beta.4
+Zuhu's OFME GUI Downloader V1.5.4-Beta.5
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -23,11 +23,13 @@ from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSl
 # --- CONFIGURATION ---
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
-ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-DWND-ICO.ico"
-ICON_PATH = os.path.join(DATA_FOLDER, 'cache', 'OFME-DWND-ICO.ico')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
 SETTINGS_FILE = os.path.join(DATA_FOLDER, 'Settings.json')
+ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-DWND-ICO.ico"
+SETTINGS_ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-STNG-ICO.ico"
+RELOAD_ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-RLD-ICO.ico"
 FONT_URL = "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/raw/main/Assets/pixelmix.ttf"
+ICON_PATH = os.path.join(DATA_FOLDER, 'cache', 'OFME-DWND-ICO.ico')
 RAR_PASSWORD = "online-fix.me"
 WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
 DEFAULT_DOWNLOAD_PATH = ""
@@ -243,6 +245,13 @@ class DataManager:
         self.games_db = self._parse_github_db()
         self.local_data = self._load_local_data()
         self.games = self._determine_game_statuses()
+    
+    def refresh_database(self):
+        """Forces a re-download of the database and updates local statuses."""
+        print("Force reloading database from server...")
+        self.games_db = self._parse_github_db()
+        self.games = self._determine_game_statuses()
+
     def _parse_github_db(self):
         print("Fetching game database from GitHub...");
         try:
@@ -732,10 +741,6 @@ class GameDetailsWidget(QWidget):
         self.worker_thread.start()
 
     def cleanup_worker_references(self):
-        """
-        Only clears the python references when the thread has officially emitted 'finished'.
-        This prevents 'QThread: Destroyed while thread is still running' errors.
-        """
         self.worker_thread = None
         self.worker = None
         print("Worker thread cleaned up successfully.")
@@ -761,7 +766,7 @@ class GameDetailsWidget(QWidget):
             
             self.installer_thread.finished.connect(self.installer.deleteLater)
             self.installer_thread.finished.connect(self.installer_thread.deleteLater)
-            self.installer_thread.finished.connect(self.cleanup_installer_references) # Add safety for installer too
+            self.installer_thread.finished.connect(self.cleanup_installer_references)
 
             self.download_button.setText("EXTRACTING..."); self.download_button.setEnabled(False)
             self.download_progress.setValue(0); self.stats_label.setText("")
@@ -841,7 +846,7 @@ class GameDetailsWidget(QWidget):
 class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.4")
+        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.5")
 
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
@@ -893,7 +898,7 @@ class GameLauncher(QWidget):
         self.loading_label.setText("Downloading assets, please wait...")
         QApplication.processEvents()
 
-        all_urls = [FONT_URL]
+        all_urls = [FONT_URL, SETTINGS_ICON_URL, RELOAD_ICON_URL]
         for game in self.data_manager.games:
             if thumbnail_url := game.get('Thumbnail'):
                 all_urls.append(thumbnail_url)
@@ -965,6 +970,13 @@ class GameLauncher(QWidget):
     def show_settings_page(self): self.stack.setCurrentWidget(self.settings_page)
     def show_game_grid(self): self.stack.setCurrentIndex(0)
 
+    def perform_full_reload(self):
+        """Refetches the database from the web and rebuilds the library."""
+        print("Reload triggered: Fetching latest database and images...")
+        self.data_manager.refresh_database()
+        self.refresh_game_statuses()
+        print("Library reload complete.")
+
     def refresh_game_statuses(self):
         """Completely rebuilds the game library view to reflect the latest data."""
         while self.games_layout.count():
@@ -982,7 +994,7 @@ class GameLauncher(QWidget):
             self.game_widgets.append(widget)
 
         self._reflow_games()
-        print("Game library has been completely refreshed.")
+        print("Game library grid refreshed.")
 
     def _reflow_games(self):
         if not hasattr(self, 'games_layout'): return
@@ -1009,18 +1021,51 @@ class GameLauncher(QWidget):
             button = StatusButton(info['text'], info['color'], status_id, self.pixel_font)
             button.clicked.connect(self._on_filter_changed); legend_layout.addWidget(button); self.status_buttons[status_id] = button
         legend_layout.addStretch()
-        settings_button = QPushButton("\u2699")
-        font = QFont(self.pixel_font); font.setPointSize(14)
-        settings_button.setFont(font)
+
+        # --- RELOAD BUTTON ---
+        reload_button = QPushButton()
+        reload_button.setFixedSize(38, 38)
+        reload_button.setStyleSheet("""
+            QPushButton {
+                border: 1px solid #5A5A5A; background-color: #404040;
+                border-radius: 17px; padding: 0px;
+            }
+            QPushButton:hover { background-color: #505050; }
+        """)
+        
+        reload_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        reload_icon_path = self.asset_manager.get_asset(RELOAD_ICON_URL)
+        if reload_icon_path and os.path.exists(reload_icon_path):
+            reload_button.setIcon(QIcon(reload_icon_path))
+            reload_button.setIconSize(QSize(32, 32))
+        else:
+            reload_button.setText("\u21BB")
+            font = QFont(self.pixel_font); font.setPointSize(14)
+            reload_button.setFont(font)
+        
+        reload_button.setToolTip("Reload Library & Images")
+        reload_button.clicked.connect(self.perform_full_reload)
+        legend_layout.addWidget(reload_button)
+        legend_layout.addSpacing(10)
+        settings_button = QPushButton()
         settings_button.setFixedSize(38, 38)
         settings_button.setStyleSheet("""
             QPushButton {
                 border: 1px solid #5A5A5A; background-color: #404040;
-                border-radius: 19px; padding: 0px;
+                border-radius: 17px; padding: 0px;
             }
             QPushButton:hover { background-color: #505050; }
         """)
+        
         settings_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        settings_icon_path = self.asset_manager.get_asset(SETTINGS_ICON_URL)
+        if settings_icon_path and os.path.exists(settings_icon_path):
+            settings_button.setIcon(QIcon(settings_icon_path))
+            settings_button.setIconSize(QSize(32, 32))
+        else:
+            settings_button.setText("\u2699")
+            font = QFont(self.pixel_font); font.setPointSize(14)
+            settings_button.setFont(font)
         settings_button.clicked.connect(self.show_settings_page)
         legend_layout.addWidget(settings_button)
         return legend_layout
