@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.4-Beta.5
+Zuhu's OFME GUI Downloader V1.5.4-Beta.6
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -846,7 +846,7 @@ class GameDetailsWidget(QWidget):
 class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.5")
+        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.6")
 
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
@@ -917,6 +917,7 @@ class GameLauncher(QWidget):
     def finish_ui_setup(self):
         self.pixel_font = QFont("Arial", 12); self.game_widgets = []
         self.status_buttons = {}; self.current_filter = None
+        self.search_text = "" 
         self.initUI()
         self.loading_widget.hide()
         self.main_layout.removeWidget(self.loading_widget)
@@ -1004,7 +1005,14 @@ class GameLauncher(QWidget):
 
         card_width = 200 + self.games_layout.spacing()
         num_cols = max(1, self.games_container.width() // card_width)
-        widgets_to_show = [w for w in self.game_widgets if self.current_filter is None or w.status == self.current_filter]
+        
+        widgets_to_show = []
+        for w in self.game_widgets:
+            status_match = (self.current_filter is None or w.status == self.current_filter)
+            name_match = (self.search_text.lower() in w.game_data.get('name', '').lower())
+            if status_match and name_match:
+                widgets_to_show.append(w)
+
         for i, widget in enumerate(widgets_to_show):
             row, col = divmod(i, num_cols)
             self.games_layout.addWidget(widget, row, col)
@@ -1021,6 +1029,24 @@ class GameLauncher(QWidget):
             button = StatusButton(info['text'], info['color'], status_id, self.pixel_font)
             button.clicked.connect(self._on_filter_changed); legend_layout.addWidget(button); self.status_buttons[status_id] = button
         legend_layout.addStretch()
+
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("Search Game...")
+        self.search_bar.setFixedSize(250, 37)
+        self.search_bar.setFont(self.pixel_font)
+        self.search_bar.setClearButtonEnabled(True)
+        self.search_bar.setStyleSheet("""
+            QLineEdit {
+                border: 1px solid #5A5A5A; background-color: #404040;
+                border-radius: 17px;
+                padding-left: 15px; padding-right: 15px;
+                color: #cccccc;
+            }
+        """)
+        
+        self.search_bar.textChanged.connect(self._on_search_text_changed)
+        legend_layout.addWidget(self.search_bar)
+        legend_layout.addSpacing(10)
 
         # --- RELOAD BUTTON ---
         reload_button = QPushButton()
@@ -1069,6 +1095,10 @@ class GameLauncher(QWidget):
         settings_button.clicked.connect(self.show_settings_page)
         legend_layout.addWidget(settings_button)
         return legend_layout
+
+    def _on_search_text_changed(self, text):
+        self.search_text = text
+        self._reflow_games()
 
     def _on_filter_changed(self, status_id):
         if self.current_filter == status_id: self.current_filter = None
