@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.4-Beta.6
+Zuhu's OFME GUI Downloader V1.5.4-Beta.7
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -12,15 +12,18 @@ import time
 import subprocess
 import hashlib
 import ctypes
+import webbrowser
+from plyer import notification
 from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QHBoxLayout, QScrollArea, QGridLayout, QSizePolicy,
                              QGraphicsOpacityEffect, QStackedWidget, QPushButton,
                              QProgressBar, QLineEdit, QFormLayout, QTabWidget,
-                             QPlainTextEdit, QFileDialog, QCheckBox)
+                             QPlainTextEdit, QFileDialog, QCheckBox, QMessageBox)
 from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPainter, QColor, QBrush, QPen
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty
 
 # --- CONFIGURATION ---
+CURRENT_VERSION = "V1.5.4-Beta.7"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
@@ -35,6 +38,7 @@ WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
 DEFAULT_DOWNLOAD_PATH = ""
 SHOW_SIZE_IN_GB = True
 SHOW_SPEED_IN_MBPS = True
+ENABLE_NOTIFICATIONS = True
 
 # --- STYLING ---
 STYLESHEET = """
@@ -62,12 +66,15 @@ STYLESHEET = """
     QTabBar::tab:selected { background-color: #2c2c2c; }
     QTabBar::tab:!selected { background-color: #404040; }
     QPlainTextEdit { color: #cccccc; background-color: #333333; border: 1px solid #5A5A5A; }
+    QMessageBox { background-color: #2c2c2c; color: #cccccc; }
+    QMessageBox QLabel { color: #cccccc; }
+    QMessageBox QPushButton { background-color: #404040; color: #cccccc; border: 1px solid #5A5A5A; padding: 5px; min-width: 60px; }
 """
 
 # --- FUNCTIONS TO LOAD AND SAVE SETTINGS ---
 def load_settings():
     """Loads settings from settings.json if it exists."""
-    global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS
+    global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, 'r') as f:
@@ -76,6 +83,7 @@ def load_settings():
                 DEFAULT_DOWNLOAD_PATH = settings.get('default_download_path', DEFAULT_DOWNLOAD_PATH)
                 SHOW_SIZE_IN_GB = settings.get('show_size_in_gb', True)
                 SHOW_SPEED_IN_MBPS = settings.get('show_speed_in_mbps', False)
+                ENABLE_NOTIFICATIONS = settings.get('enable_notifications', True)
                 print("Settings loaded from file.")
         except (json.JSONDecodeError, IOError) as e:
             print(f"ERROR: Could not load settings file: {e}. Using defaults.")
@@ -89,7 +97,8 @@ def save_settings_to_file():
         'winrar_path': WINRAR_PATH,
         'default_download_path': DEFAULT_DOWNLOAD_PATH,
         'show_size_in_gb': SHOW_SIZE_IN_GB,
-        'show_speed_in_mbps': SHOW_SPEED_IN_MBPS
+        'show_speed_in_mbps': SHOW_SPEED_IN_MBPS,
+        'enable_notifications': ENABLE_NOTIFICATIONS
     }
     try:
         with open(SETTINGS_FILE, 'w') as f:
@@ -112,6 +121,50 @@ class ConsoleStream(QObject):
     _text_written = pyqtSignal(str)
     def write(self, text): self._text_written.emit(str(text))
     def flush(self): pass
+
+# --- UPDATE CHECKER ---
+class UpdateChecker(QThread):
+    update_available = pyqtSignal(str, str)
+    error_occurred = pyqtSignal(str)
+
+    def run(self):
+        url = f"https://api.github.com/repos/ZuhuInc/Simple-OFME-Downloader-LIB/releases/latest"
+        try:
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                latest_version = data.get('tag_name', '')
+                html_url = data.get('html_url', '')
+                if latest_version and self._is_version_higher(latest_version, CURRENT_VERSION):
+                    self.update_available.emit(latest_version, html_url)
+                else:
+                    print(f"App is up to date (Current: {CURRENT_VERSION}, Remote: {latest_version}).")
+            else:
+                print(f"Update check failed. Status: {response.status_code}")
+        except Exception as e:
+            print(f"Update check error: {e}")
+
+    def _parse_version(self, v_str):
+        clean_v = v_str.lstrip('vV')
+        if '-' in clean_v:
+            main_part, pre_part = clean_v.split('-', 1)
+        else:
+            main_part, pre_part = clean_v, None
+        try:
+            main_nums = [int(x) for x in main_part.split('.')]
+        except ValueError:
+            main_nums = [0, 0, 0]
+        return main_nums, pre_part
+
+    def _is_version_higher(self, remote_ver, local_ver):
+        r_main, r_pre = self._parse_version(remote_ver)
+        l_main, l_pre = self._parse_version(local_ver)
+        if r_main > l_main: return True
+        if r_main < l_main: return False
+        if r_pre is None and l_pre is not None: return True 
+        if r_pre is not None and l_pre is None: return False 
+        if r_pre is None and l_pre is None: return False     
+        return r_pre > l_pre
 
 # --- CUSTOM TOGGLE SWITCH ---
 class PyToggle(QCheckBox):
@@ -170,8 +223,8 @@ class SettingsPage(QWidget):
         layout = QVBoxLayout(self); layout.setContentsMargins(20, 20, 20, 20); layout.setSpacing(15)
 
         header_layout = QHBoxLayout()
-        back_button = QPushButton("« Back to Library"); back_button.setFont(self.main_font)
-        back_button.setStyleSheet("padding: 2px 8px;"); back_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        back_button = QPushButton("<< Back to Library"); back_button.setFont(self.main_font)
+        back_button.setStyleSheet("padding: 5px 8px;"); back_button.setCursor(Qt.CursorShape.PointingHandCursor)
         back_button.clicked.connect(self.back_requested.emit)
         header_layout.addWidget(back_button, 0, Qt.AlignmentFlag.AlignLeft); header_layout.addStretch()
         layout.addLayout(header_layout)
@@ -213,6 +266,16 @@ class SettingsPage(QWidget):
         size_layout.addWidget(self.size_toggle); size_layout.addWidget(self.lbl_size_status); size_layout.addStretch()
         form_layout.addRow(QLabel("Download Size (MB vs GB):", font=self.main_font, styleSheet="color: #cccccc;"), size_container)
 
+        self.notif_toggle = PyToggle()
+        self.notif_toggle.setChecked(ENABLE_NOTIFICATIONS)
+        self.lbl_notif_status = QLabel("ON" if ENABLE_NOTIFICATIONS else "OFF", font=self.main_font, styleSheet="color: #999;")
+        self.notif_toggle.stateChanged.connect(lambda s: self.lbl_notif_status.setText("ON" if s else "OFF"))
+
+        notif_container = QWidget()
+        notif_layout = QHBoxLayout(notif_container); notif_layout.setContentsMargins(0,0,0,0)
+        notif_layout.addWidget(self.notif_toggle); notif_layout.addWidget(self.lbl_notif_status); notif_layout.addStretch()
+        form_layout.addRow(QLabel("Desktop Notifications:", font=self.main_font, styleSheet="color: #cccccc;"), notif_container)
+
         settings_layout.addLayout(form_layout)
         settings_layout.addStretch()
         save_button = QPushButton("Save Settings"); save_button.setFont(self.main_font); save_button.clicked.connect(self.save_settings)
@@ -223,7 +286,7 @@ class SettingsPage(QWidget):
         self.console_output.moveCursor(QTextCursor.MoveOperation.End); self.console_output.insertPlainText(text)
 
     def save_settings(self):
-        global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS
+        global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
         new_winrar_path = self.winrar_path_edit.text()
         if os.path.exists(new_winrar_path):
             WINRAR_PATH = new_winrar_path
@@ -236,7 +299,8 @@ class SettingsPage(QWidget):
         else: print(f"ERROR: Default download path is not a valid directory: {new_download_path}")
         SHOW_SPEED_IN_MBPS = self.speed_toggle.isChecked()
         SHOW_SIZE_IN_GB = self.size_toggle.isChecked()
-        print(f"Display Settings Updated: Speed in {'Mbps' if SHOW_SPEED_IN_MBPS else 'MB/s'}, Size in {'GB' if SHOW_SIZE_IN_GB else 'MB'}")
+        ENABLE_NOTIFICATIONS = self.notif_toggle.isChecked()
+        print(f"Settings Updated. Notifications: {'ON' if ENABLE_NOTIFICATIONS else 'OFF'}")
         save_settings_to_file()
 
 # --- DATA AND ASSET MANAGEMENT ---
@@ -626,8 +690,8 @@ class GameDetailsWidget(QWidget):
         top_panel_layout.addWidget(self.thumbnail_label)
         right_panel = QWidget(); right_layout = QVBoxLayout(right_panel)
         top_panel_layout.addWidget(right_panel, 1)
-        back_button = QPushButton("« Back to Library"); back_button.setFont(self.pixel_font)
-        back_button.setStyleSheet("padding: 2px 8px;"); back_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        back_button = QPushButton("<< Back to Library"); back_button.setFont(self.pixel_font)
+        back_button.setStyleSheet("padding: 5px 8px;"); back_button.setCursor(Qt.CursorShape.PointingHandCursor)
         back_button.clicked.connect(self.back_requested.emit)
         info_panel = QWidget(); info_layout = QVBoxLayout(info_panel)
         self.game_name_label = self._create_info_label(); self.sources_label = self._create_info_label()
@@ -654,7 +718,7 @@ class GameDetailsWidget(QWidget):
         self.stats_label = self._create_info_label(""); self.stats_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.download_progress = QProgressBar(); self.download_progress.setTextVisible(False)
         self.download_button = QPushButton("DOWNLOAD"); self.download_button.setFont(self.pixel_font)
-        self.download_button.setFixedWidth(150); self.download_button.clicked.connect(self.start_or_cancel_download)
+        self.download_button.setFixedWidth(154); self.download_button.clicked.connect(self.start_or_cancel_download)
         bar_and_button_layout = QHBoxLayout(); bar_and_button_layout.addWidget(self.download_progress, 1); bar_and_button_layout.addWidget(self.download_button)
         status_line_layout = QHBoxLayout(); status_line_layout.addWidget(self.status_label)
         status_line_layout.addStretch(); status_line_layout.addWidget(self.stats_label)
@@ -768,7 +832,7 @@ class GameDetailsWidget(QWidget):
             self.installer_thread.finished.connect(self.installer_thread.deleteLater)
             self.installer_thread.finished.connect(self.cleanup_installer_references)
 
-            self.download_button.setText("EXTRACTING..."); self.download_button.setEnabled(False)
+            self.download_button.setText("EXTRACTING.."); self.download_button.setEnabled(False)
             self.download_progress.setValue(0); self.stats_label.setText("")
             self.installer_thread.start()
         else:
@@ -793,6 +857,18 @@ class GameDetailsWidget(QWidget):
                 self.location_bar.setVisible(False)
                 self.fix_label.setText(f"Apply fix to: {self.final_game_path}?")
                 self.download_button.setText("..."); self.download_button.setEnabled(False)
+                if ENABLE_NOTIFICATIONS:
+                    try:
+                        game_name = self.current_game_data.get('name', 'Game')
+                        notification.notify(
+                            title=f"{game_name} Game Downloaded", 
+                            message=f"{game_name} can have a fix applied. \nPlease Select Yes/No.", 
+                            app_name="Zuhu's OFME GUI Downloader",
+                            app_icon=ICON_PATH,
+                            timeout=10
+                        )
+                    except Exception as e:
+                        print(f"Notification error: {e}")
             else:
                 if self.installer: self.installer.cleanup_files()
         else:
@@ -821,6 +897,20 @@ class GameDetailsWidget(QWidget):
 
     def on_cleanup_complete(self, success, message):
         self.status_label.setText(message)
+        if success:
+            if ENABLE_NOTIFICATIONS:
+                try:
+                    game_name = self.current_game_data.get('name', 'Game')
+                    notification.notify(
+                        title="Download Completed",
+                        message=f"{game_name} has been done downloading.",
+                        app_name="Zuhu's OFME GUI Downloader",
+                        app_icon=ICON_PATH,
+                        timeout=10
+                )
+                except Exception as e:
+                    print(f"Notification failed: {e}")
+
         if self.path_manually_changed:
             self.data_manager.save_downloaded_game(
                 self.current_game_data['name'], 
@@ -846,7 +936,7 @@ class GameDetailsWidget(QWidget):
 class GameLauncher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuhu's OFME Download GUI V1.5.4-Beta.6")
+        self.setWindowTitle(f"Zuhu's OFME Download GUI {CURRENT_VERSION}")
 
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
@@ -924,6 +1014,26 @@ class GameLauncher(QWidget):
         self.loading_widget.deleteLater()
         self.main_layout.addWidget(self.stack)
         QTimer.singleShot(0, self._reflow_games)
+        self.check_for_updates()
+
+    def check_for_updates(self):
+        self.update_checker = UpdateChecker()
+        self.update_checker.update_available.connect(self.show_update_dialog)
+        self.update_checker.start()
+
+    def show_update_dialog(self, new_version, html_url):
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Update Available")
+        msg.setText(f"A new version ({new_version}) is available!")
+        msg.setInformativeText("Would you like to visit the download page?")
+        msg.setIcon(QMessageBox.Icon.Information)
+
+        view_btn = msg.addButton("View Update", QMessageBox.ButtonRole.AcceptRole)
+        cancel_btn = msg.addButton("Later", QMessageBox.ButtonRole.RejectRole)
+        
+        msg.exec()
+        if msg.clickedButton() == view_btn:
+            webbrowser.open(html_url)
 
     def initUI(self):
         self._load_font()
@@ -972,7 +1082,7 @@ class GameLauncher(QWidget):
     def show_game_grid(self): self.stack.setCurrentIndex(0)
 
     def perform_full_reload(self):
-        """Refetches the database from the web and rebuilds the library."""
+        print("-" * 60)
         print("Reload triggered: Fetching latest database and images...")
         self.data_manager.refresh_database()
         self.refresh_game_statuses()
