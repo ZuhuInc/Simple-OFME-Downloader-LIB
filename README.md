@@ -41,7 +41,7 @@ A command-line utility designed to automate the process of downloading and extra
 
 2.  **Install dependencies:**
     ```bash
-    pip install requests PyQt6
+    pip install requests PyQt6 plyer
     ```
 
 3.  **Configure the Script (if needed):**
@@ -116,7 +116,7 @@ The script will guide you through a few simple steps.
 ### Libraries Used
 
 *   **External:** [requests](https://pypi.org/project/requests/), [PyQt6](https://pypi.org/project/PyQt6/) [Selenium](https://pypi.org/project/selenium/) [Seleniumbase](https://pypi.org/project/seleniumbase/) [plyer](https://pypi.org/project/plyer/)
-*   **Standard:** `os`, `sys`, `subprocess`, `json`, `re`, `hashlib`, `time`, `getpass`
+*   **Standard:** `os`, `sys`, `subprocess`, `json`, `re`, `hashlib`, `time`, `getpass`, `ctypes`, `webbrowser`
 
 ---
 
