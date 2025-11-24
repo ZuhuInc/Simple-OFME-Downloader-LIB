@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.4-Beta.7
+Zuhu's OFME GUI Downloader V1.5.4-Beta.8
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -23,7 +23,7 @@ from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPain
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.4-Beta.7"
+CURRENT_VERSION = "V1.5.4-Beta.8"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
@@ -73,7 +73,6 @@ STYLESHEET = """
 
 # --- FUNCTIONS TO LOAD AND SAVE SETTINGS ---
 def load_settings():
-    """Loads settings from settings.json if it exists."""
     global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -91,7 +90,6 @@ def load_settings():
         print("No settings file found. Using defaults.")
 
 def save_settings_to_file():
-    """Saves the current settings to settings.json."""
     os.makedirs(DATA_FOLDER, exist_ok=True)
     settings = {
         'winrar_path': WINRAR_PATH,
@@ -311,7 +309,6 @@ class DataManager:
         self.games = self._determine_game_statuses()
     
     def refresh_database(self):
-        """Forces a re-download of the database and updates local statuses."""
         print("Force reloading database from server...")
         self.games_db = self._parse_github_db()
         self.games = self._determine_game_statuses()
@@ -584,6 +581,7 @@ class InstallManager(QObject):
     fix_extraction_finished = pyqtSignal(bool, str)
     cleanup_finished = pyqtSignal(bool, str)
     status_update = pyqtSignal(str)
+    progress = pyqtSignal(int, str)
 
     def __init__(self, main_paths, fix_path, install_path, is_new_install):
         super().__init__()
@@ -620,8 +618,6 @@ class InstallManager(QObject):
                     if os.path.isdir(full_new_path):
                         final_install_path = full_new_path
                         print(f"Detected new game folder: {final_install_path}")
-                else:
-                    print(f"Multiple or no new items ({len(new_items)}). Using base install path.")
             
             self.main_extraction_finished.emit(True, "Main game extracted.", final_install_path)
         else:
@@ -658,15 +654,57 @@ class InstallManager(QObject):
 
     def _winrar_extraction(self, rar_path, dest_folder):
         self.status_update.emit(f"Extracting {os.path.basename(rar_path)}...")
-        if not os.path.exists(WINRAR_PATH):
-            self.status_update.emit("WinRAR not found!"); return False
-        command = [WINRAR_PATH, "x", f"-p{RAR_PASSWORD}", "-ibck", "-o+", os.path.abspath(rar_path), os.path.abspath(dest_folder) + os.sep]
+        exe_to_use = WINRAR_PATH
+        if "WinRAR.exe" in WINRAR_PATH:
+            rar_candidate = WINRAR_PATH.replace("WinRAR.exe", "Rar.exe")
+            if os.path.exists(rar_candidate):
+                exe_to_use = rar_candidate
+                print(f"Using Console Extractor: {exe_to_use}")
+            else:
+                print("Rar.exe not found. Trying WinRAR.exe.")
+
+        if not os.path.exists(exe_to_use):
+            self.status_update.emit("WinRAR/Rar not found!")
+            return False
+
+        command = [exe_to_use, "x", f"-p{RAR_PASSWORD}", "-o+", "-idcd", os.path.abspath(rar_path), os.path.abspath(dest_folder) + os.sep]
         try:
-            si = subprocess.STARTUPINFO(); si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            subprocess.run(command, check=True, capture_output=True, text=True, startupinfo=si)
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"WinRAR Error: {e.stderr}"); self.status_update.emit("WinRAR Error! Check console."); return False
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            process = subprocess.Popen(
+                command, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.STDOUT, 
+                text=True, 
+                startupinfo=si,
+                bufsize=0
+            )
+            num_buffer = ""
+            while True:
+                char = process.stdout.read(1)
+                if not char and process.poll() is not None:
+                    break
+                
+                if char:
+                    if char.isdigit():
+                        num_buffer += char
+                    elif char == '%':
+                        if num_buffer:
+                            try:
+                                percent = int(num_buffer)
+                                self.progress.emit(percent, f"{percent}%")
+                            except ValueError:
+                                pass
+                        num_buffer = ""
+                    elif char in ["\b", "\r", " "]:
+                        num_buffer = ""
+
+            return_code = process.wait()
+            return return_code == 0 or return_code == 1
+        except Exception as e:
+            print(f"Extraction Error: {e}")
+            self.status_update.emit("Extraction Error! Check console.")
+            return False
 
 # --- GAME DETAILS WIDGET ---
 class GameDetailsWidget(QWidget):
@@ -826,6 +864,7 @@ class GameDetailsWidget(QWidget):
             self.installer.fix_extraction_finished.connect(self.on_fix_extraction_complete)
             self.installer.cleanup_finished.connect(self.on_cleanup_complete)
             self.installer.status_update.connect(self.status_label.setText)
+            self.installer.progress.connect(self.update_progress)
             self.installer_thread.started.connect(self.installer.start_main_extraction)
             
             self.installer_thread.finished.connect(self.installer.deleteLater)
@@ -833,7 +872,8 @@ class GameDetailsWidget(QWidget):
             self.installer_thread.finished.connect(self.cleanup_installer_references)
 
             self.download_button.setText("EXTRACTING.."); self.download_button.setEnabled(False)
-            self.download_progress.setValue(0); self.stats_label.setText("")
+            self.download_progress.setValue(0)
+            self.stats_label.setText("0%") 
             self.installer_thread.start()
         else:
             self.set_game_data(self.current_game_data)
@@ -845,6 +885,8 @@ class GameDetailsWidget(QWidget):
     def on_main_extraction_complete(self, success, message, detected_path):
         self.status_label.setText(message)
         if success:
+            self.download_progress.setValue(100)
+            self.stats_label.setText("100%")
             self.final_game_path = detected_path
             self.data_manager.save_downloaded_game(
                 self.current_game_data['name'], 
@@ -893,11 +935,18 @@ class GameDetailsWidget(QWidget):
 
     def on_fix_extraction_complete(self, success, message):
         self.status_label.setText(message)
+        if success:
+            self.download_progress.setValue(100)
+            self.stats_label.setText("100%")
+            
         if self.installer: self.installer.cleanup_files()
 
     def on_cleanup_complete(self, success, message):
         self.status_label.setText(message)
         if success:
+            self.download_progress.setValue(100)
+            self.stats_label.setText("")
+            
             if ENABLE_NOTIFICATIONS:
                 try:
                     game_name = self.current_game_data.get('name', 'Game')
@@ -1233,3 +1282,4 @@ if __name__ == '__main__':
     main_window = GameLauncher()
     main_window.show()
     sys.exit(app.exec())
+    
