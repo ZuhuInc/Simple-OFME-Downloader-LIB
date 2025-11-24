@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.4-Beta.8
+Zuhu's OFME GUI Downloader V1.5.4
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -23,7 +23,7 @@ from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPain
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.4-Beta.8"
+CURRENT_VERSION = "V1.5.4"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
