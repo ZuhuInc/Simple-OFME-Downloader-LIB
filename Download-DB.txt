@@ -529,3 +529,12 @@ Description: All-in-one gaming utility for frame generation and scaling
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LossLessScaling.jpg
 Origin: https://steamrip.com/lossless-scaling-free-download/
 MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
+
+GoFile (Storebound) [0.7.3]
+ApproxSize: 2GB
+Description: SCP 3008
+Thumbnail: 
+Origin: https://online-fix.me/games/horror/17950-storebound-po-seti.html
+MainGame: https://gofile.io/d/5ZCmyB
+Fix: https://gofile.io/d/ufDgIp
+
