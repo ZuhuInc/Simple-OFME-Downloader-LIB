@@ -537,6 +537,13 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/cities-skylines-free-download-2j/
 MainGame: https://buzzheavier.com/1wqu84mndh5c
 
+GoFile (Game of Life 2) [Version]
+ApproxSize: 1GB
+Description: The official sequel to the hit board game played by 50 million fans! The Game of Life 2 adds vibrant 3D animation and brand-new choices in every turn. Customise your peg, spin the spinner and build your best life!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/GameofLife2.jpg
+Origin: https://steamrip.com/the-game-of-life-2-free-download-n2/
+MainGame: https://gofile.io/d/t2AbX5
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
