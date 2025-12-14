@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.5
+Zuhu's OFME GUI Downloader V1.5.6
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -14,32 +14,50 @@ import hashlib
 import ctypes
 import webbrowser
 import traceback
+from datetime import datetime
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.common.exceptions import TimeoutException
+from seleniumbase import Driver
 from plyer import notification
 from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QHBoxLayout, QScrollArea, QGridLayout, QSizePolicy,
                              QGraphicsOpacityEffect, QStackedWidget, QPushButton,
                              QProgressBar, QLineEdit, QFormLayout, QTabWidget,
-                             QPlainTextEdit, QFileDialog, QCheckBox, QMessageBox, QFrame)
-from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPainter, QColor, QBrush, QPen
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty
+                             QPlainTextEdit, QFileDialog, QCheckBox, QMessageBox, 
+                             QFrame, QTableWidget, QTableWidgetItem, QHeaderView)
+from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPainter, QColor, QBrush, QPen, QDesktopServices
+from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty, QUrl
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.5"
+CURRENT_VERSION = "V1.5.6"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
 SETTINGS_FILE = os.path.join(DATA_FOLDER, 'Settings.json')
+
 ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-DWND-ICO.ico"
 SETTINGS_ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-STNG-ICO.ico"
 RELOAD_ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-RLD-ICO.ico"
+DISCORD_ICON_URL = "https://i.imgur.com/01wdU6Q.png"
 FONT_URL = "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/raw/main/Assets/pixelmix.ttf"
 ICON_PATH = os.path.join(DATA_FOLDER, 'cache', 'OFME-DWND-ICO.ico')
 RAR_PASSWORD = "online-fix.me"
 WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
+BRAVE_PATH = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
 DEFAULT_DOWNLOAD_PATH = ""
 SHOW_SIZE_IN_GB = True
 SHOW_SPEED_IN_MBPS = True
 ENABLE_NOTIFICATIONS = True
+ENABLE_WEBHOOK = False
+WEBHOOK_URL = ""
+OFME_USERNAME = ""
+OFME_PASSWORD = ""
 
 # --- STYLING ---
 STYLESHEET = """
@@ -47,8 +65,8 @@ STYLESHEET = """
     QScrollArea { border: none; background-color: #1e1e1e; }
     
     QProgressBar {
-        border: 1px solid #444; border-radius: 4px; text-align: center;
-        background-color: #2d2d2d; height: 14px; color: white; font-size: 10px;
+        border: 1px solid #444; border-radius: 8px; text-align: center;
+        background-color: #2d2d2d; height: 26px; color: white; font-size: 10px;
     }
     QProgressBar::chunk { background-color: #00ff7f; border-radius: 3px; }
     
@@ -91,11 +109,17 @@ STYLESHEET = """
     QPlainTextEdit { color: #00ff7f; background-color: #151515; border: 1px solid #444; border-radius: 4px; }
     QMessageBox { background-color: #1e1e1e; color: #e0e0e0; }
     QMessageBox QLabel { color: #e0e0e0; }
+
+    QTableWidget { gridline-color: #444; background-color: #1e1e1e; border: 1px solid #444; }
+    QHeaderView::section { background-color: #2d2d2d; padding: 4px; border: 1px solid #444; color: #00ff7f; }
+    QTableWidget::item { padding: 5px; }
 """
 
 # --- SETTINGS LOGIC ---
 def load_settings():
     global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
+    global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD
+    
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, 'r') as f:
@@ -105,7 +129,25 @@ def load_settings():
                 SHOW_SIZE_IN_GB = settings.get('show_size_in_gb', True)
                 SHOW_SPEED_IN_MBPS = settings.get('show_speed_in_mbps', False)
                 ENABLE_NOTIFICATIONS = settings.get('enable_notifications', True)
+                
+                # New Settings
+                ENABLE_WEBHOOK = settings.get('enable_webhook', False)
+                WEBHOOK_URL = settings.get('webhook_url', "")
+                OFME_USERNAME = settings.get('ofme_username', "")
+                OFME_PASSWORD = settings.get('ofme_password', "")
+
         except (json.JSONDecodeError, IOError): pass
+    old_login_file = os.path.join(DATA_FOLDER, 'Login.json')
+    if os.path.exists(old_login_file):
+        try:
+            with open(old_login_file, 'r') as f:
+                creds = json.load(f)
+                if not OFME_USERNAME: OFME_USERNAME = creds.get('username', '')
+                if not OFME_PASSWORD: OFME_PASSWORD = creds.get('password', '')
+                if not WEBHOOK_URL: WEBHOOK_URL = creds.get('webhook_url', '')
+            save_settings_to_file()
+            print("Migrated credentials from Login.json to Settings.json")
+        except: pass
 
 def save_settings_to_file():
     os.makedirs(DATA_FOLDER, exist_ok=True)
@@ -114,7 +156,11 @@ def save_settings_to_file():
         'default_download_path': DEFAULT_DOWNLOAD_PATH,
         'show_size_in_gb': SHOW_SIZE_IN_GB,
         'show_speed_in_mbps': SHOW_SPEED_IN_MBPS,
-        'enable_notifications': ENABLE_NOTIFICATIONS
+        'enable_notifications': ENABLE_NOTIFICATIONS,
+        'enable_webhook': ENABLE_WEBHOOK,
+        'webhook_url': WEBHOOK_URL,
+        'ofme_username': OFME_USERNAME,
+        'ofme_password': OFME_PASSWORD
     }
     try:
         with open(SETTINGS_FILE, 'w') as f: json.dump(settings, f, indent=4)
@@ -147,37 +193,213 @@ class ConsoleStream(QObject):
         if self.original_stream:
             self.original_stream.flush()
 
-# --- UPDATE CHECKER ---
-class UpdateChecker(QThread):
-    update_available = pyqtSignal(str, str)
+# ---  VERSION CHECKER ---
+class VersionCheckWorker(QThread):
+    status_update = pyqtSignal(str, str, str)
+    log_message = pyqtSignal(str)
+    check_finished = pyqtSignal(list, str)
+    login_failed = pyqtSignal()
+    
     def run(self):
-        url = f"https://api.github.com/repos/ZuhuInc/Simple-OFME-Downloader-LIB/releases/latest"
+        self.log_message.emit("Starting Version Check...")
+        start_time = time.time()
+        
+        if not OFME_USERNAME or not OFME_PASSWORD:
+            self.log_message.emit("Error: Missing credentials.")
+            self.login_failed.emit()
+            return
+
+        options = Options()
+        options.add_argument("--headless=new") 
+        options.binary_location = BRAVE_PATH
+        
+        driver1 = None
+        driver2 = None
+        
         try:
-            response = requests.get(url, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                latest_version = data.get('tag_name', '')
-                html_url = data.get('html_url', '')
-                if latest_version and self._is_version_higher(latest_version, CURRENT_VERSION):
-                    self.update_available.emit(latest_version, html_url)
-        except Exception: pass
+            self.log_message.emit("Initializing Driver 1 (OFME - Headless)...")
+            try:
+                driver1 = webdriver.Chrome(options=options)
+            except Exception as e:
+                self.log_message.emit(f"Failed to init standard driver: {e}")
+                if "binary is not a Chrome" in str(e):
+                    self.log_message.emit("Trying default Chrome instead of Brave path...")
+                    options.binary_location = "" 
+                    driver1 = webdriver.Chrome(options=options)
 
-    def _parse_version(self, v_str):
-        clean_v = v_str.lstrip('vV')
-        if '-' in clean_v: main_part, pre_part = clean_v.split('-', 1)
-        else: main_part, pre_part = clean_v, None
-        try: main_nums = [int(x) for x in main_part.split('.')]
-        except ValueError: main_nums = [0, 0, 0]
-        return main_nums, pre_part
+            self.log_message.emit("Initializing Driver 2 (SteamRIP - VISIBLE)...")
+            try:
+                browser_name = 'brave' if os.path.exists(BRAVE_PATH) else 'chrome'
+                driver2 = Driver(browser=browser_name, uc=True, headless=False)
+            except Exception as e:
+                self.log_message.emit(f"Failed to init UC driver: {e}")
 
-    def _is_version_higher(self, remote_ver, local_ver):
-        r_main, r_pre = self._parse_version(remote_ver)
-        l_main, l_pre = self._parse_version(local_ver)
-        if r_main > l_main: return True
-        if r_main < l_main: return False
-        if r_pre is None and l_pre is not None: return True 
-        if r_pre is not None and l_pre is None: return False     
-        return r_pre > l_pre
+            self.log_message.emit("Fetching latest database...")
+            response = requests.get(DB_URL)
+            lines = response.text.splitlines()
+            games = []
+            current_game = {}
+            opties = ['GoFile', 'DropBox', 'Both', 'BuzzHeavier']
+            
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith("#"): continue
+                for optie in opties:
+                    if line.startswith(optie):
+                        if current_game:
+                            games.append(current_game); current_game = {}
+                        name_part = line.split(f"{optie} (")[1].split(")")[0]
+                        version = line.split("[")[1].split("]")[0]
+                        current_game["Source"] = optie; current_game["Name"] = name_part; current_game["Version"] = version
+                        break  
+                    elif ":" in line:
+                        key, value = line.split(":", 1)
+                        current_game[key.strip()] = value.strip()
+            if current_game: games.append(current_game)
+
+            total_games = len(games)
+            game_update = {}
+            counter = 0
+            
+            for idx, game in enumerate(games):
+                progress_str = f"{idx + 1}/{total_games}"
+                local_ver_display = f"Local: {game.get('Version', '?')}"
+                self.status_update.emit(game['Name'], f"Checking... ({local_ver_display})", progress_str)
+                
+                version = ""
+                
+                if 'https://online-fix.me/' in game.get('Origin', ''):
+                    if not driver1: continue
+                    driver1.get(game['Origin'])
+                    if counter == 0:
+                        try:
+                            search = driver1.find_element(By.NAME, 'login_name')
+                            search.send_keys(OFME_USERNAME)
+                            search = driver1.find_element(By.NAME, 'login_password')
+                            search.send_keys(OFME_PASSWORD)
+                            time.sleep(0.5)
+                            search.send_keys(Keys.RETURN)            
+                            try:
+                                WebDriverWait(driver1, 5).until(
+                                    EC.presence_of_element_located((By.XPATH, f"//img[@alt='{OFME_USERNAME}']"))
+                                )
+                                self.log_message.emit(f"Successfully logged in as: {OFME_USERNAME}")
+                                counter += 1
+                            except TimeoutException:
+                                self.log_message.emit("Login failed on website.")
+                                self.login_failed.emit()
+                                driver1.quit(); 
+                                if driver2: driver2.quit()
+                                return
+                        except Exception as e:
+                            self.log_message.emit(f"Login element error: {e}")
+                            continue
+                            
+                        driver1.get(game['Origin'])
+
+                    time.sleep(1) 
+                    try:
+                        select_version = WebDriverWait(driver1, 15).until(
+                            EC.presence_of_element_located((By.CLASS_NAME, "quote")))
+                        version = select_version.find_element(By.TAG_NAME, 'b').text.replace('Версия игры: ', '')
+                    except:
+                        self.log_message.emit(f"Version tag not found for {game['Name']}")
+                        continue 
+                             
+                elif 'https://steamrip.com/' in game.get('Origin', ''):
+                    if not driver2: continue
+                    Origin_URL = game['Origin']
+                    try:
+                        driver2.uc_open_with_reconnect(Origin_URL, 6) 
+                        driver2.uc_gui_click_captcha()
+                        
+                        version = driver2.find_element(By.TAG_NAME, 'h1').text.split('(')[1].replace(')','')
+                    except Exception as e:
+                        self.log_message.emit(f"SteamRIP error for {game['Name']}: {e}")
+                        continue
+                else:
+                    continue
+                
+                if "Build" in version: version = version.replace("Build ", "")
+                if "v" in version: version = version.replace("v", "")
+                
+                self.status_update.emit(game['Name'], f"Found: {version}", progress_str)
+                if version != game['Version']:
+                    game_update[game['Name']] = {
+                        'new': version, 
+                        'old': game['Version'],
+                        'url': game['Origin']
+                    }
+            if driver1: driver1.quit()
+            if driver2: driver2.quit()
+
+            end_time = time.time()
+            elapsed = end_time - start_time
+            
+            if elapsed < 60:
+                time_str = f"{int(elapsed)} sec"
+            else:
+                mins, secs = divmod(elapsed, 60)
+                time_str = f"{int(mins)}min {int(secs)}sec"
+            if ENABLE_WEBHOOK and WEBHOOK_URL and "discord" in WEBHOOK_URL:
+                self.send_discord_webhook(game_update, len(game_update))
+
+            results_list = []
+            for name, data in game_update.items():
+                results_list.append({
+                    'name': name,
+                    'old': data['old'],
+                    'new': data['new'],
+                    'url': data['url']
+                })
+                
+            self.check_finished.emit(results_list, time_str)
+
+        except Exception as e:
+            self.log_message.emit(f"Critical Worker Error: {e}")
+            self.check_finished.emit([], "Error")
+            if driver1: driver1.quit()
+            if driver2: driver2.quit()
+
+    def send_discord_webhook(self, game_update, num_updates):
+        if num_updates > 0:
+            embed_fields = []
+            for name, info in game_update.items():
+                embed_fields.append({
+                    "name": f"🎮 {name}",
+                    "value": f"**New:** {info['new']}\n**Old:** {info['old']}\n[Download Page]({info['url']})",
+                    "inline": False 
+                })
+            payload = {
+                "username": "OFME Version Checker",
+                "avatar_url": DISCORD_ICON_URL,
+                "embeds": [{
+                    "title": f"🚨 {num_updates} Game Updates Available!",
+                    "description": "The following games have new versions detected:",
+                    "color": 16711680,
+                    "fields": embed_fields,
+                    "thumbnail": { "url": DISCORD_ICON_URL },
+                    "footer": {"text": "ZuhuOFME Checker"}
+                }]
+            }
+        else:
+            payload = {
+                "username": "OFME Version Checker",
+                "avatar_url": DISCORD_ICON_URL,
+                "embeds": [{
+                    "title": "✅ All Games Up To Date",
+                    "description": "We checked your library and everything is on the latest version.",
+                    "color": 3066993,
+                    "thumbnail": { "url": DISCORD_ICON_URL },
+                    "footer": {"text": "ZuhuOFME Checker"}
+                }]
+            }
+        
+        try:
+            requests.post(WEBHOOK_URL, json=payload)
+            self.log_message.emit("Discord Webhook sent.")
+        except Exception as e:
+            self.log_message.emit(f"Failed to send webhook: {e}")
 
 # --- CUSTOM TOGGLE SWITCH ---
 class PyToggle(QCheckBox):
@@ -226,6 +448,11 @@ class SettingsPage(QWidget):
         self.settings_font = QFont(main_font)
         self.settings_font.setPointSize(11)
         self.settings_font.setBold(False)
+        self.checker_thread = None
+        
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_live_time)
+        self.start_timestamp = 0
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 10, 20, 20)
@@ -241,24 +468,33 @@ class SettingsPage(QWidget):
         header_layout.addStretch()
         layout.addLayout(header_layout)
 
-        tabs = QTabWidget()
-        tabs.setFont(self.settings_font)
-        layout.addWidget(tabs, 1)
+        self.tabs = QTabWidget()
+        self.tabs.setFont(self.settings_font)
+        layout.addWidget(self.tabs, 1)
 
-        # --- CONSOLE TAB ---
         console_widget = QWidget()
         console_layout = QVBoxLayout(console_widget)
         self.console_output = QPlainTextEdit()
         self.console_output.setReadOnly(True)
-        
-        console_font = QFont(main_font)
-        console_font.setPointSize(11)
+        console_font = QFont(main_font); console_font.setPointSize(10)
         self.console_output.setFont(console_font) 
-        
         console_layout.addWidget(self.console_output)
-        tabs.addTab(console_widget, "Console Output")
+        self.tabs.addTab(console_widget, "Console Output")
 
-        # --- SETTINGS TAB ---
+        self.create_general_settings_tab()
+        self.create_version_checker_tab()
+
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        self.save_button = QPushButton("Save Settings")
+        self.save_button.setFont(self.settings_font)
+        self.save_button.setFixedWidth(200)
+        self.save_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.save_button.clicked.connect(self.save_settings)
+        btn_layout.addWidget(self.save_button)
+        layout.addLayout(btn_layout)
+
+    def create_general_settings_tab(self):
         settings_widget = QWidget()
         settings_layout = QVBoxLayout(settings_widget)
         
@@ -317,27 +553,191 @@ class SettingsPage(QWidget):
         lbl_nf, cont_nf = create_toggle_row("Desktop Notifications:", self.notif_toggle, self.lbl_notif_status)
         form_layout.addRow(lbl_nf, cont_nf)
 
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        line.setStyleSheet("background-color: #444; margin-top: 10px; margin-bottom: 10px;")
+        form_layout.addRow(line)
+
+        # --- DISCORD WEBHOOK SETTINGS ---
+        self.wh_toggle = PyToggle()
+        self.wh_toggle.setChecked(ENABLE_WEBHOOK)
+        self.lbl_wh_status = QLabel("On" if ENABLE_WEBHOOK else "Off")
+        self.lbl_wh_status.setFont(self.settings_font)
+        self.lbl_wh_status.setStyleSheet("color: #aaa; margin-left: 10px;")
+        self.wh_toggle.stateChanged.connect(lambda s: self.lbl_wh_status.setText("On" if s else "Off"))
+        
+        lbl_wh, cont_wh = create_toggle_row("Discord Webhook (Toggle):", self.wh_toggle, self.lbl_wh_status)
+        form_layout.addRow(lbl_wh, cont_wh)
+        lbl_wh_link = QLabel("Webhook Link:")
+        lbl_wh_link.setFont(self.settings_font)
+        
+        self.wh_input = QLineEdit(WEBHOOK_URL)
+        self.wh_input.setFont(self.settings_font)
+        self.wh_input.setPlaceholderText("Paste Discord Webhook URL here...")
+        self.wh_input.setEnabled(ENABLE_WEBHOOK)
+        
+        self.wh_toggle.stateChanged.connect(self.wh_input.setEnabled)
+        
+        form_layout.addRow(lbl_wh_link, self.wh_input)
+
         settings_layout.addLayout(form_layout)
         settings_layout.addStretch()
+        self.tabs.addTab(settings_widget, "General Settings")
 
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
-        self.save_button = QPushButton("Save Settings")
-        self.save_button.setFont(self.settings_font)
-        self.save_button.setFixedWidth(200)
-        self.save_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.save_button.clicked.connect(self.save_settings)
-        btn_layout.addWidget(self.save_button)
+    def create_version_checker_tab(self):
+        vc_widget = QWidget()
+        vc_layout = QVBoxLayout(vc_widget)
         
-        settings_layout.addLayout(btn_layout)
-        tabs.addTab(settings_widget, "General Settings")
+        config_group = QFrame()
+        config_group.setStyleSheet("background-color: #252525; border-radius: 8px;")
+        config_layout = QVBoxLayout(config_group)
         
+        self.creds_container = QWidget()
+        c_lay = QFormLayout(self.creds_container)
+        self.user_input = QLineEdit(OFME_USERNAME); self.user_input.setPlaceholderText("Online-Fix Username")
+        self.pass_input = QLineEdit(OFME_PASSWORD); self.pass_input.setEchoMode(QLineEdit.EchoMode.Password); self.pass_input.setPlaceholderText("Online-Fix Password")
+        c_lay.addRow("Username:", self.user_input)
+        c_lay.addRow("Password:", self.pass_input)
+        
+        if OFME_USERNAME and OFME_PASSWORD:
+            self.creds_expand_btn = QPushButton("Show/Edit Login Credentials ▼")
+            self.creds_expand_btn.setCheckable(True)
+            self.creds_expand_btn.clicked.connect(lambda c: self.creds_container.setVisible(c))
+            self.creds_container.setVisible(False)
+            config_layout.addWidget(self.creds_expand_btn)
+        else:
+             lbl = QLabel("Login Credentials Required for Checker:"); lbl.setStyleSheet("color: #ff4500;")
+             config_layout.addWidget(lbl)
+        
+        config_layout.addWidget(self.creds_container)
+        vc_layout.addWidget(config_group)
+        
+        self.start_check_btn = QPushButton("Start Version Check")
+        self.start_check_btn.setFont(self.settings_font)
+        self.start_check_btn.setStyleSheet("background-color: #006400; color: white; padding: 10px;")
+        self.start_check_btn.clicked.connect(self.start_version_check)
+        vc_layout.addWidget(self.start_check_btn)
+        
+        status_frame = QFrame()
+        status_frame.setStyleSheet("background-color: #2d2d2d; border-radius: 5px; padding: 5px;")
+        s_lay = QGridLayout(status_frame)
+        
+        self.lbl_game_checking = QLabel("Game Checking: Idle"); self.lbl_game_checking.setFont(self.settings_font)
+        self.lbl_game_version = QLabel("Version: -"); self.lbl_game_version.setFont(self.settings_font)
+        self.lbl_check_progress = QLabel("Progress: 0/0"); self.lbl_check_progress.setFont(self.settings_font)
+        self.lbl_time_taken = QLabel("Time Taken: 0 sec"); self.lbl_time_taken.setFont(self.settings_font)
+        
+        s_lay.addWidget(self.lbl_game_checking, 0, 0)
+        s_lay.addWidget(self.lbl_game_version, 0, 1)
+        s_lay.addWidget(self.lbl_check_progress, 1, 0)
+        s_lay.addWidget(self.lbl_time_taken, 1, 1)
+        vc_layout.addWidget(status_frame)
+        
+        # --- Results Table (Overview) ---
+        self.results_table = QTableWidget()
+        self.results_table.setColumnCount(4)
+        self.results_table.setHorizontalHeaderLabels(["Game Name", "Old Ver", "New Ver", "Action"])
+        self.results_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.results_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.results_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.results_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.results_table.verticalHeader().setVisible(False)
+        vc_layout.addWidget(self.results_table)
+        
+        self.tabs.addTab(vc_widget, "Version Checker")
+
+    def start_version_check(self):
+        # Auto-save credentials temporarily for the run
+        global OFME_USERNAME, OFME_PASSWORD, WEBHOOK_URL, ENABLE_WEBHOOK
+        OFME_USERNAME = self.user_input.text()
+        OFME_PASSWORD = self.pass_input.text()
+        
+        # Get Webhook settings from the General Tab widgets
+        WEBHOOK_URL = self.wh_input.text()
+        ENABLE_WEBHOOK = self.wh_toggle.isChecked()
+        
+        self.start_check_btn.setEnabled(False)
+        self.start_check_btn.setText("Checking... (Please Wait)")
+        self.results_table.setRowCount(0)
+        self.lbl_game_checking.setText("Game Checking: Initializing...")
+        
+        # Reset and Start Timer
+        self.start_timestamp = time.time()
+        self.timer.start(1000) # update every 1s
+        self.lbl_time_taken.setText("Time Taken: 0 sec")
+        
+        self.checker_thread = VersionCheckWorker()
+        self.checker_thread.log_message.connect(self.append_to_console)
+        self.checker_thread.status_update.connect(self.update_check_status)
+        self.checker_thread.check_finished.connect(self.on_check_finished)
+        self.checker_thread.login_failed.connect(self.on_login_failed)
+        self.checker_thread.start()
+
+    def update_live_time(self):
+        elapsed = time.time() - self.start_timestamp
+        if elapsed < 60:
+            time_str = f"{int(elapsed)} sec"
+        else:
+            mins, secs = divmod(elapsed, 60)
+            time_str = f"{int(mins)}min {int(secs)}sec"
+        self.lbl_time_taken.setText(f"Time Taken: {time_str}")
+
+    def update_check_status(self, name, ver, prog):
+        self.lbl_game_checking.setText(f"Game Checking: {name}")
+        self.lbl_game_version.setText(f"Version: {ver}")
+        self.lbl_check_progress.setText(f"Progress: {prog}")
+        
+    def on_check_finished(self, results, time_str):
+        self.timer.stop() # Stop live timer
+        self.start_check_btn.setEnabled(True)
+        self.start_check_btn.setText("Start Version Check")
+        self.lbl_time_taken.setText(f"Time Taken: {time_str}") # Ensure final time is set exactly
+        self.lbl_game_checking.setText("Overview:")
+        self.lbl_game_version.setText("")
+        self.lbl_check_progress.setText(f"{len(results)} Update(s) Found")
+        
+        self.results_table.setRowCount(len(results))
+        
+        if not results:
+             self.results_table.setRowCount(1)
+             item = QTableWidgetItem("All games are up to date!")
+             item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+             self.results_table.setItem(0, 0, item)
+             self.results_table.setSpan(0, 0, 1, 4)
+             
+             if ENABLE_NOTIFICATIONS:
+                 notification.notify(title="OFME Checker", message="All games up to date!", app_icon=ICON_PATH, timeout=10)
+        else:
+            if ENABLE_NOTIFICATIONS:
+                 notification.notify(title="OFME Checker", message=f"{len(results)} Games need updates!", app_icon=ICON_PATH, timeout=10)
+                 
+            for row, data in enumerate(results):
+                self.results_table.setItem(row, 0, QTableWidgetItem(data['name']))
+                self.results_table.setItem(row, 1, QTableWidgetItem(data['old']))
+                self.results_table.setItem(row, 2, QTableWidgetItem(data['new']))
+                
+                btn = QPushButton("Open Site")
+                btn.setStyleSheet("background-color: #007acc; border-radius: 4px; padding: 2px;")
+                btn.setCursor(Qt.CursorShape.PointingHandCursor)
+                btn.clicked.connect(lambda checked, url=data['url']: QDesktopServices.openUrl(QUrl(url)))
+                self.results_table.setCellWidget(row, 3, btn)
+
+    def on_login_failed(self):
+        self.timer.stop()
+        self.start_check_btn.setEnabled(True)
+        self.start_check_btn.setText("Start Version Check")
+        QMessageBox.warning(self, "Login Error", "Could not log in to Online-Fix.me.\nPlease check your username and password in the fields above.")
+        self.creds_container.setVisible(True)
+
     def append_to_console(self, text):
         self.console_output.moveCursor(QTextCursor.MoveOperation.End)
-        self.console_output.insertPlainText(text)
+        self.console_output.insertPlainText(text + "\n")
 
     def save_settings(self):
         global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
+        global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD
+        
         self.save_button.setText("Saved!")
         self.save_button.setStyleSheet("border: 1px solid #00ff7f; color: #00ff7f;")
         QTimer.singleShot(1500, lambda: self._reset_save_btn())
@@ -351,6 +751,12 @@ class SettingsPage(QWidget):
         SHOW_SPEED_IN_MBPS = self.speed_toggle.isChecked()
         SHOW_SIZE_IN_GB = self.size_toggle.isChecked()
         ENABLE_NOTIFICATIONS = self.notif_toggle.isChecked()
+        
+        # Save new checker settings
+        ENABLE_WEBHOOK = self.wh_toggle.isChecked()
+        WEBHOOK_URL = self.wh_input.text()
+        OFME_USERNAME = self.user_input.text()
+        OFME_PASSWORD = self.pass_input.text()
         
         print("Settings saved successfully.")
         save_settings_to_file()
@@ -410,6 +816,7 @@ class DataManager:
             else: game_data['status'] = GameStatus.NOT_DOWNLOADED
             processed_games.append(game_data)
         return processed_games
+
 class AssetManager:
     def __init__(self):
         self.cache_dir = os.path.join(DATA_FOLDER, 'cache'); os.makedirs(self.cache_dir, exist_ok=True)
@@ -730,6 +1137,38 @@ class InstallManager(QObject):
             print(f"Extraction Error: {e}")
             return False
 
+# --- UPDATE CHECKER ---
+class UpdateChecker(QThread):
+    update_available = pyqtSignal(str, str)
+    def run(self):
+        url = f"https://api.github.com/repos/ZuhuInc/Simple-OFME-Downloader-LIB/releases/latest"
+        try:
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                latest_version = data.get('tag_name', '')
+                html_url = data.get('html_url', '')
+                if latest_version and self._is_version_higher(latest_version, CURRENT_VERSION):
+                    self.update_available.emit(latest_version, html_url)
+        except Exception: pass
+
+    def _parse_version(self, v_str):
+        clean_v = v_str.lstrip('vV')
+        if '-' in clean_v: main_part, pre_part = clean_v.split('-', 1)
+        else: main_part, pre_part = clean_v, None
+        try: main_nums = [int(x) for x in main_part.split('.')]
+        except ValueError: main_nums = [0, 0, 0]
+        return main_nums, pre_part
+
+    def _is_version_higher(self, remote_ver, local_ver):
+        r_main, r_pre = self._parse_version(remote_ver)
+        l_main, l_pre = self._parse_version(local_ver)
+        if r_main > l_main: return True
+        if r_main < l_main: return False
+        if r_pre is None and l_pre is not None: return True 
+        if r_pre is not None and l_pre is None: return False     
+        return r_pre > l_pre
+
 # --- GAME DETAILS WIDGET ---
 class GameDetailsWidget(QWidget):
     back_requested = pyqtSignal(); refresh_library = pyqtSignal()
@@ -813,13 +1252,14 @@ class GameDetailsWidget(QWidget):
         self.download_progress = QProgressBar()
         self.download_progress.setFont(self.pixel_font)
         self.download_button = QPushButton("DOWNLOAD")
-        self.download_button.setFont(self.pixel_font)
+        font_family = self.pixel_font.family()
+        large_font = QFont(font_family, 12, QFont.Weight.Bold) 
+        self.download_button.setFont(large_font)
         self.download_button.setFixedWidth(200)
-        self.download_button.setFixedHeight(35)
+        self.download_button.setFixedHeight(30)
         self.download_button.clicked.connect(self.start_or_cancel_download)
         
         action_line.addWidget(self.download_progress, 1); action_line.addWidget(self.download_button)
-        
         bottom_layout.addLayout(status_line); bottom_layout.addLayout(action_line)
         main_layout.addWidget(bottom_controls)
 
