@@ -398,20 +398,29 @@ Origin: https://online-fix.me/games/adventures/17891-try-to-drive-po-seti.html
 MainGame: https://gofile.io/d/S4oJh9
 Fix: https://gofile.io/d/QPTJsS
 
-GoFile (Solo Leveling ARISE OVERDRIVE) [1.1.71.0]
-ApproxSize: 40GB
-Description: Solo Leveling, the webtoon with 14.3 billion views worldwide, is now an action RPG game! Help our hero grow from his humble E-Rank beginnings.
-Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SoloLevelingAriseOverdrive.jpg
-Origin: https://online-fix.me/games/officialservers/17954-solo-leveling-arise-overdrive-po-seti.html
-MainPart1: https://gofile.io/d/KSMZPH
-MainPart2: https://gofile.io/d/DLAJEd
-MainPart3: https://gofile.io/d/qEMzPG
-MainPart4: https://gofile.io/d/41tKiX
-MainPart5: https://gofile.io/d/U1mABN
-MainPart6: https://gofile.io/d/o1E2Ik
-MainPart7: https://gofile.io/d/X4Chi3
-MainPart8: https://gofile.io/d/2tMtF4
-Fix: https://gofile.io/d/wZXnwP
+GoFile (SIDE EFFECTS) [1.03]
+ApproxSize: 1GB
+Description: A twisted trial of pill roulette for up to 4 players (solo or online). Pick your poison. Use experimental items to shift the odds. And remember: only one of you can survive.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SideEffect.jpg
+Origin: https://online-fix.me/games/horror/17956-side-effects-po-seti.html
+MainPart1: https://gofile.io/d/O0cCcI
+Fix: https://gofile.io/d/AmF1bL
+
+GoFile (Explosive Odds) [1.2.1]
+ApproxSize: 4GB
+Description: Gamble with your life in this explosive PvP game for 2-4 players. Cut wires, earn cash, use abilities and avoid the detonators. Test your luck, skills and remember to always bet on the boom!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ExplosideODDS.jpg
+Origin: https://online-fix.me/games/arcade/17963-explosive-odds-po-seti.html
+MainPart1: https://gofile.io/d/4LKcje
+Fix: https://gofile.io/d/zlJhUt
+
+GoFile (Pizza Deathlivery) [1.0.6]
+ApproxSize: 5GB
+Description: Alone or up to 6 players, deliver pizzas to the survivors of a city where an oppressive mist has turned almost everyone into monstrous creatures.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PizzaDeathLivery.jpg
+Origin: https://online-fix.me/games/horror/17964-pizza-deathlivery-po-seti.html
+MainPart1: https://gofile.io/d/gpZzpw
+Fix: https://gofile.io/d/6eBuBo
 
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.5.1]
