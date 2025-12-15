@@ -549,6 +549,20 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/the-game-of-life-2-free-download-n2/
 MainGame: https://gofile.io/d/t2AbX5
 
+BuzzHeavier (Yakuza 0 Director’s Cut) []
+ApproxSize: 80GB
+Description: Discover the decadence and danger of 1980's Japan as you fight like hell through its neon-lit entertainment districts in the definitive edition of the action-adventure crime drama that created yakuza legends.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Yakuza0CT.jpg
+Origin: https://steamrip.com/yakuza-0-directors-cut-free-download/
+MainGame: https://buzzheavier.com/10gmkd7igehb
+
+BuzzHeavier (UNBEATABLE) []
+ApproxSize: 11GB
+Description: UNBEATABLE is a rhythm adventure where music is illegal and you do crimes. Follow the story of Beat and her band on the run, in a narrative experience full of big emotions powered by arcade-flawless rhythm gameplay. [Launch game via “steamclient_loader_x64.ex”]
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/UNBEATABLE.jpg
+Origin: https://steamrip.com/unbeatable-free-download/
+MainGame: https://buzzheavier.com/503k8kmtarsx
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
