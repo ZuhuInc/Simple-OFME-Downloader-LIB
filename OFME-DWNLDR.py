@@ -1029,20 +1029,21 @@ class DownloadManager(QObject):
                 print("GoFile: Structure fallback used.")
                 download_btn = driver.find_element(By.CSS_SELECTOR, ".item_download")
             driver.execute_script("arguments[0].click();", download_btn)
-            time.sleep(3)
-
-            logs = driver.get_log("performance")
+            start_time = time.time()
             direct_url = None
-            for entry in logs:
-                try:
-                    message = json.loads(entry["message"])["message"]
-                    if message["method"] == "Network.requestWillBeSent":
-                        request_url = message["params"]["request"]["url"]
-                        if ".rar" in request_url and "gofile.io" in request_url:
-                            if "/d/" not in request_url and ".html" not in request_url:
+
+            while time.time() - start_time < 5:
+                logs = driver.get_log("performance")
+                for entry in logs:
+                    try:
+                        message = json.loads(entry["message"])["message"]
+                        if message["method"] == "Network.requestWillBeSent":
+                            request_url = message["params"]["request"]["url"]
+                            if ".rar" in request_url and "gofile.io" in request_url and "/d/" not in request_url:
                                 direct_url = request_url
-                except:
-                    continue
+                                break
+                    except: continue
+                if direct_url: break
 
             cookies = driver.get_cookies()
             account_token = None
