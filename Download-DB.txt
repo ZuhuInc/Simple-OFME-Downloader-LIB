@@ -500,12 +500,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/hades-2-free-download/
 MainGame: https://gofile.io/d/y5FRGB
 
-GoFile (Assetto Corsa EVO) [0.2.2]
+GoFile (Assetto Corsa EVO) [0.4]
 ApproxSize: 100GB
 Description: Assetto Corsa EVO redefines the realism and features of one of the most popular multiplatform driving simulations ever developed. Featuring cars and tracks from different classes spanning across years of motoring history.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AC-EVO.jpg
 Origin: https://steamrip.com/assetto-corsa-evo-free-download
-MainGame: https://gofile.io/d/HMMTus
+MainGame: https://gofile.io/d/fPcif7
 
 GoFile (Assetto Corsa Rally) [20801254]
 ApproxSize: 50GB
