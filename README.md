@@ -36,7 +36,7 @@ A command-line utility designed to automate the process of downloading and extra
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB
-    cd Simple-OFME-Downloader
+    cd Simple-OFME-Downloader-LIB
     ```
 
 2.  **Install dependencies:**
@@ -76,7 +76,7 @@ The script will guide you through a few simple steps.
 ### For Developers: To check for game updates
 
 <details>
-<summary>Click here for instructions on running The update checker from code</summary>
+<summary>Click here for instructions on running the update checker from code</summary>
 
 #### Prerequisites
 *   **Python 3.6+**
@@ -85,8 +85,8 @@ The script will guide you through a few simple steps.
 #### Installation Steps
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/ZuhuInc/Simple-OFME-Downloader
-    cd Simple-OFME-Downloader
+    git clone https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB
+    cd Simple-OFME-Downloader-LIB
     ```
 2.  **Install dependencies:**
     ```bash
