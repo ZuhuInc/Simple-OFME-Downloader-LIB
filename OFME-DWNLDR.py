@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.6
+Zuhu's OFME GUI Downloader V1.5.7
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -22,7 +22,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from seleniumbase import Driver
 from plyer import notification
 from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
@@ -35,7 +35,7 @@ from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPain
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty, QUrl
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.6"
+CURRENT_VERSION = "V1.5.7"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
@@ -982,22 +982,89 @@ class DownloadManager(QObject):
             return None
 
     def _resolve_gofile_link(self, gofile_url, progress_str=""):
-        self.status_update.emit(f"Downloading From GoFile... {progress_str}")
+        self.status_update.emit(f"Resolving GoFile Link... {progress_str}")
+        driver = None
         try:
-            headers = {"User-Agent": "Mozilla/5.0"}; token_response = requests.post("https://api.gofile.io/accounts", headers=headers).json()
-            if token_response.get("status") != "ok": return None, None
-            account_token = token_response["data"]["token"]; content_id = gofile_url.split("/")[-1]; hashed_password = hashlib.sha256(RAR_PASSWORD.encode()).hexdigest()
-            api_url = f"https://api.gofile.io/contents/{content_id}"; params = {'wt': '4fd6sg89d7s6', 'password': hashed_password}
-            auth_headers = {"User-Agent": "Mozilla/5.0", "Authorization": f"Bearer {account_token}"}
-            content_response = requests.get(api_url, params=params, headers=auth_headers).json()
-            if content_response.get("status") != "ok": return None, None
-            data = content_response.get("data", {})
-            if data.get("type") == "folder":
-                for child_id, child_data in data.get("children", {}).items():
-                    if child_data.get("type") == "file": return child_data.get("link"), account_token
-            elif data.get("type") == "file": return data.get("link"), account_token
+            options = Options()
+            options.add_argument("--headless=new") 
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--window-size=1920,1080")
+            options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
+            options.binary_location = BRAVE_PATH 
+            try:
+                driver = webdriver.Chrome(options=options)
+            except Exception:
+                options.binary_location = ""
+                driver = webdriver.Chrome(options=options)
+
+            driver.get(gofile_url)
+            try:
+                WebDriverWait(driver, 20).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "item_open"))
+                )
+            except TimeoutException:
+                print("GoFile: List didn't load.")
+                return None, None
+
+            file_links = driver.find_elements(By.CLASS_NAME, "item_open")
+            target_link = None
+            target_name = self.game_data.get('name', '').lower()
+            for link in file_links:
+                text = link.text.lower()
+                if ".rar" in text:
+                    if target_name in text:
+                        target_link = link
+                        break
+                    if target_link is None:
+                        target_link = link
+
+            if not target_link:
+                print("GoFile: No suitable .rar file found in the list.")
+                return None, None
+            try:
+                row_ancestor = target_link.find_element(By.XPATH, "./ancestor::div[.//button[contains(@class, 'item_download')]][1]")
+                download_btn = row_ancestor.find_element(By.CSS_SELECTOR, ".item_download")
+            except NoSuchElementException:
+                print("GoFile: Structure fallback used.")
+                download_btn = driver.find_element(By.CSS_SELECTOR, ".item_download")
+            driver.execute_script("arguments[0].click();", download_btn)
+            time.sleep(3)
+
+            logs = driver.get_log("performance")
+            direct_url = None
+            for entry in logs:
+                try:
+                    message = json.loads(entry["message"])["message"]
+                    if message["method"] == "Network.requestWillBeSent":
+                        request_url = message["params"]["request"]["url"]
+                        if ".rar" in request_url and "gofile.io" in request_url:
+                            if "/d/" not in request_url and ".html" not in request_url:
+                                direct_url = request_url
+                except:
+                    continue
+
+            cookies = driver.get_cookies()
+            account_token = None
+            for cookie in cookies:
+                if cookie['name'] == 'accountToken':
+                    account_token = cookie['value']
+                    break
+            if direct_url:
+                print(f"GoFile Resolved via Network Tab: {direct_url}")
+                return direct_url, account_token
+            if len(driver.window_handles) > 1:
+                driver.switch_to.window(driver.window_handles[-1])
+                return driver.current_url, account_token
+
             return None, None
-        except Exception as e: print(f"GoFile resolution error: {e}"); return None, None
+
+        except Exception as e:
+            print(f"GoFile Resolution Error: {e}")
+            return None, None
+        finally:
+            if driver:
+                driver.quit()
 
     def _download_file(self, url, dest_folder, token):
         headers = {'User-Agent': 'Mozilla/5.0'}
