@@ -35,13 +35,13 @@ A command-line utility designed to automate the process of downloading and extra
 #### Installation Steps
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/ZuhuInc/Simple-OFME-Downloader
+    git clone https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB
     cd Simple-OFME-Downloader
     ```
 
 2.  **Install dependencies:**
     ```bash
-    pip install requests PyQt6 plyer
+    pip install requests PyQt6 plyer selenium seleniumbase
     ```
 
 3.  **Configure the Script (if needed):**
