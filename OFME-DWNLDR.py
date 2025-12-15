@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.7
+Zuhu's OFME GUI Downloader V1.5.8
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -10,13 +10,10 @@ import json
 import re
 import time
 import subprocess
-import hashlib
 import ctypes
 import webbrowser
 import traceback
-from datetime import datetime
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -31,16 +28,15 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QProgressBar, QLineEdit, QFormLayout, QTabWidget,
                              QPlainTextEdit, QFileDialog, QCheckBox, QMessageBox, 
                              QFrame, QTableWidget, QTableWidgetItem, QHeaderView)
-from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPainter, QColor, QBrush, QPen, QDesktopServices
+from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPainter, QColor, QDesktopServices
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty, QUrl
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.7"
+CURRENT_VERSION = "V1.5.8"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
 SETTINGS_FILE = os.path.join(DATA_FOLDER, 'Settings.json')
-
 ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-DWND-ICO.ico"
 SETTINGS_ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-STNG-ICO.ico"
 RELOAD_ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-RLD-ICO.ico"
@@ -58,6 +54,7 @@ ENABLE_WEBHOOK = False
 WEBHOOK_URL = ""
 OFME_USERNAME = ""
 OFME_PASSWORD = ""
+VERSION_CHECK_BYPASS_LIST = []
 
 # --- STYLING ---
 STYLESHEET = """
@@ -118,7 +115,7 @@ STYLESHEET = """
 # --- SETTINGS LOGIC ---
 def load_settings():
     global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
-    global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD
+    global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD, VERSION_CHECK_BYPASS_LIST
     
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -129,12 +126,11 @@ def load_settings():
                 SHOW_SIZE_IN_GB = settings.get('show_size_in_gb', True)
                 SHOW_SPEED_IN_MBPS = settings.get('show_speed_in_mbps', False)
                 ENABLE_NOTIFICATIONS = settings.get('enable_notifications', True)
-                
-                # New Settings
                 ENABLE_WEBHOOK = settings.get('enable_webhook', False)
                 WEBHOOK_URL = settings.get('webhook_url', "")
                 OFME_USERNAME = settings.get('ofme_username', "")
                 OFME_PASSWORD = settings.get('ofme_password', "")
+                VERSION_CHECK_BYPASS_LIST = settings.get('version_check_bypass_list', [])
 
         except (json.JSONDecodeError, IOError): pass
     old_login_file = os.path.join(DATA_FOLDER, 'Login.json')
@@ -160,7 +156,8 @@ def save_settings_to_file():
         'enable_webhook': ENABLE_WEBHOOK,
         'webhook_url': WEBHOOK_URL,
         'ofme_username': OFME_USERNAME,
-        'ofme_password': OFME_PASSWORD
+        'ofme_password': OFME_PASSWORD,
+        'version_check_bypass_list': VERSION_CHECK_BYPASS_LIST
     }
     try:
         with open(SETTINGS_FILE, 'w') as f: json.dump(settings, f, indent=4)
@@ -262,6 +259,10 @@ class VersionCheckWorker(QThread):
             counter = 0
             
             for idx, game in enumerate(games):
+                if game['Name'] in VERSION_CHECK_BYPASS_LIST:
+                    self.log_message.emit(f"Skipping {game['Name']} (Bypass enabled)")
+                    continue
+                
                 progress_str = f"{idx + 1}/{total_games}"
                 local_ver_display = f"Local: {game.get('Version', '?')}"
                 self.status_update.emit(game['Name'], f"Checking... ({local_ver_display})", progress_str)
@@ -405,12 +406,14 @@ class VersionCheckWorker(QThread):
 class PyToggle(QCheckBox):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(50, 28)
+        self.setFixedSize(60, 32) 
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self._bg_color = "#777"
         self._circle_color = "#DDD"
         self._active_color = "#00ff7f"
-        self._circle_position = 3
+        self._margin = 4
+        self._circle_size = self.height() - (self._margin * 2)
+        self._circle_position = self._margin
         self.animation = QPropertyAnimation(self, b"circle_position", self)
         self.animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
         self.animation.setDuration(300)
@@ -418,9 +421,21 @@ class PyToggle(QCheckBox):
 
     def start_transition(self, state):
         self.animation.stop()
-        if state: self.animation.setEndValue(self.width() - 24)
-        else: self.animation.setEndValue(3)
+        if state: 
+            self.animation.setEndValue(self.width() - self._circle_size - self._margin)
+        else: 
+            self.animation.setEndValue(self._margin)
         self.animation.start()
+        
+    def set_state_immediate(self, state):
+        self.blockSignals(True)
+        self.setChecked(state)
+        if state:
+            self._circle_position = self.width() - self._circle_size - self._margin
+        else:
+            self._circle_position = self._margin
+        self.blockSignals(False)
+        self.update()
         
     def hitButton(self, pos): return self.contentsRect().contains(pos)
     def paintEvent(self, e):
@@ -430,9 +445,10 @@ class PyToggle(QCheckBox):
         else: p.setBrush(QColor(self._bg_color))
         p.setPen(Qt.PenStyle.NoPen)
         rect = QRect(0, 0, self.width(), self.height())
-        p.drawRoundedRect(0, 0, rect.width(), rect.height(), 14, 14)
+        radius = self.height() / 2
+        p.drawRoundedRect(0, 0, rect.width(), rect.height(), radius, radius)
         p.setBrush(QColor(self._circle_color))
-        p.drawEllipse(int(self._circle_position), 3, 22, 22)
+        p.drawEllipse(int(self._circle_position), self._margin, self._circle_size, self._circle_size)
         p.end()
 
     def get_circle_position(self): return self._circle_position
@@ -446,7 +462,7 @@ class SettingsPage(QWidget):
         super().__init__()
         
         self.settings_font = QFont(main_font)
-        self.settings_font.setPointSize(11)
+        self.settings_font.setPointSize(13)
         self.settings_font.setBold(False)
         self.checker_thread = None
         
@@ -476,23 +492,63 @@ class SettingsPage(QWidget):
         console_layout = QVBoxLayout(console_widget)
         self.console_output = QPlainTextEdit()
         self.console_output.setReadOnly(True)
-        console_font = QFont(main_font); console_font.setPointSize(10)
+        console_font = QFont(main_font); console_font.setPointSize(11)
         self.console_output.setFont(console_font) 
         console_layout.addWidget(self.console_output)
         self.tabs.addTab(console_widget, "Console Output")
-
         self.create_general_settings_tab()
         self.create_version_checker_tab()
 
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
+        # --- DYNAMIC BOTTOM LAYOUT ---
+        bottom_container = QWidget()
+        self.bottom_layout = QHBoxLayout(bottom_container)
+        self.bottom_layout.setContentsMargins(0, 0, 0, 0)
+        self.bottom_layout.addStretch()
+
         self.save_button = QPushButton("Save Settings")
         self.save_button.setFont(self.settings_font)
         self.save_button.setFixedWidth(200)
         self.save_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.save_button.clicked.connect(self.save_settings)
-        btn_layout.addWidget(self.save_button)
-        layout.addLayout(btn_layout)
+        self.bottom_layout.addWidget(self.save_button)
+
+        self.vc_toggle_container = QWidget()
+        vc_toggle_layout = QHBoxLayout(self.vc_toggle_container)
+        vc_toggle_layout.setContentsMargins(0, 0, 0, 0)
+        vc_lbl = QLabel("Discord Webhook:")
+        vc_lbl.setFont(self.settings_font)
+        vc_lbl.setStyleSheet("color: #e0e0e0; margin-right: 10px;")
+        
+        self.vc_wh_toggle = PyToggle()
+        self.vc_wh_toggle.setFixedSize(60, 32)
+        self.vc_wh_toggle.stateChanged.connect(self.on_vc_webhook_toggled)
+        vc_toggle_layout.addWidget(vc_lbl)
+        vc_toggle_layout.addWidget(self.vc_wh_toggle)
+        
+        self.bottom_layout.addWidget(self.vc_toggle_container)
+        self.vc_toggle_container.hide()
+        layout.addWidget(bottom_container)
+        self.tabs.currentChanged.connect(self.on_tab_changed)
+        self.on_tab_changed(self.tabs.currentIndex())
+
+    def on_tab_changed(self, index):
+        self.save_button.hide()
+        self.vc_toggle_container.hide()
+        if index == 1:
+            self.save_button.show()
+        elif index == 2:
+            self.vc_toggle_container.show()
+            self.vc_wh_toggle.set_state_immediate(ENABLE_WEBHOOK)
+
+    def on_vc_webhook_toggled(self, state):
+        global ENABLE_WEBHOOK
+        is_checked = (state != 0)
+        ENABLE_WEBHOOK = is_checked
+        
+        self.wh_toggle.set_state_immediate(is_checked)
+        self.lbl_wh_status.setText("On" if is_checked else "Off")
+        self.wh_input.setEnabled(is_checked)
+        save_settings_to_file()
 
     def create_general_settings_tab(self):
         settings_widget = QWidget()
@@ -527,7 +583,7 @@ class SettingsPage(QWidget):
             return lbl, container
 
         self.speed_toggle = PyToggle()
-        self.speed_toggle.setChecked(SHOW_SPEED_IN_MBPS)
+        self.speed_toggle.set_state_immediate(SHOW_SPEED_IN_MBPS)
         self.lbl_speed_status = QLabel("Mbps" if SHOW_SPEED_IN_MBPS else "MB/s")
         self.lbl_speed_status.setFont(self.settings_font)
         self.lbl_speed_status.setStyleSheet("color: #aaa; margin-left: 10px;")
@@ -536,7 +592,7 @@ class SettingsPage(QWidget):
         form_layout.addRow(lbl_sp, cont_sp)
 
         self.size_toggle = PyToggle()
-        self.size_toggle.setChecked(SHOW_SIZE_IN_GB)
+        self.size_toggle.set_state_immediate(SHOW_SIZE_IN_GB)
         self.lbl_size_status = QLabel("GB" if SHOW_SIZE_IN_GB else "MB")
         self.lbl_size_status.setFont(self.settings_font)
         self.lbl_size_status.setStyleSheet("color: #aaa; margin-left: 10px;")
@@ -545,7 +601,7 @@ class SettingsPage(QWidget):
         form_layout.addRow(lbl_sz, cont_sz)
 
         self.notif_toggle = PyToggle()
-        self.notif_toggle.setChecked(ENABLE_NOTIFICATIONS)
+        self.notif_toggle.set_state_immediate(ENABLE_NOTIFICATIONS)
         self.lbl_notif_status = QLabel("On" if ENABLE_NOTIFICATIONS else "Off")
         self.lbl_notif_status.setFont(self.settings_font)
         self.lbl_notif_status.setStyleSheet("color: #aaa; margin-left: 10px;")
@@ -561,7 +617,7 @@ class SettingsPage(QWidget):
 
         # --- DISCORD WEBHOOK SETTINGS ---
         self.wh_toggle = PyToggle()
-        self.wh_toggle.setChecked(ENABLE_WEBHOOK)
+        self.wh_toggle.set_state_immediate(ENABLE_WEBHOOK)
         self.lbl_wh_status = QLabel("On" if ENABLE_WEBHOOK else "Off")
         self.lbl_wh_status.setFont(self.settings_font)
         self.lbl_wh_status.setStyleSheet("color: #aaa; margin-left: 10px;")
@@ -736,7 +792,7 @@ class SettingsPage(QWidget):
 
     def save_settings(self):
         global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
-        global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD
+        global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD, VERSION_CHECK_BYPASS_LIST
         
         self.save_button.setText("Saved!")
         self.save_button.setStyleSheet("border: 1px solid #00ff7f; color: #00ff7f;")
@@ -1283,6 +1339,18 @@ class GameDetailsWidget(QWidget):
         self.description_label.setFont(self.pixel_font)
         self.description_label.setStyleSheet("color: #aaa; margin-top: 10px; font-size: 13px;")
         self.description_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        
+        self.bypass_container = QWidget()
+        bypass_layout = QHBoxLayout(self.bypass_container)
+        bypass_layout.setContentsMargins(0, 5, 0, 5)
+        self.bypass_toggle = PyToggle()
+        self.bypass_toggle.stateChanged.connect(self.on_bypass_toggled)
+        bypass_lbl = QLabel("Version Check Bypass")
+        bypass_lbl.setFont(self.pixel_font)
+        bypass_lbl.setStyleSheet("color: #aaa; margin-right: 10px;")
+        bypass_layout.addStretch()
+        bypass_layout.addWidget(bypass_lbl)
+        bypass_layout.addWidget(self.bypass_toggle)
         self.location_bar = QLineEdit()
         self.location_bar.setFont(self.pixel_font)
         
@@ -1302,6 +1370,7 @@ class GameDetailsWidget(QWidget):
         
         right_layout.addWidget(self.description_label, 1)
         right_layout.addStretch()
+        right_layout.addWidget(self.bypass_container)
         right_layout.addWidget(self.location_bar)
         right_layout.addWidget(self.fix_prompt_widget)
         
@@ -1331,6 +1400,20 @@ class GameDetailsWidget(QWidget):
         bottom_layout.addLayout(status_line); bottom_layout.addLayout(action_line)
         main_layout.addWidget(bottom_controls)
 
+    def on_bypass_toggled(self, state):
+        game_name = self.current_game_data.get('name')
+        if not game_name: return
+        is_checked = (state != 0)
+        if is_checked:
+            if game_name not in VERSION_CHECK_BYPASS_LIST:
+                VERSION_CHECK_BYPASS_LIST.append(game_name)
+                print(f"[{game_name}] added to Version Check bypass.")
+        else:
+            if game_name in VERSION_CHECK_BYPASS_LIST:
+                VERSION_CHECK_BYPASS_LIST.remove(game_name)
+                print(f"[{game_name}] removed from Version Check bypass.")
+        save_settings_to_file()
+
     def _create_info_row(self, title, data_label):
         row = QWidget(); layout = QHBoxLayout(row); layout.setContentsMargins(0,0,0,0)
         title_label = QLabel(title); title_label.setStyleSheet("color: #888; font-weight: bold;")
@@ -1358,6 +1441,8 @@ class GameDetailsWidget(QWidget):
         self.description_label.setText(game_data.get('Description', 'No description available.'))
         
         status = game_data.get('status', GameStatus.NOT_DOWNLOADED)
+        status_color = STATUS_INFO[status]['color']
+        self.game_name_label.setStyleSheet(f"color: {status_color};")
         thumbnail_path = self.asset_manager.get_asset(game_data.get('Thumbnail'))
         
         border_color = STATUS_INFO[status]['color']
@@ -1369,17 +1454,25 @@ class GameDetailsWidget(QWidget):
             self.thumbnail_label.setPixmap(scaled_pixmap)
         else: self.thumbnail_label.clear(); self.thumbnail_label.setText("No Image")
 
+        game_name = game_data.get('name')
+        if game_name in VERSION_CHECK_BYPASS_LIST:
+            self.bypass_toggle.set_state_immediate(True)
+        else:
+            self.bypass_toggle.set_state_immediate(False)
+
         self.download_button.setEnabled(True)
         if status == GameStatus.NOT_DOWNLOADED:
             self.download_button.setText("DOWNLOAD")
             self.location_bar.setText(DEFAULT_DOWNLOAD_PATH)
             self.location_bar.setPlaceholderText("Select base download folder...")
             self.location_bar.setVisible(True)
+            self.bypass_container.setVisible(True)
         else:
             game_name_key = game_data.get('name', '').upper()
             self.final_game_path = self.data_manager.local_data.get(game_name_key, {}).get('location', '')
             self.location_bar.setText(DEFAULT_DOWNLOAD_PATH)
             self.location_bar.setVisible(True)
+            self.bypass_container.setVisible(True)
             if status == GameStatus.UPDATE_AVAILABLE: self.download_button.setText("UPDATE")
             else: self.download_button.setText("RE-DOWNLOAD")
 
@@ -1395,7 +1488,6 @@ class GameDetailsWidget(QWidget):
         if self.installer_thread and self.installer_thread.isRunning(): return
         is_new_install = self.current_game_data['status'] == GameStatus.NOT_DOWNLOADED    
         path_to_use = self.location_bar.text()
-
         if not os.path.isdir(path_to_use):
             self.status_label.setText("Invalid location path!"); return
         
@@ -1403,7 +1495,6 @@ class GameDetailsWidget(QWidget):
         self.worker_thread = QThread()
         self.worker = DownloadManager(self.current_game_data)
         self.worker.moveToThread(self.worker_thread)
-        
         self.worker_thread.started.connect(self.worker.run)
         self.worker.finished.connect(lambda s, m, p: self.on_download_complete(s, m, p, path_to_use, is_new_install))
         self.worker.finished.connect(self.worker_thread.quit)
@@ -1441,6 +1532,7 @@ class GameDetailsWidget(QWidget):
             if self.downloaded_file_paths.get('fix'):
                 self.fix_prompt_widget.setVisible(True)
                 self.location_bar.setVisible(False)
+                self.bypass_container.setVisible(False)
                 self.fix_label.setText(f"Apply fix to: {os.path.basename(self.final_game_path)}?")
                 self.download_button.setText("ACTION REQUIRED"); self.download_button.setEnabled(False)
                 if ENABLE_NOTIFICATIONS:
@@ -1522,10 +1614,10 @@ class GameLauncher(QWidget):
 
     def finish_ui_setup(self):
         try:
-            self.pixel_font = QFont("Segoe UI", 10) 
+            self.pixel_font = QFont("Segoe UI", 11)
             if os.path.exists(os.path.join(DATA_FOLDER, 'cache', 'pixelmix.ttf')):
                  fid = QFontDatabase.addApplicationFont(os.path.join(DATA_FOLDER, 'cache', 'pixelmix.ttf'))
-                 if fid != -1: self.pixel_font = QFont(QFontDatabase.applicationFontFamilies(fid)[0], 10)
+                 if fid != -1: self.pixel_font = QFont(QFontDatabase.applicationFontFamilies(fid)[0], 11)
                  
             self.game_widgets = []; self.status_buttons = {}; self.current_filter = None; self.search_text = "" 
             self.initUI()
