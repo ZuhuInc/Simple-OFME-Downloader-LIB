@@ -271,18 +271,17 @@ Origin: https://online-fix.me/games/officialservers/17732-bmx-streets-po-seti.ht
 MainGame: https://gofile.io/d/zmAcUd
 Fix: https://gofile.io/d/ZZFEHK
 
-GoFile (BeamNG Drive) [0.37.5.0.18733]
+GoFile (BeamNG Drive) [0.38.2.0]
 ApproxSize: 55GB
 Description: A dynamic soft-body physics vehicle simulator capable of doing just about anything.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BEAMNG.png
 Origin: https://online-fix.me/games/racing/16506-beamng-drive-po-seti.html
-MainPart1: https://gofile.io/d/GDp4FO
-MainPart2: https://gofile.io/d/z8bfcr
-MainPart3: https://gofile.io/d/w7RTa6
-MainPart4: https://gofile.io/d/Fk6VUE
-MainPart5: https://gofile.io/d/wuAzPw
-MainPart6: https://gofile.io/d/Rjo4U2
-Fix: https://gofile.io/d/PeVq9C
+MainPart1: https://gofile.io/d/zGxQLD
+MainPart2: https://gofile.io/d/neaDvh
+MainPart3: https://gofile.io/d/phMDUE
+MainPart4: https://gofile.io/d/JRyPkZ
+MainPart5: https://gofile.io/d/YA31Vk
+Fix: https://gofile.io/d/1yedQv
 
 GoFile (Mimesis) [0.2.6]
 ApproxSize: 3GB
@@ -479,12 +478,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/life-is-strange-double-exposure
 MainGame: https://gofile.io/d/vFgzmR
 
-GoFile (Megabonk) [1.0.41]
+GoFile (Megabonk) [1.0.42]
 ApproxSize: 1GB
 Description: Smash your way through endless waves of enemies and grow absurdly powerful! Grab loot, level up, unlock characters and upgrade to create unique and crazy builds as you fend off hordes of creatures!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Megabonk.jpg
 Origin: https://steamrip.com/megabonk-free-download
-MainGame: https://gofile.io/d/hPnbhj
+MainGame: https://gofile.io/d/4w3B0u
 
 BuzzHeavier (Hades) [10929685]
 ApproxSize: 15GB
