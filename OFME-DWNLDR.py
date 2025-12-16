@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.8-Beta1
+Zuhu's OFME GUI Downloader V1.5.8-Beta2
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -14,6 +14,7 @@ import subprocess
 import ctypes
 import webbrowser
 import traceback
+import urllib.parse
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -33,7 +34,7 @@ from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPain
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty, QUrl
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.8-Beta1"
+CURRENT_VERSION = "V1.5.8-Beta2"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DOCUMENTS_DIR = os.path.join(os.path.expanduser('~'), 'Documents')
 PROJECTS_DIR = os.path.join(DOCUMENTS_DIR, 'ZuhuProjects')
@@ -781,10 +782,12 @@ class SettingsPage(QWidget):
              self.results_table.setSpan(0, 0, 1, 4)
              
              if ENABLE_NOTIFICATIONS:
-                 notification.notify(title="OFME Checker", message="All games up to date!", app_icon=ICON_PATH, timeout=10)
+                 safe_icon = ICON_PATH if os.path.exists(ICON_PATH) else None
+                 notification.notify(title="OFME Checker", message="All games up to date!", app_icon=safe_icon, timeout=10)
         else:
             if ENABLE_NOTIFICATIONS:
-                 notification.notify(title="OFME Checker", message=f"{len(results)} Games need updates!", app_icon=ICON_PATH, timeout=10)
+                 safe_icon = ICON_PATH if os.path.exists(ICON_PATH) else None
+                 notification.notify(title="OFME Checker", message=f"{len(results)} Games need updates!", app_icon=safe_icon, timeout=10)
                  
             for row, data in enumerate(results):
                 self.results_table.setItem(row, 0, QTableWidgetItem(data['name']))
@@ -816,12 +819,11 @@ class SettingsPage(QWidget):
         if os.path.exists(new_winrar_path): WINRAR_PATH = new_winrar_path
         
         new_download_path = self.download_path_edit.text()
-        DEFAULT_DOWNLOAD_PATH = new_download_path 
         
+        DEFAULT_DOWNLOAD_PATH = new_download_path 
         SHOW_SPEED_IN_MBPS = self.speed_toggle.isChecked()
         SHOW_SIZE_IN_GB = self.size_toggle.isChecked()
         ENABLE_NOTIFICATIONS = self.notif_toggle.isChecked()
-        
         ENABLE_WEBHOOK = self.wh_toggle.isChecked()
         WEBHOOK_URL = self.wh_input.text()
         OFME_USERNAME = self.user_input.text()
@@ -1000,19 +1002,40 @@ class DownloadManager(QObject):
             
             progress_str = f"({i+1}/{total_downloads})"
             self.status_update.emit(f"Downloading Part {i+1}/{total_downloads}...")
-            direct_url, token = url, None
+            safe_name = re.sub(r'[\\/*?:"<>|]', "", self.game_data.get('name', 'Game'))
+            safe_name = safe_name.replace(" ", "_")
+            
+            target_name = ""
+            if url == fix_url:
+                target_name = f"{safe_name}_Fix.rar"
+            else:
+                if len(main_urls) == 1 and not fix_url:
+                     target_name = f"{safe_name}.rar"
+                else:
+                     target_name = f"{safe_name}_Part{i+1}.rar"
+
+            direct_url, cookies = url, None            
             if "gofile.io" in url:
-                direct_url, token = self._resolve_gofile_link(url, progress_str)
+                direct_url, cookies = self._resolve_gofile_link(url, progress_str)
                 if not direct_url:
                     self.finished.emit(False, "Failed to resolve GoFile link.", {}); return
             elif "buzzheavier.com" in url:
-                direct_url = self._resolve_buzzheavier_link(url, progress_str)
+                direct_url, cookies = self._resolve_buzzheavier_link(url, progress_str)
                 if not direct_url:
                     self.finished.emit(False, "Failed to resolve BuzzHeavier link.", {}); return
-
-            downloaded_path = self._download_file(direct_url, temp_download_folder, token)
+                    
+            downloaded_path = self._download_file(direct_url, temp_download_folder, cookies, target_name)
             if not downloaded_path:
-                self.finished.emit(False, "Download failed.", {}); return
+                self.finished.emit(False, "Download failed (File not found or access denied).", {}); return
+            self.status_update.emit("Finalizing file...")
+            time.sleep(1) 
+            try:
+                if not os.path.exists(downloaded_path) or os.path.getsize(downloaded_path) < 10 * 1024: # 10KB
+                    self.status_update.emit("Download invalid (too small/missing).")
+                    if os.path.exists(downloaded_path):
+                        os.remove(downloaded_path) 
+                    self.finished.emit(False, "Download failed: File invalid or blocked by host.", {}); return
+            except OSError: pass
 
             if url == fix_url:
                 downloaded_fix_path = downloaded_path
@@ -1037,18 +1060,19 @@ class DownloadManager(QObject):
             session.headers.update(headers)
             download_trigger_url = buzzheavier_url.rstrip('/') + "/download"
             self.status_update.emit(f"Downloading From BuzzHeavier... {progress_str}")
+            
             response = session.get(download_trigger_url, allow_redirects=False, timeout=15)
 
-            if response.status_code >= 400: return None
+            if response.status_code >= 400: return None, None
 
             if 'hx-redirect' in response.headers:
                 final_url = response.headers['hx-redirect']
-                if "buzzheavier.com" in final_url: return None
-                return final_url
-            else: return None
+                if "buzzheavier.com" in final_url: return None, None
+                return final_url, session.cookies.get_dict()
+            else: return None, None
         except requests.exceptions.RequestException as e:
             print(f"BuzzHeavier resolution error: {e}")
-            return None
+            return None, None
 
     def _resolve_gofile_link(self, gofile_url, progress_str=""):
         self.status_update.emit(f"Resolving GoFile Link... {progress_str}")
@@ -1136,11 +1160,17 @@ class DownloadManager(QObject):
             if driver:
                 driver.quit()
 
-    def _download_file(self, url, dest_folder, token):
+    def _download_file(self, url, dest_folder, cookies=None, forced_name=""):
         headers = {'User-Agent': 'Mozilla/5.0'}
-        if token: headers['Cookie'] = f'accountToken={token}'    
+        req_cookies = None
+        if cookies:
+            if isinstance(cookies, dict): req_cookies = cookies
+            elif isinstance(cookies, str): headers['Cookie'] = f'accountToken={cookies}'
+        
+        if "buzzheavier" in url: headers['Referer'] = "https://buzzheavier.com/"
+
         try:
-            with requests.get(url, stream=True, headers=headers, timeout=(10, 30)) as r:
+            with requests.get(url, stream=True, headers=headers, cookies=req_cookies, timeout=(10, 30)) as r:
                 r.raise_for_status()
                 content_type = r.headers.get('Content-Type', '').lower()
                 if 'text/html' in content_type: return None
@@ -1149,8 +1179,21 @@ class DownloadManager(QObject):
                     disposition = r.headers['content-disposition']
                     filenames = re.findall('filename="?([^"]+)"?', disposition)
                     if filenames: local_filename = filenames[0]
+                if not local_filename and 'filename=' in r.url:
+                    try:
+                        parsed_url = urllib.parse.urlparse(r.url)
+                        params = urllib.parse.parse_qs(parsed_url.query)
+                        if 'filename' in params: local_filename = params['filename'][0]
+                    except: pass
                 if not local_filename: local_filename = r.url.split('/')[-1].split('?')[0]
-                if not local_filename: local_filename = "download.tmp"
+                has_ext = "." in local_filename and len(local_filename.split('.')[-1]) < 5
+                
+                if not has_ext or (len(local_filename) > 30 and not " " in local_filename):
+                    if forced_name:
+                        print(f"Renaming bad filename '{local_filename}' to '{forced_name}'")
+                        local_filename = forced_name
+                    elif not has_ext:
+                        local_filename += ".rar"
                 local_filepath = os.path.join(dest_folder, local_filename)
                 
                 total_size = int(r.headers.get('content-length', 0)); bytes_downloaded = 0; start_time = time.time()
@@ -1549,7 +1592,9 @@ class GameDetailsWidget(QWidget):
                 self.fix_label.setText(f"Apply fix to: {os.path.basename(self.final_game_path)}?")
                 self.download_button.setText("ACTION REQUIRED"); self.download_button.setEnabled(False)
                 if ENABLE_NOTIFICATIONS:
-                    try: notification.notify(title="Fix Available", message="Game downloaded. Please apply the fix.", app_icon=ICON_PATH, timeout=5)
+                    try: 
+                        safe_icon = ICON_PATH if os.path.exists(ICON_PATH) else None
+                        notification.notify(title="Fix Available", message="Game downloaded. Please apply the fix.", app_icon=safe_icon, timeout=5)
                     except Exception: pass
             else: self.installer.cleanup_files()
         else: self.installer.cleanup_files()
@@ -1569,7 +1614,9 @@ class GameDetailsWidget(QWidget):
         if success:
             self.download_progress.setValue(100); self.stats_label.setText("Done")
             if ENABLE_NOTIFICATIONS:
-                try: notification.notify(title="Download Complete", message=f"{self.current_game_data.get('name')} ready!", app_icon=ICON_PATH, timeout=5)
+                try: 
+                    safe_icon = ICON_PATH if os.path.exists(ICON_PATH) else None
+                    notification.notify(title="Download Complete", message=f"{self.current_game_data.get('name')} ready!", app_icon=safe_icon, timeout=5)
                 except Exception: pass
         if self.path_manually_changed:
             self.data_manager.save_downloaded_game(self.current_game_data['name'], self.current_game_data['version'], self.final_game_path)
