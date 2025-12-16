@@ -1,10 +1,11 @@
 """
-Zuhu's OFME GUI Downloader V1.5.8
+Zuhu's OFME GUI Downloader V1.5.8-Beta1
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
 import sys
 import os
+import shutil
 import requests
 import json
 import re
@@ -32,9 +33,22 @@ from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPain
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty, QUrl
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.8"
+CURRENT_VERSION = "V1.5.8-Beta1"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
-DATA_FOLDER = os.path.join(os.path.expanduser('~'), 'Documents', 'ZuhuOFME')
+DOCUMENTS_DIR = os.path.join(os.path.expanduser('~'), 'Documents')
+PROJECTS_DIR = os.path.join(DOCUMENTS_DIR, 'ZuhuProjects')
+OLD_DATA_FOLDER = os.path.join(DOCUMENTS_DIR, 'ZuhuOFME')
+NEW_DATA_FOLDER = os.path.join(PROJECTS_DIR, 'ZuhuOFME')
+
+if os.path.exists(OLD_DATA_FOLDER) and not os.path.exists(NEW_DATA_FOLDER):
+    try:
+        os.makedirs(PROJECTS_DIR, exist_ok=True)
+        shutil.move(OLD_DATA_FOLDER, NEW_DATA_FOLDER)
+        print(f"Successfully migrated data folder to: {NEW_DATA_FOLDER}")
+    except Exception as e:
+        print(f"Error migrating folder: {e}")
+
+DATA_FOLDER = NEW_DATA_FOLDER
 DATA_FILE = os.path.join(DATA_FOLDER, 'Data.json')
 SETTINGS_FILE = os.path.join(DATA_FOLDER, 'Settings.json')
 ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-DWND-ICO.ico"
@@ -133,17 +147,18 @@ def load_settings():
                 VERSION_CHECK_BYPASS_LIST = settings.get('version_check_bypass_list', [])
 
         except (json.JSONDecodeError, IOError): pass
-    old_login_file = os.path.join(DATA_FOLDER, 'Login.json')
-    if os.path.exists(old_login_file):
-        try:
-            with open(old_login_file, 'r') as f:
-                creds = json.load(f)
-                if not OFME_USERNAME: OFME_USERNAME = creds.get('username', '')
-                if not OFME_PASSWORD: OFME_PASSWORD = creds.get('password', '')
-                if not WEBHOOK_URL: WEBHOOK_URL = creds.get('webhook_url', '')
-            save_settings_to_file()
-            print("Migrated credentials from Login.json to Settings.json")
-        except: pass
+    if not OFME_USERNAME or not OFME_PASSWORD:
+        old_login_file = os.path.join(DATA_FOLDER, 'Login.json')
+        if os.path.exists(old_login_file):
+            try:
+                with open(old_login_file, 'r') as f:
+                    creds = json.load(f)
+                    if not OFME_USERNAME: OFME_USERNAME = creds.get('username', '')
+                    if not OFME_PASSWORD: OFME_PASSWORD = creds.get('password', '')
+                    if not WEBHOOK_URL: WEBHOOK_URL = creds.get('webhook_url', '')
+                save_settings_to_file()
+                print("Migrated credentials from Login.json to Settings.json")
+            except: pass
 
 def save_settings_to_file():
     os.makedirs(DATA_FOLDER, exist_ok=True)
@@ -426,7 +441,7 @@ class PyToggle(QCheckBox):
         else: 
             self.animation.setEndValue(self._margin)
         self.animation.start()
-        
+
     def set_state_immediate(self, state):
         self.blockSignals(True)
         self.setChecked(state)
@@ -549,7 +564,14 @@ class SettingsPage(QWidget):
         self.lbl_wh_status.setText("On" if is_checked else "Off")
         self.wh_input.setEnabled(is_checked)
         save_settings_to_file()
-
+        print(f"Webhook toggled to {'ON' if is_checked else 'OFF'}")
+        
+    def append_stream_output(self, text):
+        self.console_output.moveCursor(QTextCursor.MoveOperation.End)
+        self.console_output.insertPlainText(text)
+    def append_log_line(self, text):
+        self.console_output.moveCursor(QTextCursor.MoveOperation.End)
+        self.console_output.insertPlainText(text + "\n")
     def create_general_settings_tab(self):
         settings_widget = QWidget()
         settings_layout = QVBoxLayout(settings_widget)
@@ -690,7 +712,6 @@ class SettingsPage(QWidget):
         s_lay.addWidget(self.lbl_time_taken, 1, 1)
         vc_layout.addWidget(status_frame)
         
-        # --- Results Table (Overview) ---
         self.results_table = QTableWidget()
         self.results_table.setColumnCount(4)
         self.results_table.setHorizontalHeaderLabels(["Game Name", "Old Ver", "New Ver", "Action"])
@@ -704,12 +725,10 @@ class SettingsPage(QWidget):
         self.tabs.addTab(vc_widget, "Version Checker")
 
     def start_version_check(self):
-        # Auto-save credentials temporarily for the run
         global OFME_USERNAME, OFME_PASSWORD, WEBHOOK_URL, ENABLE_WEBHOOK
         OFME_USERNAME = self.user_input.text()
         OFME_PASSWORD = self.pass_input.text()
         
-        # Get Webhook settings from the General Tab widgets
         WEBHOOK_URL = self.wh_input.text()
         ENABLE_WEBHOOK = self.wh_toggle.isChecked()
         
@@ -718,13 +737,12 @@ class SettingsPage(QWidget):
         self.results_table.setRowCount(0)
         self.lbl_game_checking.setText("Game Checking: Initializing...")
         
-        # Reset and Start Timer
         self.start_timestamp = time.time()
-        self.timer.start(1000) # update every 1s
+        self.timer.start(1000)
         self.lbl_time_taken.setText("Time Taken: 0 sec")
         
         self.checker_thread = VersionCheckWorker()
-        self.checker_thread.log_message.connect(self.append_to_console)
+        self.checker_thread.log_message.connect(self.append_log_line)
         self.checker_thread.status_update.connect(self.update_check_status)
         self.checker_thread.check_finished.connect(self.on_check_finished)
         self.checker_thread.login_failed.connect(self.on_login_failed)
@@ -745,10 +763,10 @@ class SettingsPage(QWidget):
         self.lbl_check_progress.setText(f"Progress: {prog}")
         
     def on_check_finished(self, results, time_str):
-        self.timer.stop() # Stop live timer
+        self.timer.stop()
         self.start_check_btn.setEnabled(True)
         self.start_check_btn.setText("Start Version Check")
-        self.lbl_time_taken.setText(f"Time Taken: {time_str}") # Ensure final time is set exactly
+        self.lbl_time_taken.setText(f"Time Taken: {time_str}")
         self.lbl_game_checking.setText("Overview:")
         self.lbl_game_version.setText("")
         self.lbl_check_progress.setText(f"{len(results)} Update(s) Found")
@@ -786,10 +804,6 @@ class SettingsPage(QWidget):
         QMessageBox.warning(self, "Login Error", "Could not log in to Online-Fix.me.\nPlease check your username and password in the fields above.")
         self.creds_container.setVisible(True)
 
-    def append_to_console(self, text):
-        self.console_output.moveCursor(QTextCursor.MoveOperation.End)
-        self.console_output.insertPlainText(text + "\n")
-
     def save_settings(self):
         global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
         global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD, VERSION_CHECK_BYPASS_LIST
@@ -808,7 +822,6 @@ class SettingsPage(QWidget):
         SHOW_SIZE_IN_GB = self.size_toggle.isChecked()
         ENABLE_NOTIFICATIONS = self.notif_toggle.isChecked()
         
-        # Save new checker settings
         ENABLE_WEBHOOK = self.wh_toggle.isChecked()
         WEBHOOK_URL = self.wh_input.text()
         OFME_USERNAME = self.user_input.text()
@@ -1669,10 +1682,10 @@ class GameLauncher(QWidget):
         
         self.settings_page = SettingsPage(self.pixel_font)
         self.settings_page.back_requested.connect(self.show_game_grid)
-        self.settings_page.append_to_console("".join(self.console_buffer))
+        
         self.console_stream._text_written.disconnect(self.console_buffer.append)
-        self.console_stream._text_written.connect(self.settings_page.append_to_console)
-
+        self.console_stream._text_written.connect(self.settings_page.append_stream_output)
+        self.settings_page.append_stream_output("".join(self.console_buffer))
         self.stack.addWidget(grid_page); self.stack.addWidget(self.details_page); self.stack.addWidget(self.settings_page)
 
     def resizeEvent(self, event):
