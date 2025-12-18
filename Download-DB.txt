@@ -429,12 +429,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/s-t-a-l-k-e-r-2-heart-of-chornobyl-free-download/
 MainGame: https://gofile.io/d/LGyqjs
 
-GoFile (Dispatch) [1.0.16409]
+GoFile (Dispatch) [1.0.16598]
 ApproxSize: 19GB
 Description: Dispatch is a superhero workplace comedy where choices matter. Manage a dysfunctional team of misfit heroes and strategize who to send to emergencies around the city, all while balancing office politics, personal relationships, and your own quest to become a hero. All episodes out now!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Dispatch.jpg
 Origin: https://steamrip.com/dispatch-free-download/
-MainGame: https://gofile.io/d/jiRk2z
+MainGame: https://gofile.io/d/mGqYaw
 
 GoFile (Cyberpunk 2077) [2.31]
 ApproxSize: 100GB
