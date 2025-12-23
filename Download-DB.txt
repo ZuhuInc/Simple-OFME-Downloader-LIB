@@ -569,3 +569,10 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/lossless-scaling-free-download/
 MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
 
+GoFile (Unknown Species) [0.9.12]
+ApproxSize: 40GB
+Description: pecies: Unknown is a 1 to 4 players co-op survival horror. Complete high-risk missions aboard an abandoned ship while being hunted by an unknown creature.
+Thumbnail: 
+Origin: 
+MainPart1: https://gofile.io/d/1jzJUo
+MainPart2: https://gofile.io/d/Y7LP3Q
