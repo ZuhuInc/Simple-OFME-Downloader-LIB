@@ -576,3 +576,13 @@ Thumbnail:
 Origin: 
 MainPart1: https://gofile.io/d/1jzJUo
 MainPart2: https://gofile.io/d/Y7LP3Q
+Fix: https://gofile.io/d/nr97UO
+
+GoFile (Drive Beyond Horizons) [31102025]
+ApproxSize: 20GB
+Description: Start your engine and head into the unknown with Drive Beyond Horizons!
+Thumbnail: 
+Origin: 
+MainPart1: https://gofile.io/d/e1JUYY
+MainPart2: https://gofile.io/d/bLHQw2
+MainPart3: https://gofile.io/d/2bphpD
