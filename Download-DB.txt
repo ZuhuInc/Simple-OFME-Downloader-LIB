@@ -572,8 +572,8 @@ MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.
 GoFile (Unknown Species) [0.9.12]
 ApproxSize: 40GB
 Description: Species: Unknown is a 1 to 4 players co-op survival horror. Complete high-risk missions aboard an abandoned ship while being hunted by an unknown creature.
-Thumbnail: 
-Origin: 
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/UnknownSpecies.jpg
+Origin: https://online-fix.me/games/officialservers/17921-species-unknown-po-seti.html
 MainPart1: https://gofile.io/d/1jzJUo
 MainPart2: https://gofile.io/d/Y7LP3Q
 Fix: https://gofile.io/d/nr97UO
@@ -581,8 +581,8 @@ Fix: https://gofile.io/d/nr97UO
 GoFile (Drive Beyond Horizons) [31102025]
 ApproxSize: 20GB
 Description: Start your engine and head into the unknown with Drive Beyond Horizons!
-Thumbnail: 
-Origin: 
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DriveBeyondHorizons.jpg
+Origin: https://online-fix.me/games/adventures/17730-drive-beyond-horizons.html
 MainPart1: https://gofile.io/d/e1JUYY
 MainPart2: https://gofile.io/d/bLHQw2
 MainPart3: https://gofile.io/d/2bphpD
