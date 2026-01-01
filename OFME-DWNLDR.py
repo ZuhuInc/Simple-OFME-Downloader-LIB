@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.8-Beta2
+Zuhu's OFME GUI Downloader V1.5.8-Beta3
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -8,6 +8,7 @@ import os
 import shutil
 import requests
 import json
+import zlib
 import re
 import time
 import subprocess
@@ -15,6 +16,9 @@ import ctypes
 import webbrowser
 import traceback
 import urllib.parse
+import vdf
+import psutil
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -29,12 +33,13 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QGraphicsOpacityEffect, QStackedWidget, QPushButton,
                              QProgressBar, QLineEdit, QFormLayout, QTabWidget,
                              QPlainTextEdit, QFileDialog, QCheckBox, QMessageBox, 
-                             QFrame, QTableWidget, QTableWidgetItem, QHeaderView)
+                             QFrame, QTableWidget, QTableWidgetItem, QHeaderView,
+                             QDialog)
 from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPainter, QColor, QDesktopServices
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty, QUrl
+from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty, QUrl, QStandardPaths
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.8-Beta2"
+CURRENT_VERSION = "V1.5.8-Beta3"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DOCUMENTS_DIR = os.path.join(os.path.expanduser('~'), 'Documents')
 PROJECTS_DIR = os.path.join(DOCUMENTS_DIR, 'ZuhuProjects')
@@ -61,6 +66,8 @@ ICON_PATH = os.path.join(DATA_FOLDER, 'cache', 'OFME-DWND-ICO.ico')
 RAR_PASSWORD = "online-fix.me"
 WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
 BRAVE_PATH = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
+STEAM_PATH = r"C:\Program Files (x86)\Steam"
+STEAM_USER_ID = ""
 DEFAULT_DOWNLOAD_PATH = ""
 SHOW_SIZE_IN_GB = True
 SHOW_SPEED_IN_MBPS = True
@@ -77,10 +84,10 @@ STYLESHEET = """
     QScrollArea { border: none; background-color: #1e1e1e; }
     
     QProgressBar {
-        border: 1px solid #444; border-radius: 8px; text-align: center;
+        border: 1px solid #444; border-radius: 13px; text-align: center;
         background-color: #2d2d2d; height: 26px; color: white; font-size: 10px;
     }
-    QProgressBar::chunk { background-color: #00ff7f; border-radius: 3px; }
+    QProgressBar::chunk { background-color: #00ff7f; border-radius: 13px; }
     
     QLineEdit {
         border: 1px solid #444; background-color: #2d2d2d;
@@ -96,8 +103,10 @@ STYLESHEET = """
     }
     QPushButton#CircleBtn:hover { border-color: #00ff7f; background-color: #333; }
     
+    /* --- UPDATED: Generic Buttons now match the 15px rounding --- */
     QPushButton {
-        background-color: #2d2d2d; border: 1px solid #444; border-radius: 8px;
+        background-color: #2d2d2d; border: 1px solid #444; 
+        border-radius: 15px;
         padding: 6px 12px; color: #e0e0e0; 
     }
     QPushButton:hover { border: 1px solid #00ff7f; color: #00ff7f; background-color: #333; }
@@ -108,6 +117,13 @@ STYLESHEET = """
         text-align: left; font-weight: bold; font-size: 14px; padding: 0px;
     }
     QPushButton#TopBackBtn:hover { color: #fff; border: none; background: transparent; }
+
+    /* --- UPDATED: Steam Button now matches 15px rounding --- */
+    QPushButton#SteamBtn {
+        background-color: #171a21; border: 1px solid #66c0f4; color: #66c0f4; font-weight: bold;
+        border-radius: 15px;
+    }
+    QPushButton#SteamBtn:hover { background-color: #2a475e; color: #ffffff; }
     
     QTabWidget::pane { border: 1px solid #444; background-color: #1e1e1e; }
     QTabBar::tab {
@@ -131,6 +147,7 @@ STYLESHEET = """
 def load_settings():
     global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
     global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD, VERSION_CHECK_BYPASS_LIST
+    global STEAM_PATH, STEAM_USER_ID
     
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -138,6 +155,8 @@ def load_settings():
                 settings = json.load(f)
                 WINRAR_PATH = settings.get('winrar_path', WINRAR_PATH)
                 DEFAULT_DOWNLOAD_PATH = settings.get('default_download_path', DEFAULT_DOWNLOAD_PATH)
+                STEAM_PATH = settings.get('steam_path', STEAM_PATH)
+                STEAM_USER_ID = settings.get('steam_user_id', "")
                 SHOW_SIZE_IN_GB = settings.get('show_size_in_gb', True)
                 SHOW_SPEED_IN_MBPS = settings.get('show_speed_in_mbps', False)
                 ENABLE_NOTIFICATIONS = settings.get('enable_notifications', True)
@@ -166,6 +185,8 @@ def save_settings_to_file():
     settings = {
         'winrar_path': WINRAR_PATH,
         'default_download_path': DEFAULT_DOWNLOAD_PATH,
+        'steam_path': STEAM_PATH,
+        'steam_user_id': STEAM_USER_ID,
         'show_size_in_gb': SHOW_SIZE_IN_GB,
         'show_speed_in_mbps': SHOW_SPEED_IN_MBPS,
         'enable_notifications': ENABLE_NOTIFICATIONS,
@@ -205,6 +226,101 @@ class ConsoleStream(QObject):
     def flush(self):
         if self.original_stream:
             self.original_stream.flush()
+
+# ---  STEAM SCRAPER WORKER ---
+class SteamScraperWorker(QThread):
+    account_found = pyqtSignal(str, str, str)
+    finished = pyqtSignal()
+
+    def run(self):
+        userdata_path = os.path.join(STEAM_PATH, "userdata")
+        if not os.path.exists(userdata_path): return
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        for entry in os.listdir(userdata_path):
+            if entry.isdigit():
+                try:
+                    url = f"https://steamid.xyz/{entry}"
+                    resp = requests.get(url, headers=headers, timeout=5)
+                    soup = BeautifulSoup(resp.content, 'html.parser')
+                    
+                    user_tag = soup.find('h1', class_='value')
+                    username = user_tag.text.strip() if user_tag else f"User {entry}"
+                    
+                    ava_tag = soup.find('img', class_='avatar')
+                    avatar_url = ava_tag['src'] if ava_tag and 'src' in ava_tag.attrs else ""
+                    
+                    self.account_found.emit(entry, username, avatar_url)
+                    time.sleep(1.0)
+                except:
+                    self.account_found.emit(entry, "N/A", "")
+        self.finished.emit()
+
+# --- STEAM ACCOUNT PICKER DIALOG ---
+class SteamAccountPicker(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Select Steam Account")
+        self.setFixedSize(450, 480)
+        self.setStyleSheet("background-color: #1e1e1e; border: 1px solid #444;")
+        self.selected_id = None
+        
+        layout = QVBoxLayout(self)
+        title = QLabel("Select your Steam Profile:"); 
+        title.setStyleSheet("font-weight: bold; color: #00ff7f; font-size: 14px; border:none;")
+        layout.addWidget(title)
+        
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFixedHeight(350)
+        self.container = QWidget()
+        self.accounts_layout = QVBoxLayout(self.container)
+        self.accounts_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.scroll.setWidget(self.container)
+        layout.addWidget(self.scroll)
+        
+        self.loading_lbl = QLabel("Scanning Steam accounts..."); 
+        self.loading_lbl.setStyleSheet("color: #888; border: none;")
+        layout.addWidget(self.loading_lbl)
+        
+        self.worker = SteamScraperWorker()
+        self.worker.account_found.connect(self.add_account_row)
+        self.worker.finished.connect(lambda: self.loading_lbl.setText("Scan complete."))
+        self.worker.start()
+
+    def add_account_row(self, sid, name, avatar_url):
+        row = QFrame()
+        row.setFixedHeight(100)
+        row.setStyleSheet("background-color: #252525; border-radius: 8px;")
+        h_lay = QHBoxLayout(row)
+        
+        img_lbl = QLabel()
+        img_lbl.setFixedSize(65, 65)
+        img_lbl.setStyleSheet("background-color: #000; border: 1px solid #444;")
+        if avatar_url:
+            try:
+                data = requests.get(avatar_url, timeout=5).content
+                pix = QPixmap()
+                pix.loadFromData(data)
+                img_lbl.setPixmap(pix.scaled(65, 65, Qt.AspectRatioMode.KeepAspectRatio))
+            except: pass
+        
+        v_lay = QVBoxLayout()
+        name_lbl = QLabel(name); 
+        name_lbl.setStyleSheet("font-size: 14px; font-weight: bold; color: #e0e0e0; border:none;")
+        id_lbl = QLabel(f"ID: {sid}"); 
+        id_lbl.setStyleSheet("font-size: 11px; color: #888; border:none;")
+        v_lay.addWidget(name_lbl); v_lay.addWidget(id_lbl)
+        h_lay.addWidget(img_lbl); h_lay.addLayout(v_lay, 1)
+        
+        sel_btn = QPushButton("Select")
+        sel_btn.setFixedWidth(80)
+        sel_btn.clicked.connect(lambda: self.confirm_selection(sid))
+        h_lay.addWidget(sel_btn)
+        self.accounts_layout.addWidget(row)
+
+    def confirm_selection(self, sid):
+        self.selected_id = sid
+        self.accept()
 
 # ---  VERSION CHECKER ---
 class VersionCheckWorker(QThread):
@@ -594,6 +710,20 @@ class SettingsPage(QWidget):
         self.download_path_edit.setPlaceholderText("Leave empty to prompt every time...")
         form_layout.addRow(lbl_dl, self.download_path_edit)
 
+        # --- STEAM SETTINGS ---
+        lbl_steam_p = QLabel("Steam Path:")
+        lbl_steam_p.setFont(self.settings_font)
+        self.steam_path_edit = QLineEdit(STEAM_PATH)
+        self.steam_path_edit.setFont(self.settings_font)
+        form_layout.addRow(lbl_steam_p, self.steam_path_edit)
+
+        lbl_steam_id = QLabel("Steam User ID:")
+        lbl_steam_id.setFont(self.settings_font)
+        self.steam_id_edit = QLineEdit(STEAM_USER_ID)
+        self.steam_id_edit.setFont(self.settings_font)
+        self.steam_id_edit.setPlaceholderText("Select in Game Tab or enter ID here")
+        form_layout.addRow(lbl_steam_id, self.steam_id_edit)
+
         def create_toggle_row(text, toggle, status_lbl):
             container = QWidget()
             h_lay = QHBoxLayout(container)
@@ -810,6 +940,7 @@ class SettingsPage(QWidget):
     def save_settings(self):
         global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
         global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD, VERSION_CHECK_BYPASS_LIST
+        global STEAM_PATH, STEAM_USER_ID
         
         self.save_button.setText("Saved!")
         self.save_button.setStyleSheet("border: 1px solid #00ff7f; color: #00ff7f;")
@@ -821,6 +952,8 @@ class SettingsPage(QWidget):
         new_download_path = self.download_path_edit.text()
         
         DEFAULT_DOWNLOAD_PATH = new_download_path 
+        STEAM_PATH = self.steam_path_edit.text()
+        STEAM_USER_ID = self.steam_id_edit.text()
         SHOW_SPEED_IN_MBPS = self.speed_toggle.isChecked()
         SHOW_SIZE_IN_GB = self.size_toggle.isChecked()
         ENABLE_NOTIFICATIONS = self.notif_toggle.isChecked()
@@ -837,8 +970,9 @@ class SettingsPage(QWidget):
         self.save_button.setStyleSheet("")
 
 # --- DATA AND ASSET MANAGEMENT ---
-class DataManager:
+class DataManager(QObject):
     def __init__(self):
+        super().__init__()
         self.games_db = self._parse_github_db()
         self.local_data = self._load_local_data()
         self.games = self._determine_game_statuses()
@@ -882,11 +1016,23 @@ class DataManager:
         for game_key, db_info in self.games_db.items():
             game_data = db_info.copy()
             if game_key in self.local_data:
+                game_data.update(self.local_data[game_key]) 
                 local_version = self.local_data[game_key].get('version', '0.0')
                 game_data['status'] = GameStatus.UP_TO_DATE if local_version == db_info['version'] else GameStatus.UPDATE_AVAILABLE
             else: game_data['status'] = GameStatus.NOT_DOWNLOADED
             processed_games.append(game_data)
         return processed_games
+    def save_steam_url(self, game_name, steam_url):
+        data = self._load_local_data()
+        if game_name.upper() in data:
+            data[game_name.upper()]['steam_url'] = steam_url
+            try:
+                with open(DATA_FILE, 'w') as f:
+                    json.dump(data, f, indent=4)
+                print(f"Saved Steam URL for {game_name}: {steam_url}")
+                self.local_data = data 
+            except Exception as e:
+                print(f"Error saving Steam URL: {e}")
 
 class AssetManager:
     def __init__(self):
@@ -1282,7 +1428,8 @@ class InstallManager(QObject):
         except OSError as e:
             self.cleanup_finished.emit(False, f"Cleanup failed: {e}")
 
-    def _winrar_extraction(self, rar_path, dest_folder):
+    def _winrar_extraction(self, rar_path, LazyExtraction):
+        dest_folder = LazyExtraction
         exe_to_use = WINRAR_PATH
         if "WinRAR.exe" in WINRAR_PATH:
             rar_candidate = WINRAR_PATH.replace("WinRAR.exe", "Rar.exe")
@@ -1360,6 +1507,7 @@ class GameDetailsWidget(QWidget):
         self.current_game_data = {}
         self.downloaded_file_paths = {}
         self.final_game_path = ""; self.path_manually_changed = False; self.installer = None
+        self.selected_exe = ""
         self.initUI()
 
     def initUI(self):
@@ -1367,7 +1515,7 @@ class GameDetailsWidget(QWidget):
         
         header_layout = QHBoxLayout()
         back_button = QPushButton("<< Back to Library"); back_button.setObjectName("TopBackBtn")
-        back_button.setFont(self.pixel_font) # Use custom font
+        back_button.setFont(self.pixel_font) 
         back_button.setCursor(Qt.CursorShape.PointingHandCursor)
         back_button.clicked.connect(self.back_requested.emit)
         header_layout.addWidget(back_button, 0, Qt.AlignmentFlag.AlignLeft); header_layout.addStretch()
@@ -1396,6 +1544,15 @@ class GameDetailsWidget(QWidget):
         self.description_label.setStyleSheet("color: #aaa; margin-top: 10px; font-size: 13px;")
         self.description_label.setAlignment(Qt.AlignmentFlag.AlignTop)
         
+        right_layout.addWidget(info_panel)
+        
+        desc_title = QLabel("Description:"); desc_title.setFont(self.pixel_font)
+        desc_title.setStyleSheet("color:#fff; font-weight:bold; margin-top:10px;")
+        right_layout.addWidget(desc_title)
+        
+        right_layout.addWidget(self.description_label, 1)
+        right_layout.addStretch()
+
         self.bypass_container = QWidget()
         bypass_layout = QHBoxLayout(self.bypass_container)
         bypass_layout.setContentsMargins(0, 5, 0, 5)
@@ -1407,8 +1564,29 @@ class GameDetailsWidget(QWidget):
         bypass_layout.addStretch()
         bypass_layout.addWidget(bypass_lbl)
         bypass_layout.addWidget(self.bypass_toggle)
+        right_layout.addWidget(self.bypass_container)
+        buttons_container = QWidget()
+        buttons_layout = QHBoxLayout(buttons_container)
+        buttons_layout.setContentsMargins(0, 0, 0, 0)
+        buttons_layout.setSpacing(10)
+        
+        self.launch_button = QPushButton("LAUNCH GAME")
+        self.launch_button.setFont(self.pixel_font)
+        self.launch_button.setFixedHeight(32)
+        self.launch_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.launch_button.clicked.connect(self.launch_steam_game)
+        self.launch_button.hide() 
+        self.steam_button = QPushButton("ADD TO STEAM")
+        self.steam_button.setObjectName("SteamBtn")
+        self.steam_button.setFont(self.pixel_font)
+        self.steam_button.setFixedHeight(32)
+        self.steam_button.clicked.connect(self.handle_steam_click)
+        buttons_layout.addWidget(self.launch_button, 1) 
+        buttons_layout.addWidget(self.steam_button, 1)
+        right_layout.addWidget(buttons_container)
         self.location_bar = QLineEdit()
         self.location_bar.setFont(self.pixel_font)
+        right_layout.addWidget(self.location_bar)
         
         self.fix_prompt_widget = QWidget(); fix_layout = QHBoxLayout(self.fix_prompt_widget); fix_layout.setContentsMargins(0,0,0,0)
         self.fix_label = self._create_info_label(text="Fix is available. Apply it?", color="#ffd700")
@@ -1417,17 +1595,6 @@ class GameDetailsWidget(QWidget):
         self.change_path_button = QPushButton("Change Path"); self.change_path_button.setFont(self.pixel_font)
         yes_button.clicked.connect(self.on_fix_yes); no_button.clicked.connect(self.on_fix_no); self.change_path_button.clicked.connect(self.select_fix_path)
         fix_layout.addWidget(self.fix_label, 1); fix_layout.addWidget(yes_button); fix_layout.addWidget(no_button); fix_layout.addWidget(self.change_path_button)
-        
-        right_layout.addWidget(info_panel)
-        
-        desc_title = QLabel("Description:"); desc_title.setFont(self.pixel_font)
-        desc_title.setStyleSheet("color:#fff; font-weight:bold; margin-top:10px;")
-        right_layout.addWidget(desc_title)
-        
-        right_layout.addWidget(self.description_label, 1)
-        right_layout.addStretch()
-        right_layout.addWidget(self.bypass_container)
-        right_layout.addWidget(self.location_bar)
         right_layout.addWidget(self.fix_prompt_widget)
         
         content_layout.addWidget(right_panel, 1)
@@ -1442,12 +1609,15 @@ class GameDetailsWidget(QWidget):
         status_line.addWidget(self.status_label); status_line.addStretch(); status_line.addWidget(self.stats_label)
 
         action_line = QHBoxLayout()
-        self.download_progress = QProgressBar()
-        self.download_progress.setFont(self.pixel_font)
-        self.download_button = QPushButton("DOWNLOAD")
+        
         font_family = self.pixel_font.family()
         large_font = QFont(font_family, 12, QFont.Weight.Bold) 
-        self.download_button.setFont(large_font)
+
+        self.download_progress = QProgressBar()
+        self.download_progress.setFont(self.pixel_font)
+        
+        self.download_button = QPushButton("DOWNLOAD")
+        self.download_button.setFont(large_font) 
         self.download_button.setFixedWidth(200)
         self.download_button.setFixedHeight(30)
         self.download_button.clicked.connect(self.start_or_cancel_download)
@@ -1455,6 +1625,187 @@ class GameDetailsWidget(QWidget):
         action_line.addWidget(self.download_progress, 1); action_line.addWidget(self.download_button)
         bottom_layout.addLayout(status_line); bottom_layout.addLayout(action_line)
         main_layout.addWidget(bottom_controls)
+
+    def get_actual_path(self, path):
+            try:
+                path = os.path.abspath(path)
+                if os.name == 'nt':
+                    buf = ctypes.create_unicode_buffer(500)
+                    GetLongPathNameW = ctypes.windll.kernel32.GetLongPathNameW
+                    GetLongPathNameW(path, buf, 500)
+                    path = buf.value
+                    if len(path) > 1 and path[1] == ':':
+                        path = path[0].upper() + path[1:]
+                return path
+            except:
+                return path
+
+    def handle_steam_click(self):
+        global STEAM_USER_ID, STEAM_PATH
+        current_text = self.steam_button.text()
+        if not STEAM_USER_ID:
+            picker = SteamAccountPicker(self)
+            if picker.exec():
+                STEAM_USER_ID = picker.selected_id
+                save_settings_to_file()
+                self.steam_button.setText("SELECT GAME EXE")
+                self.status_label.setText(f"Steam Account {STEAM_USER_ID} selected.")
+            return
+        if current_text == "ADD TO STEAM" or current_text == "SELECT GAME EXE":
+            game_folder = self.final_game_path if os.path.exists(self.final_game_path) else DEFAULT_DOWNLOAD_PATH
+            if not game_folder:
+                 game_folder = "C:\\"
+            
+            exe_path, _ = QFileDialog.getOpenFileName(self, "Select the game executable", game_folder, "Executables (*.exe)")
+            if exe_path:
+                self.selected_exe = exe_path
+                self.steam_button.setText("CONFIRM STEAM SHORTCUT")
+                self.steam_button.setStyleSheet("background-color: #00ff7f; color: black; font-weight: bold;")
+                self.status_label.setText(f"Target selected: {os.path.basename(exe_path)}")
+            return
+        if current_text == "CONFIRM STEAM SHORTCUT":
+            self.finalize_steam_shortcut()
+
+    def finalize_steam_shortcut(self):
+        global STEAM_PATH
+
+        steam_running = any(p.name().lower() == "steam.exe" for p in psutil.process_iter())
+        if steam_running:
+            res = QMessageBox.warning(self, "Steam is Running", 
+                "Steam must be closed to add the game to the library.\n\nClick YES to close Steam automatically.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+            if res == QMessageBox.StandardButton.Yes:
+                os.system("taskkill /f /im steam.exe")
+                timeout = 0
+                while any(p.name().lower() == "steam.exe" for p in psutil.process_iter()) and timeout < 10:
+                    time.sleep(0.5)
+                    timeout += 1
+            else:
+                return
+
+        try:
+            vdf_path = os.path.join(STEAM_PATH, "userdata", STEAM_USER_ID, "config", "shortcuts.vdf")
+            if os.path.exists(vdf_path):
+                with open(vdf_path, 'rb') as f: data = vdf.binary_load(f)
+            else:
+                data = {'shortcuts': {}}
+
+            app_name = self.current_game_data['name']
+            real_exe_path = self.get_actual_path(self.selected_exe)
+            real_dir_path = os.path.dirname(real_exe_path)
+            exe_string = f'"{real_exe_path}"'
+            start_dir = f'"{real_dir_path}"'
+
+            already_exists = False
+            for k, v in data['shortcuts'].items():
+                if v.get('AppName') == app_name:
+                    already_exists = True
+                    break
+
+            if not already_exists:
+                index = str(len(data['shortcuts']))
+                new_shortcut = {
+                    'appid': -1,
+                    'AppName': app_name,
+                    'exe': exe_string,
+                    'StartDir': start_dir,
+                    'icon': "", 'ShortcutPath': "", 'LaunchOptions': "",
+                    'IsHidden': 0, 'AllowDesktopConfig': 1, 'AllowOverlay': 1, 'OpenVR': 0,
+                    'Devkit': 0, 'DevkitGameID': "", 'LastPlayTime': 0, 'tags': {}
+                }
+                data['shortcuts'][index] = new_shortcut
+                with open(vdf_path, 'wb') as f: vdf.binary_dump(data, f)
+                print("Written shortcut to VDF.")
+
+            print("Restarting Steam...")
+            steam_exe = os.path.join(STEAM_PATH, "steam.exe")
+            if os.path.exists(steam_exe):
+                subprocess.Popen([steam_exe])
+
+            reply = QMessageBox.question(self, "Sync Steam ID?", 
+                f"{app_name} has been added to Steam!\n\n"
+                "Do you want to import the Steam Launch URL to this launcher?\n"
+                "This requires you to manually create a desktop shortcut in Steam right now.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+            if reply == QMessageBox.StandardButton.Yes:
+                self.initiate_shortcut_watch(app_name)
+            else:
+                self.status_label.setText(f"Added to Steam (No ID Sync).")
+                self.set_game_data(self.current_game_data)
+
+        except Exception as e:
+            traceback.print_exc()
+            QMessageBox.critical(self, "Error", f"Failed to save shortcut: {e}")
+            self.set_game_data(self.current_game_data)
+
+    def initiate_shortcut_watch(self, app_name):
+        self.download_button.setText("WAITING FOR SHORTCUT...")
+        self.download_button.setEnabled(False)
+        self.status_label.setText("Waiting for Desktop Shortcut...")
+        
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Action Required")
+        msg.setText(f"Steam is restarting...\n\nTo grab the ID for {app_name}:\n\n"
+                    "1. Go to your Steam Library.\n"
+                    f"2. Right-Click '{app_name}' > Manage > Add desktop shortcut.\n"
+                    "3. Wait a moment, and this app will auto-detect it!")
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
+
+        self.watch_timer = QTimer(self)
+        self.watch_timer.timeout.connect(lambda: self.check_for_shortcut(app_name))
+        self.watch_timer.start(1000)
+        self.watch_start_time = time.time()
+
+    def check_for_shortcut(self, app_name):
+        desktop_path = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)
+        safe_name = re.sub(r'[\\/*?:"<>|]', "", app_name)
+        shortcut_path = os.path.join(desktop_path, f"{safe_name}.url")
+        if os.path.exists(shortcut_path):
+            self.watch_timer.stop()
+            try:
+                with open(shortcut_path, 'r') as f:
+                    content = f.read()
+                match = re.search(r'steam://rungameid/(\d+)', content)
+                if match:
+                    steam_id = match.group(1)
+                    steam_url = f"steam://rungameid/{steam_id}"
+                    self.data_manager.save_steam_url(app_name, steam_url)
+                    try:
+                        os.remove(shortcut_path)
+                    except: pass 
+                    
+                    self.status_label.setText(f"Success! ID: {steam_id}")
+                    QMessageBox.information(self, "Integration Complete", f"Successfully grabbed Steam ID!\n\nURL: {steam_url}")
+                else:
+                    self.status_label.setText("Error: ID not found in shortcut.")
+            
+            except Exception as e:
+                print(f"Error reading shortcut: {e}")
+            
+            self.set_game_data(self.current_game_data)
+            return
+
+        if time.time() - self.watch_start_time > 120:
+            self.watch_timer.stop()
+            self.download_button.setText("TIMED OUT")
+            self.status_label.setText("Shortcut detection timed out.")
+            QMessageBox.warning(self, "Timeout", "Could not find the desktop shortcut in time.\nPlease try again.")
+            self.set_game_data(self.current_game_data)
+            
+    def launch_steam_game(self):
+        steam_url = self.current_game_data.get('steam_url')
+        if steam_url:
+            print(f"Launching: {steam_url}")
+            QDesktopServices.openUrl(QUrl(steam_url))
+            
+            if ENABLE_NOTIFICATIONS:
+                safe_icon = ICON_PATH if os.path.exists(ICON_PATH) else None
+                notification.notify(title="Launching", message=f"Starting {self.current_game_data['name']} via Steam...", app_icon=safe_icon, timeout=3)
+        else:
+            QMessageBox.warning(self, "Error", "No Steam URL found for this game.")
 
     def on_bypass_toggled(self, state):
         game_name = self.current_game_data.get('name')
@@ -1488,19 +1839,23 @@ class GameDetailsWidget(QWidget):
 
     def set_game_data(self, game_data):
         self.current_game_data = game_data
-        self.final_game_path = ""; self.path_manually_changed = False; self.downloaded_file_paths = {}
-        self.download_progress.setValue(0); self.stats_label.setText(""); self.status_label.setText("")
+        self.final_game_path = ""
+        self.path_manually_changed = False
+        self.downloaded_file_paths = {}
+        self.download_progress.setValue(0)
+        self.stats_label.setText("")
+        self.status_label.setText("")
         self.fix_prompt_widget.setVisible(False)
-        
-        self.game_name_label.setText(game_data.get('name', 'N/A')); self.sources_label.setText(game_data.get('Sources', 'N/A'))
-        self.size_label.setText(game_data.get('ApproxSize', 'N/A')); self.version_label.setText(game_data.get('version', 'N/A'))
+        self.selected_exe = ""
+        self.game_name_label.setText(game_data.get('name', 'N/A'))
+        self.sources_label.setText(game_data.get('Sources', 'N/A'))
+        self.size_label.setText(game_data.get('ApproxSize', 'N/A'))
+        self.version_label.setText(game_data.get('version', 'N/A'))
         self.description_label.setText(game_data.get('Description', 'No description available.'))
-        
         status = game_data.get('status', GameStatus.NOT_DOWNLOADED)
         status_color = STATUS_INFO[status]['color']
         self.game_name_label.setStyleSheet(f"color: {status_color};")
         thumbnail_path = self.asset_manager.get_asset(game_data.get('Thumbnail'))
-        
         border_color = STATUS_INFO[status]['color']
         self.thumbnail_label.setStyleSheet(f"border: 2px solid {border_color}; border-radius: 0px; background-color: #000;")
 
@@ -1508,7 +1863,9 @@ class GameDetailsWidget(QWidget):
             pixmap = QPixmap(thumbnail_path)
             scaled_pixmap = pixmap.scaled(self.thumbnail_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             self.thumbnail_label.setPixmap(scaled_pixmap)
-        else: self.thumbnail_label.clear(); self.thumbnail_label.setText("No Image")
+        else:
+            self.thumbnail_label.clear()
+            self.thumbnail_label.setText("No Image")
 
         game_name = game_data.get('name')
         if game_name in VERSION_CHECK_BYPASS_LIST:
@@ -1517,20 +1874,40 @@ class GameDetailsWidget(QWidget):
             self.bypass_toggle.set_state_immediate(False)
 
         self.download_button.setEnabled(True)
+        self.steam_button.setText("ADD TO STEAM")
+        self.launch_button.hide()
+        
         if status == GameStatus.NOT_DOWNLOADED:
             self.download_button.setText("DOWNLOAD")
             self.location_bar.setText(DEFAULT_DOWNLOAD_PATH)
             self.location_bar.setPlaceholderText("Select base download folder...")
             self.location_bar.setVisible(True)
             self.bypass_container.setVisible(True)
+            self.steam_button.setVisible(False)
         else:
             game_name_key = game_data.get('name', '').upper()
             self.final_game_path = self.data_manager.local_data.get(game_name_key, {}).get('location', '')
             self.location_bar.setText(DEFAULT_DOWNLOAD_PATH)
             self.location_bar.setVisible(True)
             self.bypass_container.setVisible(True)
-            if status == GameStatus.UPDATE_AVAILABLE: self.download_button.setText("UPDATE")
-            else: self.download_button.setText("RE-DOWNLOAD")
+            self.steam_button.setVisible(True)
+            
+            if status == GameStatus.UPDATE_AVAILABLE: 
+                self.download_button.setText("UPDATE")
+            else: 
+                self.download_button.setText("RE-DOWNLOAD")
+
+            steam_url = game_data.get('steam_url')
+            if steam_url:
+                self.steam_button.setText("RE-ADD TO STEAM")
+                self.launch_button.setVisible(True)
+                self.launch_button.setText("LAUNCH (STEAM)")
+                if status == GameStatus.UP_TO_DATE:
+                    self.launch_button.setStyleSheet("background-color: #00ff7f; color: black; font-weight: bold; border-radius: 15px;")
+                elif status == GameStatus.UPDATE_AVAILABLE:
+                    self.launch_button.setStyleSheet("background-color: #ffd700; color: black; font-weight: bold; border-radius: 15px;")
+                else:
+                    self.launch_button.setStyleSheet("border-radius: 15px; border: 1px solid #444;")
 
     def start_or_cancel_download(self):
         if self.worker_thread is not None:
