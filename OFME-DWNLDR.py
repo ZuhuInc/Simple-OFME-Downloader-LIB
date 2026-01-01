@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.8-Beta3
+Zuhu's OFME GUI Downloader V1.5.8-Beta4
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -18,6 +18,7 @@ import traceback
 import urllib.parse
 import vdf
 import psutil
+import winreg
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -34,12 +35,15 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QProgressBar, QLineEdit, QFormLayout, QTabWidget,
                              QPlainTextEdit, QFileDialog, QCheckBox, QMessageBox, 
                              QFrame, QTableWidget, QTableWidgetItem, QHeaderView,
-                             QDialog)
-from PyQt6.QtGui import QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, QPainter, QColor, QDesktopServices
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QThread, QTimer, pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty, QUrl, QStandardPaths
+                             QDialog, QComboBox)
+from PyQt6.QtGui import (QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, 
+                         QPainter, QColor, QDesktopServices, QPen)
+from PyQt6.QtCore import (Qt, QSize, pyqtSignal, QObject, QThread, QTimer, 
+                          pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, 
+                          pyqtProperty, QUrl, QStandardPaths)
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.8-Beta3"
+CURRENT_VERSION = "V1.5.8-Beta4"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DOCUMENTS_DIR = os.path.join(os.path.expanduser('~'), 'Documents')
 PROJECTS_DIR = os.path.join(DOCUMENTS_DIR, 'ZuhuProjects')
@@ -77,6 +81,92 @@ WEBHOOK_URL = ""
 OFME_USERNAME = ""
 OFME_PASSWORD = ""
 VERSION_CHECK_BYPASS_LIST = []
+SELECTED_BROWSER_PATH = ""
+
+# --- BROWSER DETECTION ---
+def normalize_browser_name(raw_name):
+    raw = raw_name.lower()
+    if "brave" in raw: return "Brave"
+    if "opera gx" in raw or "operagx" in raw: return "Opera GX"
+    if "chrome" in raw and "google" in raw: return "Google Chrome"
+    if "firefox" in raw: return "Firefox"
+    if "opera" in raw and "gx" not in raw: return "Opera"
+    if "vivaldi" in raw: return "Vivaldi"
+    if "edge" in raw: return "Microsoft Edge"
+    return raw_name
+
+def get_installed_browsers():
+    found_browsers = {}
+    prog_files = os.environ.get("PROGRAMFILES", r"C:\Program Files")
+    prog_files_x86 = os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")
+    local_appdata = os.environ.get("LOCALAPPDATA", r"C:\Users\Default\AppData\Local")
+    
+    potential_paths = {
+        "Opera GX": [os.path.join(local_appdata, "Programs", "Opera GX", "launcher.exe"), os.path.join(local_appdata, "Programs", "Opera GX", "opera.exe")],
+        "Google Chrome": [os.path.join(prog_files, "Google", "Chrome", "Application", "chrome.exe"), os.path.join(prog_files_x86, "Google", "Chrome", "Application", "chrome.exe"), os.path.join(local_appdata, "Google", "Chrome", "Application", "chrome.exe")],
+        "Brave": [os.path.join(prog_files, "BraveSoftware", "Brave-Browser", "Application", "brave.exe"), os.path.join(local_appdata, "BraveSoftware", "Brave-Browser", "Application", "brave.exe")],
+        "Firefox": [os.path.join(prog_files, "Mozilla Firefox", "firefox.exe"), os.path.join(local_appdata, "Mozilla Firefox", "firefox.exe")],
+        "Opera": [os.path.join(local_appdata, "Programs", "Opera", "launcher.exe"), os.path.join(prog_files, "Opera", "launcher.exe")],
+        "Vivaldi": [os.path.join(local_appdata, "Vivaldi", "Application", "vivaldi.exe"), os.path.join(prog_files, "Vivaldi", "Application", "vivaldi.exe")],
+        "Microsoft Edge": [os.path.join(prog_files_x86, "Microsoft", "Edge", "Application", "msedge.exe"), os.path.join(prog_files, "Microsoft", "Edge", "Application", "msedge.exe")]
+    }
+
+    for name, paths in potential_paths.items():
+        for path in paths:
+            if os.path.exists(path):
+                found_browsers[name] = path
+                break 
+
+    registry_locations = [
+        (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Clients\StartMenuInternet"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Clients\StartMenuInternet"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Clients\StartMenuInternet")
+    ]
+    for hive, reg_path in registry_locations:
+        try:
+            with winreg.OpenKey(hive, reg_path) as key:
+                i = 0
+                while True:
+                    try:
+                        subkey_name = winreg.EnumKey(key, i); i += 1
+                        if "iexplore" in subkey_name.lower(): continue
+                        name = normalize_browser_name(subkey_name)
+                        if name in found_browsers: continue 
+                        cmd_path = f"{reg_path}\\{subkey_name}\\shell\\open\\command"
+                        with winreg.OpenKey(hive, cmd_path) as cmd_key:
+                            val, _ = winreg.QueryValueEx(cmd_key, "")
+                            val = val.strip('"')
+                            if os.path.exists(val): found_browsers[name] = val
+                    except OSError: break
+        except OSError: continue
+
+    priority = ["Brave", "Opera GX", "Google Chrome", "Firefox", "Opera", "Vivaldi", "Microsoft Edge"]
+    sorted_browsers = {}
+    for p in priority:
+        if p in found_browsers: sorted_browsers[p] = found_browsers[p]
+    for k, v in found_browsers.items():
+        if k not in sorted_browsers: sorted_browsers[k] = v
+    return sorted_browsers
+
+# --- CUSTOM WIDGETS ---
+class CustomComboBox(QComboBox):
+    """
+    A custom ComboBox that draws a text-based arrow ( > or v ) 
+    instead of using an image file. Matches the green pixel theme.
+    """
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        is_open = self.view().isVisible()
+        arrow_char = "v" if is_open else ">"
+        painter.setPen(QColor("#00ff7f"))
+        f = self.font()
+        f.setBold(True)
+        painter.setFont(f)
+        rect = self.rect()
+        arrow_area = QRect(rect.width() - 30, 0, 30, rect.height())
+        painter.drawText(arrow_area, Qt.AlignmentFlag.AlignCenter, arrow_char)
 
 # --- STYLING ---
 STYLESHEET = """
@@ -91,10 +181,7 @@ STYLESHEET = """
     
     QLineEdit {
         border: 1px solid #444; background-color: #2d2d2d;
-        border-radius: 15px; 
-        padding: 5px 12px; 
-        color: #e0e0e0;
-        min-height: 20px; 
+        border-radius: 15px; padding: 5px 12px; color: #e0e0e0; min-height: 20px; 
     }
     QLineEdit:focus { border: 1px solid #00ff7f; }
     
@@ -103,11 +190,9 @@ STYLESHEET = """
     }
     QPushButton#CircleBtn:hover { border-color: #00ff7f; background-color: #333; }
     
-    /* --- UPDATED: Generic Buttons now match the 15px rounding --- */
     QPushButton {
         background-color: #2d2d2d; border: 1px solid #444; 
-        border-radius: 15px;
-        padding: 6px 12px; color: #e0e0e0; 
+        border-radius: 15px; padding: 6px 12px; color: #e0e0e0; 
     }
     QPushButton:hover { border: 1px solid #00ff7f; color: #00ff7f; background-color: #333; }
     QPushButton:disabled { border: 1px solid #333; color: #555; }
@@ -118,7 +203,6 @@ STYLESHEET = """
     }
     QPushButton#TopBackBtn:hover { color: #fff; border: none; background: transparent; }
 
-    /* --- UPDATED: Steam Button now matches 15px rounding --- */
     QPushButton#SteamBtn {
         background-color: #171a21; border: 1px solid #66c0f4; color: #66c0f4; font-weight: bold;
         border-radius: 15px;
@@ -141,13 +225,51 @@ STYLESHEET = """
     QTableWidget { gridline-color: #444; background-color: #1e1e1e; border: 1px solid #444; }
     QHeaderView::section { background-color: #2d2d2d; padding: 4px; border: 1px solid #444; color: #00ff7f; }
     QTableWidget::item { padding: 5px; }
+
+    /* --- CUSTOM COMBOBOX STYLING --- */
+    QComboBox {
+        background-color: #2d2d2d;
+        border: 1px solid #444;
+        border-radius: 0px; /* Square */
+        padding: 5px 10px;
+        color: #00ff7f;
+        min-width: 140px;
+        font-weight: bold;
+    }
+    QComboBox:hover { border: 1px solid #00ff7f; }
+    
+    QComboBox::drop-down {
+        subcontrol-origin: padding;
+        subcontrol-position: top right;
+        width: 30px;
+        border-left-width: 1px;
+        border-left-color: #444;
+        border-left-style: solid;
+        border-top-right-radius: 0px;
+        border-bottom-right-radius: 0px;
+    }
+    
+    /* HIDE DEFAULT ARROW (We draw it manually in Python) */
+    QComboBox::down-arrow {
+        image: none;
+        border: none;
+    }
+
+    QComboBox QAbstractItemView {
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+        selection-background-color: #00ff7f;
+        selection-color: #000000;
+        border: 1px solid #444;
+        outline: none;
+    }
 """
 
 # --- SETTINGS LOGIC ---
 def load_settings():
     global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
     global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD, VERSION_CHECK_BYPASS_LIST
-    global STEAM_PATH, STEAM_USER_ID
+    global STEAM_PATH, STEAM_USER_ID, SELECTED_BROWSER_PATH
     
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -165,6 +287,7 @@ def load_settings():
                 OFME_USERNAME = settings.get('ofme_username', "")
                 OFME_PASSWORD = settings.get('ofme_password', "")
                 VERSION_CHECK_BYPASS_LIST = settings.get('version_check_bypass_list', [])
+                SELECTED_BROWSER_PATH = settings.get('selected_browser_path', "")
 
         except (json.JSONDecodeError, IOError): pass
     if not OFME_USERNAME or not OFME_PASSWORD:
@@ -194,7 +317,8 @@ def save_settings_to_file():
         'webhook_url': WEBHOOK_URL,
         'ofme_username': OFME_USERNAME,
         'ofme_password': OFME_PASSWORD,
-        'version_check_bypass_list': VERSION_CHECK_BYPASS_LIST
+        'version_check_bypass_list': VERSION_CHECK_BYPASS_LIST,
+        'selected_browser_path': SELECTED_BROWSER_PATH
     }
     try:
         with open(SETTINGS_FILE, 'w') as f: json.dump(settings, f, indent=4)
@@ -340,7 +464,17 @@ class VersionCheckWorker(QThread):
 
         options = Options()
         options.add_argument("--headless=new") 
-        options.binary_location = BRAVE_PATH
+        browser_exe = SELECTED_BROWSER_PATH
+        if not browser_exe or not os.path.exists(browser_exe):
+            self.log_message.emit("Selected browser not found or unset, fallback to default...")
+            if os.path.exists(BRAVE_PATH):
+                browser_exe = BRAVE_PATH
+            else:
+                self.log_message.emit("Brave default not found. Attempting system Chrome...")
+                browser_exe = ""
+        self.log_message.emit(f"Using Browser Path: {browser_exe if browser_exe else 'System Default'}")
+        if browser_exe:
+            options.binary_location = browser_exe
         
         driver1 = None
         driver2 = None
@@ -351,15 +485,22 @@ class VersionCheckWorker(QThread):
                 driver1 = webdriver.Chrome(options=options)
             except Exception as e:
                 self.log_message.emit(f"Failed to init standard driver: {e}")
-                if "binary is not a Chrome" in str(e):
-                    self.log_message.emit("Trying default Chrome instead of Brave path...")
+                if "binary is not a Chrome" in str(e) or "binary" in str(e).lower():
+                    self.log_message.emit("Binary error. Trying default system Chrome...")
                     options.binary_location = "" 
                     driver1 = webdriver.Chrome(options=options)
 
             self.log_message.emit("Initializing Driver 2 (SteamRIP - VISIBLE)...")
             try:
-                browser_name = 'brave' if os.path.exists(BRAVE_PATH) else 'chrome'
-                driver2 = Driver(browser=browser_name, uc=True, headless=False)
+                sb_browser = "chrome"
+                if browser_exe:
+                    lower_path = browser_exe.lower()
+                    if "brave" in lower_path: sb_browser = "brave"
+                    elif "firefox" in lower_path: sb_browser = "firefox"
+                    elif "edge" in lower_path: sb_browser = "edge"
+                    elif "opera" in lower_path: sb_browser = "opera"
+                
+                driver2 = Driver(browser=sb_browser, uc=True, headless=False)
             except Exception as e:
                 self.log_message.emit(f"Failed to init UC driver: {e}")
 
@@ -630,8 +771,7 @@ class SettingsPage(QWidget):
         self.tabs.addTab(console_widget, "Console Output")
         self.create_general_settings_tab()
         self.create_version_checker_tab()
-
-        # --- DYNAMIC BOTTOM LAYOUT ---
+        
         bottom_container = QWidget()
         self.bottom_layout = QHBoxLayout(bottom_container)
         self.bottom_layout.setContentsMargins(0, 0, 0, 0)
@@ -647,6 +787,28 @@ class SettingsPage(QWidget):
         self.vc_toggle_container = QWidget()
         vc_toggle_layout = QHBoxLayout(self.vc_toggle_container)
         vc_toggle_layout.setContentsMargins(0, 0, 0, 0)
+        
+        lbl_browser = QLabel("Browser:")
+        lbl_browser.setFont(self.settings_font)
+        lbl_browser.setStyleSheet("color: #e0e0e0; margin-right: 5px;")
+        
+        self.browser_combo = CustomComboBox()
+        self.browser_combo.setFont(self.settings_font)
+        self.browser_combo.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.browser_combo.setToolTip("Select the browser used for verification")
+        self.detected_browsers = get_installed_browsers()
+        for name, path in self.detected_browsers.items():
+            self.browser_combo.addItem(name, path)
+            
+        idx = self.browser_combo.findData(SELECTED_BROWSER_PATH)
+        if idx >= 0: self.browser_combo.setCurrentIndex(idx)
+        elif self.browser_combo.count() > 0: self.browser_combo.setCurrentIndex(0) 
+        self.browser_combo.currentIndexChanged.connect(self.save_browser_selection)
+
+        vc_toggle_layout.addWidget(lbl_browser)
+        vc_toggle_layout.addWidget(self.browser_combo)
+        vc_toggle_layout.addSpacing(20)
+        
         vc_lbl = QLabel("Discord Webhook:")
         vc_lbl.setFont(self.settings_font)
         vc_lbl.setStyleSheet("color: #e0e0e0; margin-right: 10px;")
@@ -662,6 +824,12 @@ class SettingsPage(QWidget):
         layout.addWidget(bottom_container)
         self.tabs.currentChanged.connect(self.on_tab_changed)
         self.on_tab_changed(self.tabs.currentIndex())
+
+    def save_browser_selection(self):
+        global SELECTED_BROWSER_PATH
+        SELECTED_BROWSER_PATH = self.browser_combo.currentData()
+        print(f"Browser selection changed to: {self.browser_combo.currentText()}")
+        save_settings_to_file()
 
     def on_tab_changed(self, index):
         self.save_button.hide()
