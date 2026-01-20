@@ -629,6 +629,13 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/desktop-defender-free-download/
 MainGame: https://buzzheavier.com/klichw8ekchw
 
+GoFile (Pacific Drive) [1.14.0]
+ApproxSize: 18GB
+Description: Face the supernatural dangers of the Olympic Exclusion Zone with a car as your only lifeline in this driving survival adventure! Scavenge resources, load up your trusty station wagon, and drive like hell to make it through alive.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PacificDrive.jpg
+Origin: https://steamrip.com/pacific-dgdjo7-drive-free-download-p1/
+MainGame: https://gofile.io/d/rFwn7d
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
