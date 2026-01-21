@@ -799,3 +799,4 @@ Origin: https://online-fix.me/games/sandbox/17619-nuclear-nightmare-po-seti.html
 MainPart1: https://gofile.io/d/4ySvT4
 MainPart2: https://gofile.io/d/VgOYwf
 MainPart3: https://gofile.io/d/HeXQVQ
+Fix: https://gofile.io/d/775pms
