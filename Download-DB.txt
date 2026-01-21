@@ -664,6 +664,20 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/indiana-jones-and-the-great-circle-free-download/
 MainGame: https://buzzheavier.com/0wvm5bvj51hb
 
+BuzzHeavier (UNCHARTED: Legacy of Thieves Collection) [1.3.20900]
+ApproxSize: 126GB
+Description: Play as Nathan Drake and Chloe Frazer in their own standalone adventures as they confront their pasts and forge their own legacies. This game includes the critically acclaimed single-player stories from both UNCHARTED 4: A Thief’s End and UNCHARTED: The Lost Legacy.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/UNCHARTEDLegacyOfThievesCollection.jpg
+Origin: https://steamrip.com/uncharted-legacy-of-thieves-collection-free-download-h1/
+MainGame: https://buzzheavier.com/lnbo0bforf7e
+
+GoFile (Sifu) [1.28_6,720]
+ApproxSize: 22GB
+Description: Sifu is a realistic third-person brawler with tight Kung Fu combat mechanics and cinematic martial arts action embarking you on a path for revenge.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SIFU.jpg
+Origin: https://steamrip.com/sifu-free-download-2y/
+MainGame: https://gofile.io/d/4ZInBP
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
