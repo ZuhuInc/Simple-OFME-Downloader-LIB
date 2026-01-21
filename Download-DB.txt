@@ -189,7 +189,7 @@ Description: Raft™ throws you and your friends into an epic oceanic adventure!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Raft.jpg
 Origin: https://online-fix.me/games/survival/16179-raft-po-seti.html
 MainGame: https://gofile.io/d/u7RdXG
-Fix: https://gofile.io/d/gdpL1E
+Fix: https://gofile.io/d/IS9L0c
 
 GoFile (The Long Drive) [26112024]
 ApproxSize: 1GB
