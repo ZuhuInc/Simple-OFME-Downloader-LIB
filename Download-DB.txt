@@ -731,7 +731,7 @@ MainGame: https://gofile.io/d/p0XebG
 BuzzHeavier (Resident Evil) [3149858]
 ApproxSize: 20GB
 Description: The game that defined the survival-horror genre is back! Check out the remastered HD version of Resident Evil.
-Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil.jpg
 Origin: https://steamrip.com/resident-evil-biohazard-hd-r-u1/
 MainGame: https://buzzheavier.com/su4k84ksobc1
 
