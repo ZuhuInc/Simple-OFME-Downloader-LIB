@@ -678,6 +678,16 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/sifu-free-download-2y/
 MainGame: https://gofile.io/d/4ZInBP
 
+GoFile (Arken Age) [16 Jan, 2025]
+ApproxSize: 30GB
+Description: Arken Age is a VR action-adventure game set in the Bio-Chasm—a terraformed fantasy world created by the Grand Arborist. Engage in full physics combat using Arkenite infused swords & guns—and freely explore the densely filled environments under siege by Hyperion's neural corruption.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ArkenAge.jpg
+Origin: https://gload.to/arken-age-vr-elamigos
+MainPart1: https://gofile.io/d/D54HQt
+MainPart2: https://gofile.io/d/oVPOwe
+MainPart3: https://gofile.io/d/1Bu8TN
+
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
