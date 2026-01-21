@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.8-Beta4
+Zuhu's OFME GUI Downloader V1.5.8-Beta5
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -41,9 +41,12 @@ from PyQt6.QtGui import (QPixmap, QFontDatabase, QFont, QTextCursor, QIcon,
 from PyQt6.QtCore import (Qt, QSize, pyqtSignal, QObject, QThread, QTimer, 
                           pyqtSlot, QRect, QPropertyAnimation, QEasingCurve, 
                           pyqtProperty, QUrl, QStandardPaths)
+from flask import Flask, render_template, jsonify, request
+from flask_socketio import SocketIO, emit
+import threading
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.8-Beta4"
+CURRENT_VERSION = "V1.5.8-Beta5"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DOCUMENTS_DIR = os.path.join(os.path.expanduser('~'), 'Documents')
 PROJECTS_DIR = os.path.join(DOCUMENTS_DIR, 'ZuhuProjects')
@@ -64,6 +67,7 @@ SETTINGS_FILE = os.path.join(DATA_FOLDER, 'Settings.json')
 ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-DWND-ICO.ico"
 SETTINGS_ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-STNG-ICO.ico"
 RELOAD_ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-RLD-ICO.ico"
+WEB_TEMPLATE_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/index.html"
 DISCORD_ICON_URL = "https://i.imgur.com/01wdU6Q.png"
 FONT_URL = "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/raw/main/Assets/pixelmix.ttf"
 ICON_PATH = os.path.join(DATA_FOLDER, 'cache', 'OFME-DWND-ICO.ico')
@@ -82,6 +86,7 @@ OFME_USERNAME = ""
 OFME_PASSWORD = ""
 VERSION_CHECK_BYPASS_LIST = []
 SELECTED_BROWSER_PATH = ""
+WEB_MODE = False
 
 # --- BROWSER DETECTION ---
 def normalize_browser_name(raw_name):
@@ -147,6 +152,44 @@ def get_installed_browsers():
     for k, v in found_browsers.items():
         if k not in sorted_browsers: sorted_browsers[k] = v
     return sorted_browsers
+
+# --- WEB TEMPLATE MANAGEMENT ---
+def ensure_web_template():
+    template_dir = os.path.join(DATA_FOLDER, 'Templates')
+    template_path = os.path.join(template_dir, 'index.html')
+    dev_lock_path = os.path.join(template_dir, '.dev') 
+    
+    os.makedirs(template_dir, exist_ok=True)
+    
+    if os.path.exists(dev_lock_path):
+        print("Developer Mode: .dev lock found. Skipping index.html update.")
+        return
+
+    url = WEB_TEMPLATE_URL 
+    
+    try:
+        local_exists = os.path.exists(template_path)
+        response = requests.head(url, timeout=5)
+        remote_size = int(response.headers.get('content-length', 0))
+        
+        should_download = False
+        if not local_exists:
+            print("Web template missing. Downloading...")
+            should_download = True
+        else:
+            local_size = os.path.getsize(template_path)
+            if local_size != remote_size and remote_size > 0:
+                print(f"Update found for web template. Downloading...")
+                should_download = True
+
+        if should_download:
+            r = requests.get(url, timeout=10)
+            if r.status_code == 200:
+                with open(template_path, 'wb') as f:
+                    f.write(r.content)
+                print("Web template saved successfully.")
+    except Exception as e:
+        print(f"Web template check skipped: {e}")
 
 # --- CUSTOM WIDGETS ---
 class CustomComboBox(QComboBox):
@@ -269,7 +312,7 @@ STYLESHEET = """
 def load_settings():
     global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
     global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD, VERSION_CHECK_BYPASS_LIST
-    global STEAM_PATH, STEAM_USER_ID, SELECTED_BROWSER_PATH
+    global STEAM_PATH, STEAM_USER_ID, SELECTED_BROWSER_PATH, WEB_MODE
     
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -288,6 +331,7 @@ def load_settings():
                 OFME_PASSWORD = settings.get('ofme_password', "")
                 VERSION_CHECK_BYPASS_LIST = settings.get('version_check_bypass_list', [])
                 SELECTED_BROWSER_PATH = settings.get('selected_browser_path', "")
+                WEB_MODE = settings.get('web_mode', False)
 
         except (json.JSONDecodeError, IOError): pass
     if not OFME_USERNAME or not OFME_PASSWORD:
@@ -318,7 +362,8 @@ def save_settings_to_file():
         'ofme_username': OFME_USERNAME,
         'ofme_password': OFME_PASSWORD,
         'version_check_bypass_list': VERSION_CHECK_BYPASS_LIST,
-        'selected_browser_path': SELECTED_BROWSER_PATH
+        'selected_browser_path': SELECTED_BROWSER_PATH,
+        'web_mode': WEB_MODE
     }
     try:
         with open(SETTINGS_FILE, 'w') as f: json.dump(settings, f, indent=4)
@@ -340,11 +385,13 @@ class ConsoleStream(QObject):
     def __init__(self, original_stream):
         super().__init__()
         self.original_stream = original_stream
+        self.history = []
 
     def write(self, text):
         if self.original_stream:
             self.original_stream.write(text)
             self.original_stream.flush()
+        self.history.append(text)
         self._text_written.emit(str(text))
 
     def flush(self):
@@ -796,6 +843,7 @@ class SettingsPage(QWidget):
         self.browser_combo.setFont(self.settings_font)
         self.browser_combo.setCursor(Qt.CursorShape.PointingHandCursor)
         self.browser_combo.setToolTip("Select the browser used for verification")
+        self.browser_combo.setEnabled(False)
         self.detected_browsers = get_installed_browsers()
         for name, path in self.detected_browsers.items():
             self.browser_combo.addItem(name, path)
@@ -891,6 +939,12 @@ class SettingsPage(QWidget):
         self.steam_id_edit.setFont(self.settings_font)
         self.steam_id_edit.setPlaceholderText("Select in Game Tab or enter ID here")
         form_layout.addRow(lbl_steam_id, self.steam_id_edit)
+        lbl_web = QLabel("Enable Web Interface (Restart required):")
+        lbl_web.setFont(self.settings_font)
+        
+        self.web_mode_toggle = PyToggle()
+        self.web_mode_toggle.set_state_immediate(WEB_MODE)
+        form_layout.addRow(lbl_web, self.web_mode_toggle)
 
         def create_toggle_row(text, toggle, status_lbl):
             container = QWidget()
@@ -1130,9 +1184,16 @@ class SettingsPage(QWidget):
         OFME_USERNAME = self.user_input.text()
         OFME_PASSWORD = self.pass_input.text()
         
+        global WEB_MODE
+        old_web_mode = WEB_MODE
+        WEB_MODE = self.web_mode_toggle.isChecked()
+        
+        if WEB_MODE and not old_web_mode:
+            ensure_web_template()
+            
         print("Settings saved successfully.")
         save_settings_to_file()
-
+        
     def _reset_save_btn(self):
         self.save_button.setText("Save Settings")
         self.save_button.setStyleSheet("")
@@ -1170,26 +1231,64 @@ class DataManager(QObject):
         os.makedirs(DATA_FOLDER, exist_ok=True)
         if os.path.exists(DATA_FILE):
             try:
-                with open(DATA_FILE, 'r') as f: return {k.upper(): v for k, v in json.load(f).items()}
-            except (json.JSONDecodeError, IOError) as e: print(f"ERROR: {e}")
+                with open(DATA_FILE, 'r') as f:
+                    content = f.read().strip()
+                    if not content:
+                        return {}
+                    return {k.upper(): v for k, v in json.loads(content).items()}
+            except json.JSONDecodeError as e:
+                print(f"CRITICAL ERROR: Data.json is corrupted! Line {e.lineno}: {e.msg}")
+                return {}
+            except IOError as e:
+                print(f"ERROR: Could not read Data.json: {e}")
         return {}
+    
     def save_downloaded_game(self, game_name, version, location):
         data = self._load_local_data()
-        data[game_name.upper()] = {'version': version, 'location': location}
+        name_key = game_name.upper()
+        
+        if name_key not in data:
+            data[name_key] = {}
+            
+        data[name_key].update({
+            'version': version,
+            'location': location
+        })
+        
         with open(DATA_FILE, 'w') as f:
             json.dump(data, f, indent=4)
-        print(f"Saved game data for {game_name.upper()} at location {location}")
+        print(f"Saved game data for {name_key} at location {location}")
+
     def _determine_game_statuses(self):
         processed_games = []
         for game_key, db_info in self.games_db.items():
             game_data = db_info.copy()
+            game_data['newest_version'] = db_info.get('version', '0.0')
             if game_key in self.local_data:
                 game_data.update(self.local_data[game_key]) 
                 local_version = self.local_data[game_key].get('version', '0.0')
-                game_data['status'] = GameStatus.UP_TO_DATE if local_version == db_info['version'] else GameStatus.UPDATE_AVAILABLE
-            else: game_data['status'] = GameStatus.NOT_DOWNLOADED
+                game_data['status'] = GameStatus.UP_TO_DATE if local_version == game_data['newest_version'] else GameStatus.UPDATE_AVAILABLE
+            else:
+                game_data['status'] = GameStatus.NOT_DOWNLOADED
+                game_data['version'] = "N/A"
             processed_games.append(game_data)
         return processed_games
+
+    def save_downloaded_game(self, game_name, version, location):
+        data = self._load_local_data()
+        name_key = game_name.upper()
+        if name_key not in data:
+            data[name_key] = {}
+            
+        data[name_key].update({
+            'version': version,
+            'location': location
+        })
+        
+        with open(DATA_FILE, 'w') as f:
+            json.dump(data, f, indent=4)
+        print(f"Saved game data for {name_key}")
+        
     def save_steam_url(self, game_name, steam_url):
         data = self._load_local_data()
         if game_name.upper() in data:
@@ -2013,19 +2112,27 @@ class GameDetailsWidget(QWidget):
         self.download_progress.setValue(0)
         self.stats_label.setText("")
         self.status_label.setText("")
-        self.fix_prompt_widget.setVisible(False)
+        self.fix_prompt_widget.setVisible(False) 
         self.selected_exe = ""
+        local_ver = game_data.get('version', 'N/A')
+        newest_ver = game_data.get('newest_version', 'N/A')
+        status = game_data.get('status', GameStatus.NOT_DOWNLOADED)
+        self.version_label.setStyleSheet("color: #e0e0e0;")
+
+        if status == GameStatus.UPDATE_AVAILABLE:
+            self.version_label.setText(f"{local_ver} > {newest_ver}")
+        else:
+            self.version_label.setText(newest_ver)
+
         self.game_name_label.setText(game_data.get('name', 'N/A'))
         self.sources_label.setText(game_data.get('Sources', 'N/A'))
         self.size_label.setText(game_data.get('ApproxSize', 'N/A'))
-        self.version_label.setText(game_data.get('version', 'N/A'))
         self.description_label.setText(game_data.get('Description', 'No description available.'))
-        status = game_data.get('status', GameStatus.NOT_DOWNLOADED)
         status_color = STATUS_INFO[status]['color']
         self.game_name_label.setStyleSheet(f"color: {status_color};")
+        
         thumbnail_path = self.asset_manager.get_asset(game_data.get('Thumbnail'))
-        border_color = STATUS_INFO[status]['color']
-        self.thumbnail_label.setStyleSheet(f"border: 2px solid {border_color}; border-radius: 0px; background-color: #000;")
+        self.thumbnail_label.setStyleSheet(f"border: 2px solid {status_color}; background-color: #000;")
 
         if thumbnail_path:
             pixmap = QPixmap(thumbnail_path)
@@ -2127,23 +2234,39 @@ class GameDetailsWidget(QWidget):
     def on_main_extraction_complete(self, success, message, detected_path):
         self.status_label.setText(message)
         if success:
-            self.download_progress.setValue(100); self.final_game_path = detected_path
-            self.data_manager.save_downloaded_game(self.current_game_data['name'], self.current_game_data['version'], self.final_game_path)
+            self.download_progress.setValue(100)
+            self.final_game_path = detected_path
+            
+            new_version_to_save = self.current_game_data.get('newest_version')
+            if not new_version_to_save or new_version_to_save == "N/A":
+                new_version_to_save = self.current_game_data.get('version')
+                
+            self.data_manager.save_downloaded_game(
+                self.current_game_data['name'], 
+                new_version_to_save, 
+                self.final_game_path
+            )
+            self.current_game_data['version'] = new_version_to_save
             self.refresh_library.emit()
             if self.downloaded_file_paths.get('fix'):
                 self.fix_prompt_widget.setVisible(True)
-                self.location_bar.setVisible(False)
-                self.bypass_container.setVisible(False)
+                if hasattr(self, 'location_bar'): self.location_bar.setVisible(False)
+                if hasattr(self, 'bypass_container'): self.bypass_container.setVisible(False)
+                
                 self.fix_label.setText(f"Apply fix to: {os.path.basename(self.final_game_path)}?")
-                self.download_button.setText("ACTION REQUIRED"); self.download_button.setEnabled(False)
+                self.download_button.setText("ACTION REQUIRED")
+                self.download_button.setEnabled(False)
+                
                 if ENABLE_NOTIFICATIONS:
                     try: 
                         safe_icon = ICON_PATH if os.path.exists(ICON_PATH) else None
-                        notification.notify(title="Fix Available", message="Game downloaded. Please apply the fix.", app_icon=safe_icon, timeout=5)
+                        notification.notify(title="Fix Available", message="Game updated. Please apply the fix.", app_icon=safe_icon, timeout=5)
                     except Exception: pass
-            else: self.installer.cleanup_files()
-        else: self.installer.cleanup_files()
-
+            else: 
+                self.installer.cleanup_files()
+        else: 
+            self.installer.cleanup_files()
+            
     def select_fix_path(self):
         directory = QFileDialog.getExistingDirectory(self, "Select Game Folder")
         if directory:
@@ -2379,12 +2502,278 @@ class GameLauncher(QWidget):
             button.set_active(self.current_filter is None or s_id == self.current_filter)
         self._reflow_games()
 
+
+class OFMEWebServer:
+    def __init__(self, data_manager, asset_manager, console_stream=None):
+        template_dir = os.path.join(DATA_FOLDER, 'Templates')
+        self.app = Flask(__name__, 
+                        template_folder=template_dir,
+                        static_folder=os.path.join(DATA_FOLDER, 'cache'),
+                        static_url_path='/cache')
+        
+        self.socketio = SocketIO(self.app)
+        self.data_manager = data_manager
+        self.asset_manager = asset_manager
+        self.client_count = 0
+        self.temp_selected_exe = None
+        self.last_finalizing_game = None
+        self.detection_mode = False
+        
+        if console_stream:
+            self.log_buffer = list(console_stream.history) 
+            console_stream._text_written.connect(self.handle_new_log)
+        else:
+            self.log_buffer = []
+            
+        self.setup_routes()
+
+    def handle_new_log(self, text):
+        """Pushes logs directly to the web UI console."""
+        if not text.endswith('\n'):
+            text += '\n'
+        self.log_buffer.append(text)
+        self.socketio.emit('console_log', {'message': text})
+
+    def setup_routes(self):
+        @self.app.route('/')
+        def index():
+            initial_logs = "".join(self.log_buffer)
+            return render_template('index.html', 
+                                 games=self.data_manager.games, 
+                                 version=CURRENT_VERSION,
+                                 winrar=WINRAR_PATH,
+                                 default_path=DEFAULT_DOWNLOAD_PATH,
+                                 steam_path=STEAM_PATH,
+                                 steam_id=STEAM_USER_ID,
+                                 web_mode=WEB_MODE,
+                                 mbps=SHOW_SPEED_IN_MBPS,
+                                 size_gb=SHOW_SIZE_IN_GB,
+                                 notifs=ENABLE_NOTIFICATIONS,
+                                 webhook_on=ENABLE_WEBHOOK,
+                                 webhook_url=WEBHOOK_URL,
+                                 initial_logs=initial_logs)
+
+        @self.socketio.on('save_settings')
+        def handle_save_settings(data):
+            global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, STEAM_PATH, STEAM_USER_ID
+            global SHOW_SPEED_IN_MBPS, SHOW_SIZE_IN_GB, ENABLE_NOTIFICATIONS, ENABLE_WEBHOOK, WEBHOOK_URL
+            global WEB_MODE
+            
+            WINRAR_PATH = data.get('winrar')
+            DEFAULT_DOWNLOAD_PATH = data.get('path')
+            STEAM_PATH = data.get('steam_path')
+            STEAM_USER_ID = data.get('steam_id')
+            SHOW_SPEED_IN_MBPS = data.get('mbps')
+            SHOW_SIZE_IN_GB = data.get('size_gb')
+            ENABLE_NOTIFICATIONS = data.get('notifs')
+            ENABLE_WEBHOOK = data.get('webhook_on')
+            WEBHOOK_URL = data.get('webhook_url')
+            WEB_MODE = data.get('web_mode')
+            
+            save_settings_to_file()
+            self.handle_new_log("Web UI: Settings successfully saved.\n")
+            self.socketio.emit('settings_saved', {'status': 'success'})
+
+        @self.socketio.on('connect')
+        def handle_connect():
+            self.client_count += 1
+            print(f"Web UI: Connected. Active tabs: {self.client_count}")
+
+        @self.socketio.on('disconnect')
+        def handle_disconnect():
+            self.client_count -= 1
+            print(f"Web UI: Disconnected. Active tabs: {self.client_count}")
+            if self.client_count <= 0:
+                timeout = 180.0 if self.detection_mode else 15.0
+                if self.detection_mode:
+                    self.handle_new_log(f"Detection mode active: Postponing shutdown for {timeout} seconds...\n")
+                
+                threading.Timer(timeout, self.shutdown_check).start()
+
+        @self.socketio.on('start_download')
+        def handle_download(data):
+            game_name = data.get('name')
+            custom_path = data.get('path')
+            print(f"Web UI: Downloading {game_name} to {custom_path}")
+            
+        @self.socketio.on('launch_game')
+        def handle_launch(data):
+            steam_url = data.get('url')
+            if steam_url:
+                self.handle_new_log(f"Web UI: Launching {steam_url}\n")
+                webbrowser.open(steam_url)
+                
+        @self.socketio.on('request_steam_accounts')
+        def handle_steam_request():
+            def run_scraper():
+                userdata_path = os.path.join(STEAM_PATH, "userdata")
+                if not os.path.exists(userdata_path): return
+                headers = {'User-Agent': 'Mozilla/5.0'}
+                for entry in os.listdir(userdata_path):
+                    if entry.isdigit():
+                        try:
+                            url = f"https://steamid.xyz/{entry}"
+                            resp = requests.get(url, headers=headers, timeout=5)
+                            soup = BeautifulSoup(resp.content, 'html.parser')
+                            user_tag = soup.find('h1', class_='value')
+                            username = user_tag.text.strip() if user_tag else f"User {entry}"
+                            ava_tag = soup.find('img', class_='avatar')
+                            avatar_url = ava_tag['src'] if ava_tag and 'src' in ava_tag.attrs else ""
+                            self.socketio.emit('steam_account_found', {'id': entry, 'name': username, 'avatar': avatar_url})
+                        except:
+                            self.socketio.emit('steam_account_found', {'id': entry, 'name': "N/A", 'avatar': ""})
+                self.socketio.emit('steam_scan_finished')
+            threading.Thread(target=run_scraper, daemon=True).start()
+
+        @self.socketio.on('set_steam_account')
+        def handle_set_steam(data):
+            global STEAM_USER_ID
+            STEAM_USER_ID = data.get('id')
+            save_settings_to_file()
+            self.handle_new_log(f"Web UI: Steam ID set to {STEAM_USER_ID}\n")
+
+        @self.socketio.on('pick_steam_exe')
+        def handle_pick_exe(data):
+            game_name = data.get('game_name')
+            game_key = game_name.upper()
+            game_folder = self.data_manager.local_data.get(game_key, {}).get('location', DEFAULT_DOWNLOAD_PATH)
+            
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            exe_path = filedialog.askopenfilename(title="Select Game EXE", initialdir=game_folder, filetypes=[("Executable", "*.exe")])
+            root.destroy()
+
+            if exe_path:
+                self.temp_selected_exe = exe_path 
+                self.socketio.emit('steam_exe_picked', {'filename': os.path.basename(exe_path)})
+
+        @self.socketio.on('finalize_steam')
+        def handle_finalize(data):
+            game_name = data.get('game_name')
+            self.last_finalizing_game = game_name 
+            
+            steam_running = any(p.name().lower() == "steam.exe" for p in psutil.process_iter())
+            if steam_running:
+                self.socketio.emit('steam_require_close')
+            else:
+                self.process_vdf_write(game_name)
+
+        @self.socketio.on('close_steam_and_continue')
+        def handle_close_and_cont():
+            os.system("taskkill /f /im steam.exe")
+            self.handle_new_log("Web UI: steam.exe has been successfully terminated.\n")
+            time.sleep(2)
+            if self.last_finalizing_game:
+                self.process_vdf_write(self.last_finalizing_game)
+
+        @self.socketio.on('start_shortcut_watch')
+        def handle_watch(data):
+            game_name = data.get('name')
+            self.detection_mode = True 
+            watch_start_time = time.time() 
+            
+            def watch():
+                desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+                safe_name = re.sub(r'[\\/*?:"<>|]', "", game_name)
+                path = os.path.join(desktop, f"{safe_name}.url")
+                
+                self.handle_new_log(f"Watch started for: {safe_name} on Desktop\n")
+                
+                start_loop = time.time()
+                while time.time() - start_loop < 120:
+                    if os.path.exists(path):
+                        file_mod_time = os.path.getmtime(path)
+                        if file_mod_time >= watch_start_time:
+                            time.sleep(1.5)
+                            try:
+                                with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                                    content = f.read()
+                                m = re.search(r'steam://rungameid/(\d+)', content)
+                                if m:
+                                    steam_url = f"steam://rungameid/{m.group(1)}"
+                                    self.data_manager.save_steam_url(game_name, steam_url)
+                                    self.handle_new_log(f"Web UI: Saved Steam URL for {game_name}: {steam_url}\n")
+                                    try: os.remove(path)
+                                    except: pass
+                                    self.socketio.emit('steam_integration_success', {'url': steam_url})
+                                    self.detection_mode = False 
+                                    return
+                            except Exception as e:
+                                self.handle_new_log(f"Error reading shortcut: {e}\n")
+                    time.sleep(1)
+                
+                self.detection_mode = False 
+                self.socketio.emit('steam_error', {'message': "Timeout: No new shortcut detected."})
+            
+            threading.Thread(target=watch, daemon=True).start()
+
+    def process_vdf_write(self, game_name):
+        try:
+            vdf_path = os.path.join(STEAM_PATH, "userdata", STEAM_USER_ID, "config", "shortcuts.vdf")
+            if os.path.exists(vdf_path):
+                with open(vdf_path, 'rb') as f: data = vdf.binary_load(f)
+            else:
+                data = {'shortcuts': {}}
+            
+            exe_path = self.temp_selected_exe
+            real_exe = os.path.abspath(exe_path)
+            real_dir = os.path.dirname(real_exe)
+            
+            exists = any(v.get('AppName') == game_name for k, v in data['shortcuts'].items())
+            if not exists:
+                idx = str(len(data['shortcuts']))
+                data['shortcuts'][idx] = {
+                    'AppName': game_name, 'exe': f'"{real_exe}"', 'StartDir': f'"{real_dir}"',
+                    'icon': "", 'ShortcutPath': "", 'LaunchOptions': "", 'IsHidden': 0, 
+                    'AllowDesktopConfig': 1, 'AllowOverlay': 1, 'OpenVR': 0, 'Devkit': 0, 
+                    'DevkitGameID': "", 'LastPlayTime': 0, 'tags': {}
+                }
+                with open(vdf_path, 'wb') as f: vdf.binary_dump(data, f)
+                self.handle_new_log(f"Web UI: {game_name} written to Steam VDF.\n")
+            
+            steam_exe = os.path.join(STEAM_PATH, "steam.exe")
+            if os.path.exists(steam_exe):
+                subprocess.Popen([steam_exe])
+            self.socketio.emit('steam_sync_prompt', {'name': game_name})
+        except Exception as e:
+            self.handle_new_log(f"VDF Error: {str(e)}\n")
+            self.socketio.emit('steam_error', {'message': f"VDF Error: {str(e)}"})                    
+
+    def shutdown_check(self):
+        if self.client_count <= 0 and not self.detection_mode:
+            print("No active web sessions. Closing ZuhuOFME...")
+            os._exit(0)
+        elif self.detection_mode:
+            print("Shutdown blocked: Detection Mode is active.")
+
+    def run(self):
+        print(f"Starting Web Mode on http://127.0.0.1:5000")
+        webbrowser.open("http://127.0.0.1:5000")
+        self.socketio.run(self.app, port=5000, debug=False, use_reloader=False)
+
 if __name__ == '__main__':
     myappid = 'OFME-DWNLDR'
     try: ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except: pass
-    app = QApplication(sys.argv)
-    if os.path.exists(ICON_PATH): app.setWindowIcon(QIcon(ICON_PATH))
-    main_window = GameLauncher()
-    main_window.show()
-    sys.exit(app.exec())
+    load_settings()
+
+    console_stream = ConsoleStream(sys.__stdout__)
+    sys.stdout = console_stream
+    sys.stderr = console_stream
+    
+    if WEB_MODE:
+        ensure_web_template() 
+        dm = DataManager()
+        am = AssetManager()
+        server = OFMEWebServer(dm, am, console_stream) 
+        server.run()
+    else:
+        app = QApplication(sys.argv)
+        if os.path.exists(ICON_PATH): 
+            app.setWindowIcon(QIcon(ICON_PATH))
+        main_window = GameLauncher()
+        main_window.show()
+        sys.exit(app.exec())
