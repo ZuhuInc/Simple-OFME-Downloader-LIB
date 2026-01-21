@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zuhu's OFME Web-Mode</title>
-    <!-- FontAwesome light icons -->
     <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.1/css/all.css">
     <style>
         @font-face { font-family: 'pixelmix'; src: url('/cache/pixelmix.ttf'); }
@@ -19,7 +18,6 @@
             image-rendering: pixelated;
         }
 
-        /* --- HEADER --- */
         .header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 15px 25px; background: #1e1e1e; position: sticky; top: 0; z-index: 100;
@@ -43,11 +41,9 @@
         }
         .icon-btn { background: none; border: none; color: #00ff7f; font-size: 18px; cursor: pointer; padding: 0 5px; display: flex; align-items: center; }
 
-        /* --- VIEWS --- */
         #library-view { width: 100%; height: calc(100vh - 0.1px); overflow-y: auto; }
         #details-view { display: none; width: 100%; height: 100vh; flex-direction: column; padding: 25px; box-sizing: border-box; }
 
-        /* --- LIBRARY GRID --- */
         .game-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); 
@@ -70,7 +66,6 @@
         .card-status-3 { border-color: #ff4500; }
         .game-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-        /* --- DETAILS VIEW --- */
         .back-nav { color: #00ff7f; cursor: pointer; font-size: 16px; margin-bottom: 15px; flex-shrink: 0; }
         .details-content-wrapper { display: flex; gap: 40px; flex-grow: 1; min-height: 0; margin-bottom: 20px; }
         
@@ -104,11 +99,9 @@
         .progress-bar-text { position: absolute; width: 100%; text-align: center; top: 8px; font-size: 12px; }
         .main-action-btn { width: 220px; padding: 12px; background: #2d2d2d; border: 1px solid #444; border-radius: 16px; color: white; font-family: 'pixelmix'; cursor: pointer; }
 
-        /* --- MODALS --- */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; }
         .modal-content { background: #1e1e1e; width: 90%; max-width: 850px; margin: 30px auto; border: 1px solid #444; height: 85vh; display: flex; flex-direction: column; border-radius: 4px; }
         
-        /* Fixed Modal Header Padding */
         .modal-header { padding: 15px 20px; flex-shrink: 0; }
         .modal-header .back-nav { margin-bottom: 0; font-size: 16px; }
 
@@ -134,7 +127,6 @@
         .save-btn { width: 100%; background: #2d2d2d; border: 1px solid #444; color: #00ff7f; padding: 12px; font-family: 'pixelmix'; cursor: pointer; border-radius: 15px; margin-top: auto; transition: 0.2s; }
         .save-btn:hover { border-color: #00ff7f; background: #333; }
 
-        /* --- STEAM MODAL SPECIFIC --- */
         #steam-modal .modal-content { max-width: 450px; height: auto; max-height: 85vh; }
         .steam-modal-header { padding: 15px; border-bottom: 1px solid #333; color: #00ff7f; font-weight: bold; }
         .steam-account-list { max-height: 400px; overflow-y: auto; padding: 10px; }
@@ -148,11 +140,10 @@
     </style>
 </head>
 <body>
-
-    <!-- LIBRARY VIEW -->
+    
     <div id="library-view">
         <div class="header">
-            <div class="header-title">Zuhu's OFME Web-Mode v0.3</div>
+            <div class="header-title">Zuhu's OFME Web-Mode v0.4</div>
             <div class="header-right">
                 <div class="status-filters">
                     <span class="filter-link up-to-date" onclick="filterByStatus(1)">UP-TO-DATE</span>
@@ -173,7 +164,6 @@
         </div>
     </div>
 
-    <!-- GAME DETAILS VIEW -->
     <div id="details-view">
         <div class="back-nav" onclick="closeDetails()"><< Back to Library</div>
         <div class="details-content-wrapper">
@@ -206,7 +196,6 @@
         </div>
     </div>
 
-    <!-- STEAM ACCOUNT PICKER MODAL -->
     <div id="steam-modal" class="modal">
         <div class="modal-content">
             <div class="steam-modal-header">Select your Steam Profile:</div>
@@ -215,7 +204,6 @@
         </div>
     </div>
 
-    <!-- SETTINGS MODAL -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header"><div class="back-nav" onclick="toggleSettings()"><< Back to Library</div></div>
@@ -315,7 +303,6 @@
             lb.onclick = () => { if(game.steam_url) socket.emit('launch_game', {url: game.steam_url}); else alert("Sync Steam ID first!"); };
         }
 
-        // --- STEAM LOGIC ---
         function handleSteamStep() {
             if (steamStep === "START") { socket.emit('request_steam_accounts'); document.getElementById('steam-modal').style.display = 'block'; document.getElementById('steam-list').innerHTML = ""; document.getElementById('steam-scan-status').innerText = "Scanning Steam accounts..."; } 
             else if (steamStep === "SELECT_EXE") { socket.emit('pick_steam_exe', {game_name: activeGame.name}); }
