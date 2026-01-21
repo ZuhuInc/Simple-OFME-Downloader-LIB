@@ -478,6 +478,12 @@ Origin: https://online-fix.me/games/shooter/17965-the-horde-wants-you-dead-po-se
 MainGame: https://gofile.io/d/SL79pw
 Fix: https://gofile.io/d/5m3rTI
 
+GoFile (Pummel Party) [1.14.0c]
+ApproxSize: 1GB
+Description: Pummel Party is a 4-8 player online and local-multiplayer party game. Pummel friends or AI using a wide array of absurd items in the board mode and compete to destroy friendships in the unique collection of minigames.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/PummelParty.jpg
+Origin: https://online-fix.me/games/arcade/16256-pummel-party-po-seti.html
+MainGame: https://gofile.io/d/R5rMfN
 
 
 
@@ -714,6 +720,69 @@ Description: At Dead Of Night is part horror film, part horror game and part gho
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AtDeadofNight.jpg
 Origin: https://steamrip.com/at-dead-of-night-free-download/
 MainGame: https://gofile.io/d/un7vGc
+
+GoFile (Resident Evil 0) [17178773]
+ApproxSize: 13GB
+Description: Before the mansion, before the destruction of Raccoon City, there was Resident Evil 0. Now remastered with improved visuals and sounds, as well as the all-new Wesker Mode, there's never been a better time to experience the origins of the Resident Evil story.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil0.jpg
+Origin: https://steamrip.com/resident-evil-0-free-download/
+MainGame: https://gofile.io/d/p0XebG
+
+BuzzHeavier (Resident Evil) [3149858]
+ApproxSize: 20GB
+Description: The game that defined the survival-horror genre is back! Check out the remastered HD version of Resident Evil.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil
+Origin: https://steamrip.com/resident-evil-biohazard-hd-r-u1/
+MainGame: https://buzzheavier.com/su4k84ksobc1
+
+GoFile (Resident Evil 2) [8814181]
+ApproxSize: 26 GB
+Description: A deadly virus engulfs the residents of Raccoon City in September of 1998, plunging the city into chaos as flesh eating zombies roam the streets for survivors. An unparalleled adrenaline rush, gripping storyline, and unimaginable horrors await you. Witness the return of Resident Evil 2.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil2.jpg
+Origin: https://steamrip.com/resident-evil-two-y9/
+MainGame: https://gofile.io/d/PzoGnG
+
+GoFile (Resident Evil 3) [8856549]
+ApproxSize: 45GB
+Description: Jill Valentine is one of the last remaining people in Raccoon City to witness the atrocities Umbrella performed. To stop her, Umbrella unleashes their ultimate secret weapon: Nemesis! Also includes Resident Evil Resistance, a new 1 vs 4 online multiplayer game set in the Resident Evil universe.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil3.jpg
+Origin: https://steamrip.com/resident-evil-3-free-download-3l/
+MainGame: https://gofile.io/d/NhLxHQ
+
+GoFile (Resident Evil 4) [B11025382]
+ApproxSize: 65GB
+Description: Survival is just the beginning. Six years have passed since the biological disaster in Raccoon City. Leon S. Kennedy, one of the survivors, tracks the president's kidnapped daughter to a secluded European village, where there is something terribly wrong with the locals.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil4.jpg
+Origin: https://steamrip.com/resident-evil-iv-r-i2/
+MainGame: https://gofile.io/d/vLe5ze
+
+BuzzHeavier (Resident Evil 5) [1.2.0]
+ApproxSize: 15GB
+Description: This game is a port of the Games for Windows - Live version that was released in 2009. If you buy the Untold Stories Bundle here on Steam, it will be the same as upgrading to Resident Evil 5 Gold Edition.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil5.jpg
+Origin: https://steamrip.com/resident-evil-5-free-download-r1/
+MainGame: https://buzzheavier.com/ad782l80e5lk
+
+BuzzHeavier (Resident Evil 6) [1.1.0]
+ApproxSize: 16GB
+Description: Blending action and survival horror, Resident Evil 6 promises to be the dramatic horror experience of 2013.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil6.jpg
+Origin: https://steamrip.com/resident-evil-six-u3/
+MainGame: https://buzzheavier.com/uww3eogkg4ar
+
+GoFile (RESIDENT EVIL 7) [11026049]
+ApproxSize: 25GB
+Description: Fear and isolation seep through the walls of an abandoned southern farmhouse. "7" marks a new beginning for survival horror with the “Isolated View” of the visceral new first-person perspective.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil7.jpg
+Origin: https://steamrip.com/resident-evil-7-biohazard-free-download-2k/
+MainGame: https://gofile.io/d/8hOzjw
+
+GoFile (Resident Evil Village) [11260452]
+ApproxSize: 30GB
+Description: Experience survival horror like never before in the 8th major installment in the Resident Evil franchise - Resident Evil Village. With detailed graphics, intense first-person action and masterful storytelling, the terror has never felt more realistic.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvilVillage.jpg
+Origin: https://steamrip.com/resident-evil-village-1g/
+MainGame: https://gofile.io/d/HwoUid
 
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
