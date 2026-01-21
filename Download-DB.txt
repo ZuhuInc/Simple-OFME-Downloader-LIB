@@ -790,3 +790,12 @@ Description: All-in-one gaming utility for frame generation and scaling
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LossLessScaling.jpg
 Origin: https://steamrip.com/lossless-scaling-free-download/
 MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
+
+GoFile (Nuclear Nightmare) [06082025]
+ApproxSize: 15GB
+Description: Join a specialized team of players in search of classified materials while escaping the Black Goo virus.
+Thumbnail: https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/blob/main/Assets/Nuclear%20Nightmare.jpg
+Origin: https://online-fix.me/games/sandbox/17619-nuclear-nightmare-po-seti.html
+MainPart1: https://gofile.io/d/4ySvT4
+MainPart2: https://gofile.io/d/VgOYwf
+MainPart3: https://gofile.io/d/HeXQVQ
