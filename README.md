@@ -66,9 +66,9 @@ The script will guide you through a few simple steps.
 
 | Step | Action | Preview |
 | :--: | :--- | :--- |
-| **1** | **Select Game & Source**<br/><br/>First, choose the game you want to download. Then, select your preferred download host from the next menu. | <img width="1157" height="742" alt="image" src="https://github.com/user-attachments/assets/7b6c5ecd-3e0e-42ae-8d05-e35befbbfcac" /> |
-| **2** | **Set Path & Download**<br/><br/>Enter the base directory where you want the game extracted. The download will start automatically. | <img width="1157" height="742" alt="image" src="https://github.com/user-attachments/assets/2e4f7ae4-15cd-478f-8613-5c846eae5193" /> |
-| **3** | **Apply Fix (Optional)**<br/><br/>After extraction, the script will ask if you want to download and apply an available fix or update. | <img width="1157" height="742" alt="image" src="https://github.com/user-attachments/assets/9d8f08bc-0433-4e74-a7a6-4c0b2e6ba14c" /> |
+| **1** | **Select Game & Source**<br/><br/>First, choose the game you want to download. Then, select your preferred download host from the next menu. | <img width="1157" height="742" alt="image" src="https://i.imgur.com/eDvvlxP.png" /> |
+| **2** | **Set Path & Download**<br/><br/>Enter the base directory where you want the game extracted. The download will start automatically. | <img width="1157" height="742" alt="image" src="https://i.imgur.com/DmAdPAj.png" /> |
+| **3** | **Apply Fix (Optional)**<br/><br/>After extraction, the script will ask if you want to download and apply an available fix or update. | <img width="1157" height="742" alt="image" src="https://i.imgur.com/QmlfcfK.png" /> |
 
 
 ---
