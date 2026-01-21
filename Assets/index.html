@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zuhu's OFME Web-Mode</title>
+    <!-- FontAwesome light icons -->
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.1/css/all.css">
+    <style>
+        @font-face { font-family: 'pixelmix'; src: url('/cache/pixelmix.ttf'); }
+        
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'pixelmix', sans-serif;
+            margin: 0; padding: 0; overflow: hidden;
+            -webkit-font-smoothing: none;
+            text-rendering: crispEdges;
+            image-rendering: pixelated;
+        }
+
+        /* --- HEADER --- */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 25px; background: #1e1e1e; position: sticky; top: 0; z-index: 100;
+            border-bottom: 1px solid #333;
+            height: 60px; box-sizing: border-box;
+        }
+        .header-title { color: #00ff7f; font-size: 16px; font-weight: normal !important; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        
+        .status-filters { display: flex; gap: 15px; font-size: 16px; font-weight: normal !important; }
+        .filter-link { cursor: pointer; padding-bottom: 2px; border-bottom: 2px solid transparent; transition: 0.2s; }
+        .filter-link.up-to-date { color: #00ff7f; }
+        .filter-link.update { color: #ffd700; }
+        .filter-link.missing { color: #ff4500; }
+        .filter-link.active { border-bottom: 2px solid currentColor; }
+
+        .search-bar { 
+            background: #1e1e1e; border: 1px solid #00ff7f; border-radius: 20px; 
+            color: white; padding: 0 15px; width: 220px; height: 32px; 
+            outline: none; font-family: 'pixelmix'; font-size: 13px; box-sizing: border-box;
+        }
+        .icon-btn { background: none; border: none; color: #00ff7f; font-size: 18px; cursor: pointer; padding: 0 5px; display: flex; align-items: center; }
+
+        /* --- VIEWS --- */
+        #library-view { width: 100%; height: calc(100vh - 0.1px); overflow-y: auto; }
+        #details-view { display: none; width: 100%; height: 100vh; flex-direction: column; padding: 25px; box-sizing: border-box; }
+
+        /* --- LIBRARY GRID --- */
+        .game-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); 
+            gap: 20px; 
+            padding: 25px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .game-card { 
+            aspect-ratio: 2 / 3; 
+            border: 2px solid #444; 
+            cursor: pointer; 
+            transition: transform 0.1s; 
+            background: #2d2d2d; 
+            width: 100%;
+        }
+        .game-card:hover { transform: scale(1.02); }
+        .card-status-1 { border-color: #00ff7f; }
+        .card-status-2 { border-color: #ffd700; }
+        .card-status-3 { border-color: #ff4500; }
+        .game-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        /* --- DETAILS VIEW --- */
+        .back-nav { color: #00ff7f; cursor: pointer; font-size: 16px; margin-bottom: 15px; flex-shrink: 0; }
+        .details-content-wrapper { display: flex; gap: 40px; flex-grow: 1; min-height: 0; margin-bottom: 20px; }
+        
+        .details-left { width: auto; height: 100%; flex-shrink: 0; display: flex; align-items: flex-start; }
+        .details-left img { height: 100%; width: auto; border: 2px solid #444; object-fit: contain; background: #000; }
+        
+        .details-right { flex: 1; display: flex; flex-direction: column; }
+        .meta-container { width: 100%; margin-bottom: 25px; }
+        .meta-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .meta-val { font-weight: normal; text-align: right; }
+        .desc-text { color: #aaa; font-size: 12px; line-height: 1.6; text-align: left; overflow-y: auto; padding-right: 10px; }
+        
+        .details-right-actions { margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding-top: 20px; }
+        .actions-row { display: flex; gap: 15px; }
+        .btn-pill { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #444; background: #1e1e1e; color: white; font-family: 'pixelmix'; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+        
+        .btn-launch { background: #ffd700; color: black; border: none; font-weight: bold !important; }
+        .btn-launch.ready { background: #00ff7f; }
+        .btn-steam { color: #66c0f4; border-color: #66c0f4; background: transparent; }
+        
+        .steam-status-msg { font-size: 11px; color: #00ff7f; margin-bottom: -5px; height: 15px; }
+        .path-display { 
+            width: 100%; background: #151515; border: 1px solid #333; color: #00ff7f; 
+            padding: 10px 18px; border-radius: 20px; font-family: 'pixelmix'; font-size: 11px; 
+            outline: none; box-sizing: border-box; cursor: text;
+        }
+        
+        .details-bottom-footer { flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding-top: 10px; }
+        .progress-bar-bg { flex: 1; height: 32px; background: #1a1a1a; border-radius: 16px; border: 1px solid #333; position: relative; overflow: hidden; }
+        .progress-fill { width: 0%; height: 100%; background: #00ff7f; transition: width 0.2s; }
+        .progress-bar-text { position: absolute; width: 100%; text-align: center; top: 8px; font-size: 12px; }
+        .main-action-btn { width: 220px; padding: 12px; background: #2d2d2d; border: 1px solid #444; border-radius: 16px; color: white; font-family: 'pixelmix'; cursor: pointer; }
+
+        /* --- MODALS --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; }
+        .modal-content { background: #1e1e1e; width: 90%; max-width: 850px; margin: 30px auto; border: 1px solid #444; height: 85vh; display: flex; flex-direction: column; border-radius: 4px; }
+        
+        /* Fixed Modal Header Padding */
+        .modal-header { padding: 15px 20px; flex-shrink: 0; }
+        .modal-header .back-nav { margin-bottom: 0; font-size: 16px; }
+
+        .tabs { border-bottom: 1px solid #444; padding-left: 10px; display: flex; align-items: flex-end; background: #252525; }
+        .tab-btn { padding: 10px 20px; border: 1px solid transparent; background: none; color: #888; cursor: pointer; font-family: 'pixelmix'; font-size: 11px; border-radius: 4px 4px 0 0; }
+        .tab-btn.active { color: #00ff7f; border: 1px solid #444; border-bottom: 1px solid #1e1e1e; background: #1e1e1e; margin-bottom: -1px; }
+        .tab-content { flex: 1; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
+        .tab-content.active { display: flex; }
+        
+        .console { background: #0a0a0a; color: #00ff7f; padding: 15px; font-family: monospace; height: 100%; border: 1px solid #444; border-radius: 4px; overflow-y: auto; font-size: 14px; white-space: pre-wrap; }
+        .settings-row { display: flex; align-items: center; margin-bottom: 12px; gap: 15px; }
+        .settings-label { width: 330px; color: #e0e0e0; font-size: 13px; }
+        .settings-input { flex: 1; background: #151515; border: 1px solid #444; color: #e0e0e0; padding: 8px 15px; border-radius: 15px; outline: none; font-family: 'pixelmix'; font-size: 11px; }
+        
+        .toggle-container { display: flex; align-items: center; gap: 10px; }
+        .toggle-text { color: #aaa; font-size: 10px; min-width: 45px; font-family: 'pixelmix'; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 4px; bottom: 4px; background-color: #ddd; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #00ff7f; }
+        input:checked + .slider:before { transform: translateX(22px); }
+        .save-btn { width: 100%; background: #2d2d2d; border: 1px solid #444; color: #00ff7f; padding: 12px; font-family: 'pixelmix'; cursor: pointer; border-radius: 15px; margin-top: auto; transition: 0.2s; }
+        .save-btn:hover { border-color: #00ff7f; background: #333; }
+
+        /* --- STEAM MODAL SPECIFIC --- */
+        #steam-modal .modal-content { max-width: 450px; height: auto; max-height: 85vh; }
+        .steam-modal-header { padding: 15px; border-bottom: 1px solid #333; color: #00ff7f; font-weight: bold; }
+        .steam-account-list { max-height: 400px; overflow-y: auto; padding: 10px; }
+        .steam-account-row { display: flex; align-items: center; gap: 15px; background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid transparent; }
+        .steam-avatar { width: 50px; height: 50px; background: #000; border-radius: 4px; border: 1px solid #333; }
+        .steam-info { flex: 1; }
+        .steam-name { font-size: 13px; color: #fff; margin-bottom: 4px; }
+        .steam-id { font-size: 10px; color: #888; }
+        .steam-select-btn { padding: 5px 12px; border: 1px solid #00ff7f; color: #00ff7f; background: transparent; cursor: pointer; font-family: 'pixelmix'; font-size: 10px; border-radius: 4px; }
+        .steam-modal-footer { padding: 10px; text-align: center; font-size: 10px; color: #666; }
+    </style>
+</head>
+<body>
+
+    <!-- LIBRARY VIEW -->
+    <div id="library-view">
+        <div class="header">
+            <div class="header-title">Zuhu's OFME Web-Mode v0.3</div>
+            <div class="header-right">
+                <div class="status-filters">
+                    <span class="filter-link up-to-date" onclick="filterByStatus(1)">UP-TO-DATE</span>
+                    <span class="filter-link update" onclick="filterByStatus(2)">UPDATE</span>
+                    <span class="filter-link missing" onclick="filterByStatus(3)">MISSING</span>
+                </div>
+                <input type="text" id="searchBar" class="search-bar" placeholder="Search Game..." onkeyup="searchGames()">
+                <button class="icon-btn" onclick="location.reload()"><i class="fa-light fa-arrow-rotate-right"></i></button>
+                <button class="icon-btn" onclick="toggleSettings()"><i class="fa-light fa-gear"></i></button>
+            </div>
+        </div>
+        <div class="game-grid" id="gameGrid">
+            {% for game in games %}
+            <div class="game-card card-status-{{ game.status }}" data-name="{{ game.name|lower }}" data-status="{{ game.status }}" onclick='openDetails({{ game|tojson }})'>
+                <img src="{{ game.Thumbnail }}" alt="{{ game.name }}">
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- GAME DETAILS VIEW -->
+    <div id="details-view">
+        <div class="back-nav" onclick="closeDetails()"><< Back to Library</div>
+        <div class="details-content-wrapper">
+            <div class="details-left"><img id="det-img" src=""></div>
+            <div class="details-right">
+                <div class="meta-container">
+                    <div class="meta-row"><span class="meta-label">Game:</span><span id="det-name" class="meta-val">---</span></div>
+                    <div class="meta-row"><span class="meta-label">Source:</span><span id="det-source" class="meta-val">---</span></div>
+                    <div class="meta-row"><span class="meta-label">Size:</span><span id="det-size" class="meta-val">---</span></div>
+                    <div class="meta-row"><span class="meta-label">Version:</span><span id="det-version" class="meta-val">---</span></div>
+                </div>
+                <span class="desc-title" style="color:#fff; margin-bottom:12px; display:block;">Description:</span>
+                <div id="det-desc" class="desc-text">---</div>
+                <div class="details-right-actions">
+                    <div id="steam-status" class="steam-status-msg"></div>
+                    <div class="actions-row" id="det-actions">
+                        <button id="det-launch-btn" class="btn-pill btn-launch">LAUNCH (STEAM)</button>
+                        <button id="det-add-btn" class="btn-pill btn-steam" onclick="handleSteamStep()">ADD TO STEAM</button>
+                    </div>
+                    <input type="text" id="det-path" class="path-display" placeholder="Select location...">
+                </div>
+            </div>
+        </div>
+        <div class="details-bottom-footer">
+            <div class="progress-bar-bg">
+                <div id="prog-fill" class="progress-fill"></div>
+                <div id="prog-text" class="progress-bar-text">0%</div>
+            </div>
+            <button id="det-main-btn" class="main-action-btn">DOWNLOAD</button>
+        </div>
+    </div>
+
+    <!-- STEAM ACCOUNT PICKER MODAL -->
+    <div id="steam-modal" class="modal">
+        <div class="modal-content">
+            <div class="steam-modal-header">Select your Steam Profile:</div>
+            <div id="steam-list" class="steam-account-list"></div>
+            <div class="steam-modal-footer" id="steam-scan-status">Scanning Steam accounts...</div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><div class="back-nav" onclick="toggleSettings()"><< Back to Library</div></div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab(event, 'consoleTab')">Console Output</button>
+                <button class="tab-btn" onclick="showTab(event, 'generalTab')">General Settings</button>
+                <button class="tab-btn" onclick="showTab(event, 'versionTab')">Version Checker</button>
+            </div>
+            
+            <div id="consoleTab" class="tab-content active"><div class="console" id="consoleOutput">--- Console Live Feed ---<br>{{ initial_logs|safe }}</div></div>
+            
+            <div id="generalTab" class="tab-content">
+                <div class="settings-row"><div class="settings-label">WinRAR Path:</div><input type="text" id="set_winrar" class="settings-input" value="{{ winrar }}"></div>
+                <div class="settings-row"><div class="settings-label">Default Path:</div><input type="text" id="set_path" class="settings-input" value="{{ default_path }}"></div>
+                <div class="settings-row"><div class="settings-label">Steam Path:</div><input type="text" id="set_steam_path" class="settings-input" value="{{ steam_path }}"></div>
+                <div class="settings-row"><div class="settings-label">Steam User ID:</div><input type="text" id="set_steam_id" class="settings-input" value="{{ steam_id }}"></div>
+                
+                <div class="settings-row">
+                    <div class="settings-label">Enable Web-Mode (Restart required):</div>
+                    <div class="toggle-container">
+                        <label class="switch"><input type="checkbox" id="set_web_mode" {% if web_mode %}checked{% endif %} onchange="updateToggleText(this, 'lbl_webmode', 'On', 'Off')"><span class="slider"></span></label>
+                        <span class="toggle-text" id="lbl_webmode">{{ 'On' if web_mode else 'Off' }}</span>
+                    </div>
+                </div>
+                
+                <div class="settings-row">
+                    <div class="settings-label">Show Speed in:</div>
+                    <div class="toggle-container">
+                        <label class="switch"><input type="checkbox" id="set_mbps" {% if mbps %}checked{% endif %} onchange="updateToggleText(this, 'lbl_mbps', 'Mbps', 'MB/s')"><span class="slider"></span></label>
+                        <span class="toggle-text" id="lbl_mbps">{{ 'Mbps' if mbps else 'MB/s' }}</span>
+                    </div>
+                </div>
+
+                <div class="settings-row">
+                    <div class="settings-label">Show Size in:</div>
+                    <div class="toggle-container">
+                        <label class="switch"><input type="checkbox" id="set_size_gb" {% if size_gb %}checked{% endif %} onchange="updateToggleText(this, 'lbl_size', 'GB', 'MB')"><span class="slider"></span></label>
+                        <span class="toggle-text" id="lbl_size">{{ 'GB' if size_gb else 'MB' }}</span>
+                    </div>
+                </div>
+
+                <div class="settings-row">
+                    <div class="settings-label">Desktop Notifications:</div>
+                    <div class="toggle-container">
+                        <label class="switch"><input type="checkbox" id="set_notifs" {% if notifs %}checked{% endif %} onchange="updateToggleText(this, 'lbl_notif', 'On', 'Off')"><span class="slider"></span></label>
+                        <span class="toggle-text" id="lbl_notif">{{ 'On' if notifs else 'Off' }}</span>
+                    </div>
+                </div>
+
+                <hr style="height:1px; background:#444; border:none; margin:15px 0;">
+                
+                <div class="settings-row">
+                    <div class="settings-label">Discord Webhook (Toggle):</div>
+                    <div class="toggle-container">
+                        <label class="switch"><input type="checkbox" id="set_wh_on" {% if webhook_on %}checked{% endif %} onchange="updateToggleText(this, 'lbl_wh', 'On', 'Off')"><span class="slider"></span></label>
+                        <span class="toggle-text" id="lbl_wh">{{ 'On' if webhook_on else 'Off' }}</span>
+                    </div>
+                </div>
+                <div class="settings-row"><div class="settings-label">Webhook Link:</div><input type="text" id="set_webhook" class="settings-input" style="border-radius:20px;" value="{{ webhook_url }}"></div>
+                
+                <button class="save-btn" onclick="saveWebSettings()" id="saveBtn">SAVE SETTINGS</button>
+            </div>
+            
+            <div id="versionTab" class="tab-content"><button style="width:100%; background:#006400; color:white; border:none; padding:12px; font-family:'pixelmix'; cursor:pointer; border-radius:5px;">START VERSION CHECK</button></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        var socket = io(); var activeGame = null; var steamStep = "START";
+        const consoleEl = document.getElementById('consoleOutput');
+        socket.on('console_log', (d) => { if(consoleEl) { consoleEl.innerHTML += d.message; consoleEl.scrollTop = consoleEl.scrollHeight; } });
+        window.onload = () => { setTimeout(() => { if(consoleEl) consoleEl.scrollTop = consoleEl.scrollHeight; }, 100); };
+
+        function openDetails(game) {
+            activeGame = game; steamStep = "START";
+            document.getElementById('library-view').style.display = 'none';
+            document.getElementById('details-view').style.display = 'flex';
+            const colors = { 1: '#00ff7f', 2: '#ffd700', 3: '#ff4500' };
+            const statusColor = colors[game.status] || '#444';
+            document.getElementById('det-img').src = game.Thumbnail;
+            document.getElementById('det-img').style.borderColor = statusColor;
+            document.getElementById('det-name').innerText = game.name;
+            document.getElementById('det-name').style.color = statusColor;
+            document.getElementById('det-source').innerText = game.Sources || "N/A";
+            document.getElementById('det-size').innerText = game.ApproxSize || "N/A";
+            document.getElementById('det-version').innerText = game.version || "N/A";
+            document.getElementById('det-desc').innerText = game.Description || "No description provided.";
+            document.getElementById('det-path').value = "{{ default_path }}";
+            document.getElementById('steam-status').innerText = "";
+            const mb = document.getElementById('det-main-btn'); const lb = document.getElementById('det-launch-btn'); const sb = document.getElementById('det-add-btn'); const ar = document.getElementById('det-actions');
+            lb.style.backgroundColor = (game.status == 1) ? '#00ff7f' : '#ffd700'; sb.style.borderColor = statusColor; sb.style.color = statusColor;
+            if(game.status == 1) { mb.innerText = "RE-DOWNLOAD"; lb.classList.add('ready'); ar.style.display='flex'; sb.innerText = game.steam_url ? "RE-ADD TO STEAM" : "ADD TO STEAM"; }
+            else if(game.status == 2) { mb.innerText = "UPDATE"; lb.classList.remove('ready'); ar.style.display='flex'; sb.innerText = "RE-ADD TO STEAM"; }
+            else { mb.innerText = "DOWNLOAD"; ar.style.display='none'; }
+            mb.onclick = () => socket.emit('start_download', {name: game.name, path: document.getElementById('det-path').value});
+            lb.onclick = () => { if(game.steam_url) socket.emit('launch_game', {url: game.steam_url}); else alert("Sync Steam ID first!"); };
+        }
+
+        // --- STEAM LOGIC ---
+        function handleSteamStep() {
+            if (steamStep === "START") { socket.emit('request_steam_accounts'); document.getElementById('steam-modal').style.display = 'block'; document.getElementById('steam-list').innerHTML = ""; document.getElementById('steam-scan-status').innerText = "Scanning Steam accounts..."; } 
+            else if (steamStep === "SELECT_EXE") { socket.emit('pick_steam_exe', {game_name: activeGame.name}); }
+            else if (steamStep === "CONFIRM") { socket.emit('finalize_steam', {game_name: activeGame.name}); }
+        }
+        socket.on('steam_account_found', (data) => {
+            const list = document.getElementById('steam-list'); const row = document.createElement('div'); row.className = 'steam-account-row';
+            row.innerHTML = `<img class="steam-avatar" src="${data.avatar || ''}"><div class="steam-info"><div class="steam-name">${data.name}</div><div class="steam-id">ID: ${data.id}</div></div><button class="steam-select-btn" onclick="selectSteamAccount('${data.id}')">Select</button>`;
+            list.appendChild(row);
+        });
+        function selectSteamAccount(id) { socket.emit('set_steam_account', {id: id}); document.getElementById('steam-modal').style.display = 'none'; document.getElementById('steam-status').innerText = `Steam Account ${id} selected.`; document.getElementById('det-add-btn').innerText = "SELECT GAME EXE"; steamStep = "SELECT_EXE"; }
+        socket.on('steam_exe_picked', (data) => { document.getElementById('steam-status').innerText = `Target selected: ${data.filename}`; document.getElementById('det-add-btn').innerText = "CONFIRM STEAM SHORTCUT"; document.getElementById('det-add-btn').style.background = "#00ff7f"; document.getElementById('det-add-btn').style.color = "#000"; steamStep = "CONFIRM"; });
+        socket.on('steam_require_close', () => { if (confirm("Steam must be closed to add the game. Close Steam automatically?")) socket.emit('close_steam_and_continue'); });
+        socket.on('steam_sync_prompt', (data) => { 
+            const msg = `${data.name} has been added to Steam!\n\nTo import the Steam Launch ID, you MUST:\n1. Open your Steam Library.\n2. Right-Click '${data.name}' > Manage > Add desktop shortcut.\n3. Wait a moment, and this app will auto-detect it!\n\nStart detection now?`;
+            if (confirm(msg)) { 
+                socket.emit('start_shortcut_watch', {name: data.name}); 
+                document.getElementById('det-add-btn').innerText = "WAITING FOR SHORTCUT..."; 
+                document.getElementById('det-add-btn').disabled = true; 
+                document.getElementById('steam-status').innerText = "Scanning desktop for new shortcut..."; 
+            } else {
+                const sb = document.getElementById('det-add-btn'); sb.innerText = "ADD TO STEAM"; steamStep = "START";
+            }
+        });
+        socket.on('steam_integration_success', (data) => { 
+            activeGame.steam_url = data.url; document.getElementById('steam-status').innerText = "Success! ID Grabbed."; 
+            const sb = document.getElementById('det-add-btn'); sb.innerText = "RE-ADD TO STEAM"; sb.disabled = false; sb.style.background = "transparent"; sb.style.color = "#66c0f4";
+            const lb = document.getElementById('det-launch-btn'); lb.classList.add('ready'); lb.style.backgroundColor = "#00ff7f";
+            alert(`Integration Complete!\nURL: ${data.url}`);
+        });
+        socket.on('steam_error', (data) => { alert(data.message); const sb = document.getElementById('det-add-btn'); sb.disabled = false; sb.innerText = "ADD TO STEAM"; steamStep = "START"; document.getElementById('steam-status').innerText = "Detection failed."; });
+
+        function closeDetails() { document.getElementById('library-view').style.display = 'block'; document.getElementById('details-view').style.display = 'none'; }
+        function toggleSettings() { const m = document.getElementById('settings-modal'); m.style.display = (m.style.display === 'block') ? 'none' : 'block'; }
+        function showTab(e, id) { const contents = document.getElementsByClassName("tab-content"); for (let c of contents) c.style.display = "none"; const btns = document.getElementsByClassName("tab-btn"); for (let b of btns) b.classList.remove("active"); document.getElementById(id).style.display = "flex"; e.currentTarget.classList.add("active"); }
+        function updateToggleText(cb, id, on, off) { document.getElementById(id).innerText = cb.checked ? on : off; }
+        
+        function saveWebSettings() {
+            const data = {
+                winrar: document.getElementById('set_winrar').value, path: document.getElementById('set_path').value,
+                steam_path: document.getElementById('set_steam_path').value, steam_id: document.getElementById('set_steam_id').value,
+                web_mode: document.getElementById('set_web_mode').checked, mbps: document.getElementById('set_mbps').checked,
+                size_gb: document.getElementById('set_size_gb').checked, notifs: document.getElementById('set_notifs').checked,
+                webhook_on: document.getElementById('set_wh_on').checked, webhook_url: document.getElementById('set_webhook').value
+            };
+            socket.emit('save_settings', data);
+            const btn = document.getElementById('saveBtn'); btn.innerText = "SAVED!";
+            setTimeout(() => { btn.innerText = "SAVE SETTINGS"; }, 2000);
+        }
+
+        function searchGames() { let q = document.getElementById('searchBar').value.toLowerCase(); let c = document.getElementsByClassName('game-card'); for (let card of c) card.style.display = card.getAttribute('data-name').includes(q) ? "block" : "none"; }
+        let currentFilter = null;
+        function filterByStatus(s) { let c = document.getElementsByClassName('game-card'); let l = document.getElementsByClassName('filter-link'); if (currentFilter === s) { for (let link of l) link.classList.remove('active'); for (let card of c) card.style.display = "block"; currentFilter = null; } else { for (let link of l) link.classList.remove('active'); event.target.classList.add('active'); for (let card of c) card.style.display = (card.getAttribute('data-status') == s) ? "block" : "none"; currentFilter = s; } }
+    </script>
+</body>
+</html>
