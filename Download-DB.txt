@@ -636,6 +636,27 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/pacific-dgdjo7-drive-free-download-p1/
 MainGame: https://gofile.io/d/rFwn7d
 
+BuzzHeavier (Marvel’s Spider-Man Remastered) [2.1012.0.0]
+ApproxSize: 75GB
+Description: In Marvel’s Spider-Man Remastered, the worlds of Peter Parker and Spider-Man collide in an original action-packed story. Play as an experienced Peter Parker, fighting big crime and iconic villains in Marvel’s New York. Web-swing through vibrant neighborhoods and defeat villains with epic takedowns.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Spider-ManRemastered.jpg
+Origin: https://steamrip.com/marvels-spider-man-remastered-1u/
+MainGame: https://buzzheavier.com/716go6imtzta
+
+GoFile (Marvel’s Spider-Man: Miles Morales) [3.617.1.0]
+ApproxSize: 75GB
+Description: After the events of Marvel’s Spider-Man Remastered, teenage Miles Morales is adjusting to his new home while following in the footsteps of his mentor, Peter Parker, as a new Spider-Man. When a fierce power struggle threatens to destroy his home, Miles must take up the mantle of Spider-Man and own it
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Spider-ManMilesMorales.jpg
+Origin: https://steamrip.com/marvels-spider-man-miles-morales-free-download-o2/
+MainGame: https://buzzheavier.com/67pt5szrjk0h
+
+GoFile (Marvel’s Spider-Man 2) [1.526.0.0]
+ApproxSize: 140GB
+Description: Be Greater. Together. The incredible power of the symbiote forces Peter Parker and Miles Morales into a desperate fight as they balance their lives, friendships, and their duty to protect in an exciting chapter of the critically acclaimed Spider-Man franchise on PC.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Spider-Man2.jpg
+Origin: https://steamrip.com/marvels-spider-man-2-free-download-sp1/
+MainGame: https://buzzheavier.com/f9wmyj6bwidy
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
