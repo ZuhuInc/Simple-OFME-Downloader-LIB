@@ -580,6 +580,27 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/cloverpit-free-download
 MainGame: https://buzzheavier.com/liksw0ew4pu8
 
+GoFile (SILENT HILL 2) [1.1.258 834]
+ApproxSize: 50GB
+Description: Investigating a letter from his late wife, James returns to where they made so many memories - Silent Hill. What he finds is a ghost town, prowled by disturbing monsters and cloaked in deep fog. Confront the monsters, solve puzzles, and search for traces of your wife in this remake of SILENT HILL 2.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SilentHill2.jpg
+Origin: https://steamrip.com/silent-hill-2-free-download-remake/
+MainGame: https://gofile.io/d/zgnYBJ
+
+BuzzHeavier (Silent Hill 3) [1.0]
+ApproxSize: 5GB
+Description: Heather Mason lived a carefree existence until her world was suddenly turned upside down. A typical trip to the mall transforms into a descent into a blood-soaked, rusted nightmare realm filled with grotesque monsters. Plunged into a world where reality and nightmare blur, Heather must fight to survive, manage limited resources, and uncover a terrifying connection between her past and the mysterious, godforsaken town of Silent Hill.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SilentHill3.png
+Origin: https://steamrip.com/silent-hill-3-free-download/
+MainGame: https://buzzheavier.com/4jhm3jxjf3aj
+
+GoFile (Silent Hill 4: The Room) [6 – 82931]
+ApproxSize: 5GB
+Description: Henry Townshend has been trapped in his apartment, Room 302 of South Ashfield Heights, for five days. The phone is dead, the TV is static, and his front door is sealed shut with heavy chains and padlocks. Recurring nightmares and a feeling of being watched push him to the brink of sanity until a mysterious hole suddenly appears in his bathroom wall, leading to a horrifying alternate reality.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SilentHill4TheRoom.png
+Origin: https://steamrip.com/silent-hill-4-the-room-free-download/
+MainGame: https://gofile.io/d/jiMnyR
+
 GoFile (SILENT HILL f) [1.2.382755]
 ApproxSize: 50GB
 Description: Hinako's hometown is engulfed in fog, driving her to fight grotesque monsters and solve eerie puzzles. Uncover the disturbing beauty hidden in terror. **NOTICE: Launch with the “SILENT HILL f Launcher.bat” file. The EXE file will not work.**
@@ -687,6 +708,12 @@ MainPart1: https://gofile.io/d/D54HQt
 MainPart2: https://gofile.io/d/oVPOwe
 MainPart3: https://gofile.io/d/1Bu8TN
 
+GoFile (At Dead of Night) [14844637]
+ApproxSize: 5GB
+Description: At Dead Of Night is part horror film, part horror game and part ghost hunt. It blends live-action and graphics to create a unique immersive horror experience like no other.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AtDeadofNight.jpg
+Origin: https://steamrip.com/at-dead-of-night-free-download/
+MainGame: https://gofile.io/d/un7vGc
 
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
