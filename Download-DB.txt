@@ -237,23 +237,23 @@ MainPart6: https://gofile.io/d/DEQhvr
 MainPart7: https://gofile.io/d/k3Oqx1
 Fix: https://gofile.io/d/aazujB
 
-GoFile (Grounded 2) [0.2.0.1.2181664]
+GoFile (Grounded 2) [0.2.2.5.2404755]
 ApproxSize: 40GB
 Description: Shrunk again, but the world is much larger. In this open-world, single-player or co-op survival adventure, craft weapons and armor, build your base, and traverse the playground on your buggy. But something else is out there—and it hasn’t forgotten you.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded2.jpg
 Origin: https://online-fix.me/games/officialservers/17827-grounded-2-po-seti.html
-MainPart1: https://gofile.io/d/yP5wXE
-MainPart2: https://gofile.io/d/zKU4Br
-MainPart3: https://gofile.io/d/ynRDjS
-MainPart4: https://gofile.io/d/ReoZNL
+MainPart1: https://gofile.io/d/0uFKpx
+MainPart2: https://gofile.io/d/yXTEzw
+MainPart3: https://gofile.io/d/7bqU8Z
+MainPart4: https://gofile.io/d/jukLGv
 Fix: https://gofile.io/d/Ou6xyo
 
-GoFile (Abiotic Factor) [1.1.0.22148]
+GoFile (Abiotic Factor) [1.2.0.23023]
 ApproxSize: 7GB
 Description: Abiotic Factor is a survival crafting experience for 1-6 players set in the depths of an underground research facility. Caught between paranormal containment failure, a military crusade, and chaos from a dozen realms, the world’s greatest minds must survive against the universe’s biggest threats.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Abiotic Factor.jpg
 Origin: https://online-fix.me/games/survival/17505-abiotic-factor-po-seti.html
-MainGame: https://gofile.io/d/ESEtAN
+MainGame: https://gofile.io/d/G19i9k
 Fix: https://gofile.io/d/LZjgnE
 
 GoFile (Backroom Company) [05082025]
