@@ -844,7 +844,7 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/warhammer-40000-space-marine-2-free-download/
 MainGame: https://buzzheavier.com/wwtd1wnr6qiz
 
-BuzzHeavier (Dead Space 2023) [Version]
+BuzzHeavier (Dead Space 2023) [10602756]
 ApproxSize: 50GB
 Description: The sci-fi survival-horror classic returns, completely rebuilt to offer an even more immersive experience — including visual, audio, and gameplay improvements — while staying faithful to the original game’s thrilling vision.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DeadSpace.jpg
