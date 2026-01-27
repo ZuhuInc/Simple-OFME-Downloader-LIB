@@ -794,12 +794,34 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/resident-evil-village-1g/
 MainGame: https://gofile.io/d/HwoUid
 
-GoFile (Sekiro™: Shadows Die Twice - GOTY Edition) [1.06]
+BuzzHeavier (Sekiro™: Shadows Die Twice - GOTY Edition) [1.06]
 ApproxSize: 25GB
 Description: Game of the Year - The Game Awards 2019 Best Action Game of 2019 - IGN Carve your own clever path to vengeance in the award winning adventure from developer FromSoftware, creators of Bloodborne and the Dark Souls series. Take Revenge. Restore Your Honor. Kill Ingeniously.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SekiroShadowsDieTwice.jpg
 Origin: https://steamrip.com/sekiro-shadows-die-twice-free-download-c2/
 MainGame: https://buzzheavier.com/bpf4xp9ptrlv
+
+BuzzHeavier (DARK SOULS™: REMASTERED) [1.03]
+ApproxSize: 8GB
+Description: Then, there was fire. Re-experience the critically acclaimed, genre-defining game that started it all. Beautifully remastered, return to Lordran in stunning high-definition detail running at 60fps.
+Thumbnail: DarkSoulsRemastered.jpg
+Origin: https://steamrip.com/dark-souls-remastered-free-download-1j/
+MainGame: https://buzzheavier.com/n0y5bc5kze2n
+
+
+BuzzHeavier (DARK SOULS™ II: Scholar of the First Sin) [1.02]
+ApproxSize: 23GB
+Description: DARK SOULS™ II: Scholar of the First Sin brings the franchise’s renowned obscurity & gripping gameplay to a new level. Join the dark journey and experience overwhelming enemy encounters, diabolical hazards, and unrelenting challenge.
+Thumbnail: DarkSouls2-SOTFS.jpg
+Origin: https://steamrip.com/dark-souls-ii-free-download-1j/
+MainGame: https://buzzheavier.com/qckuibkza9df
+
+BuzzHeavier (DARK SOULS™ III) [1.15.2]
+ApproxSize: 25GB
+Description: Dark Souls continues to push the boundaries with the latest, ambitious chapter in the critically-acclaimed and genre-defining series. Prepare yourself and Embrace The Darkness!
+Thumbnail: DarkSouls3.jpg
+Origin: https://steamrip.com/dark-souls-iii-free-download-17/
+MainGame: https://buzzheavier.com/97ki7d4o0n3w
 
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
