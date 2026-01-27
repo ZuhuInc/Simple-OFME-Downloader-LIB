@@ -804,7 +804,7 @@ MainGame: https://buzzheavier.com/bpf4xp9ptrlv
 BuzzHeavier (DARK SOULS™: REMASTERED) [1.03]
 ApproxSize: 8GB
 Description: Then, there was fire. Re-experience the critically acclaimed, genre-defining game that started it all. Beautifully remastered, return to Lordran in stunning high-definition detail running at 60fps.
-Thumbnail: DarkSoulsRemastered.jpg
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DarkSoulsRemastered.jpg
 Origin: https://steamrip.com/dark-souls-remastered-free-download-1j/
 MainGame: https://buzzheavier.com/n0y5bc5kze2n
 
@@ -812,16 +812,44 @@ MainGame: https://buzzheavier.com/n0y5bc5kze2n
 BuzzHeavier (DARK SOULS™ II: Scholar of the First Sin) [1.02]
 ApproxSize: 23GB
 Description: DARK SOULS™ II: Scholar of the First Sin brings the franchise’s renowned obscurity & gripping gameplay to a new level. Join the dark journey and experience overwhelming enemy encounters, diabolical hazards, and unrelenting challenge.
-Thumbnail: DarkSouls2-SOTFS.jpg
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DarkSouls2-SOTFS.jpg
 Origin: https://steamrip.com/dark-souls-ii-free-download-1j/
 MainGame: https://buzzheavier.com/qckuibkza9df
 
 BuzzHeavier (DARK SOULS™ III) [1.15.2]
 ApproxSize: 25GB
 Description: Dark Souls continues to push the boundaries with the latest, ambitious chapter in the critically-acclaimed and genre-defining series. Prepare yourself and Embrace The Darkness!
-Thumbnail: DarkSouls3.jpg
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DarkSouls3.jpg
 Origin: https://steamrip.com/dark-souls-iii-free-download-17/
 MainGame: https://buzzheavier.com/97ki7d4o0n3w
+
+GoFile (MiSide) [0.93L]
+ApproxSize: 2GB
+Description: Let's imagine that you have a game in which you care for a character. But could you imagine one day getting into that game yourself?
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/MiSide.jpg
+Origin: https://steamrip.com/miside-free-download/
+MainGame: https://gofile.io/d/JVhFz4
+
+BuzzHeavier (BrokenLore: UNFOLLOW) [21512240]
+ApproxSize: 15GB
+Description: BrokenLore: UNFOLLOW is a first-person psychological horror game that explores the impact social media has on mental health through the story of Anne, a victim of bullying trapped in a surreal nightmare where she must solve a dark mystery and confront sinister creatures.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BrokenLoreUNFOLLOW.jpg
+Origin: https://steamrip.com/brokenlore-unfollow-free-download/
+MainGame: https://buzzheavier.com/awt6g4pnvr1w
+
+BuzzHeavier (Warhammer 40,000: Space Marine 2) [10.1.0.1]
+ApproxSize: 75GB
+Description: Embody the superhuman skill and brutality of a Space Marine. Unleash deadly abilities and devastating weaponry to obliterate the relentless Tyranid swarms. Defend the Imperium in spectacular third-person action in solo or multiplayer modes.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Warhammer40000SpaceMarine2.jpg
+Origin: https://steamrip.com/warhammer-40000-space-marine-2-free-download/
+MainGame: https://buzzheavier.com/wwtd1wnr6qiz
+
+BuzzHeavier (Dead Space 2023) [Version]
+ApproxSize: 50GB
+Description: The sci-fi survival-horror classic returns, completely rebuilt to offer an even more immersive experience — including visual, audio, and gameplay improvements — while staying faithful to the original game’s thrilling vision.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DeadSpace.jpg
+Origin: https://steamrip.com/dead-space-2023-free-download/
+MainGame: https://buzzheavier.com/zc3ayda8oigs
 
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
