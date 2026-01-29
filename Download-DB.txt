@@ -851,6 +851,13 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/dead-space-2023-free-download/
 MainGame: https://buzzheavier.com/zc3ayda8oigs
 
+BuzzHeavier (Half-Life: Alyx) [1.5.4 + NoVR Mod]
+ApproxSize: 70GB
+Description: Half-Life: Alyx is Valve’s VR return to the Half-Life series. It’s the story of an impossible fight against a vicious alien race known as the Combine, set between the events of Half-Life and Half-Life 2. Playing as Alyx Vance, you are humanity’s only chance for survival. Now also with a non vr mod
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/HalfLifeAlyx.jpg
+Origin: https://steamrip.com/half-life-alyx-free-download-1/
+MainGame: https://buzzheavier.com/igozc2odvagq
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
