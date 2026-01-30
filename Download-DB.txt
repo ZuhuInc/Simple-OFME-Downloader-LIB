@@ -506,6 +506,15 @@ MainPart3: https://gofile.io/d/PzMxDd
 MainPart4: https://gofile.io/d/EsUkSy
 Fix: https://gofile.io/d/ue1DtN
 
+GoFile (Escape Simulator 2) [1.0.47.0]
+ApproxSize: 20 GB
+Description: Sequel to the best-selling escape room game, brings a fresh take on first-person puzzles with a variety of new rooms to explore solo or with friends. Solve intricate puzzles, uncover hidden secrets, or craft your own escape rooms with Room Editor 2.0.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/EscapeSimulator2.jpg
+Origin: https://online-fix.me/games/adventures/17923-escape-simulator-2-po-seti.html
+MainPart1: https://gofile.io/d/kB6tsV
+MainPart2: https://gofile.io/d/InW2LK
+MainPart3: https://gofile.io/d/aGaKY7
+Fix: https://gofile.io/d/erFxOK
 
 
 
