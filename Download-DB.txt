@@ -527,6 +527,7 @@ MainPart3: https://gofile.io/d/S6hdNF
 Fix: https://gofile.io/d/qU2loz
 
 
+
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.8.1]
 ApproxSize: 155GB
 Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
@@ -893,6 +894,13 @@ Description: EMBARK ON A JOURNEY TO OWN IT ALL! Build your empire on a colorful 
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/MonopolyPlus.png
 Origin: https://steamrip.com/monopoly-plus-free-download-1l/
 MainGame: https://buzzheavier.com/nxuz4x3nedcd
+
+GoFile (Thief VR: Legacy of Shadow) [21259977]
+ApproxSize: 33 GB
+Description: Step into the shadows in Thief VR. You are Magpie, a cunning thief orphaned by Baron Northcrest and shaped by the streets. Use VR mechanics to steal, evade, and outsmart the City's forces. Your goal? A relic in Northcrest's vault, which uncovers a far greater artifact with a powerful legacy.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ThiefVRLegacyofShadow.jpg
+Origin: https://steamrip.com/thief-vr-legacy-of-shadow-free-download/
+MainGame: https://gofile.io/d/VqwFff
 
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
