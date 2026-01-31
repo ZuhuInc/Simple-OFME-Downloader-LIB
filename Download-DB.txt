@@ -506,7 +506,7 @@ MainPart3: https://gofile.io/d/PzMxDd
 MainPart4: https://gofile.io/d/EsUkSy
 Fix: https://gofile.io/d/ue1DtN
 
-GoFile (Escape Simulator 2) [1.0.47.0]
+GoFile (Escape Simulator 2) [17323r]
 ApproxSize: 20 GB
 Description: Sequel to the best-selling escape room game, brings a fresh take on first-person puzzles with a variety of new rooms to explore solo or with friends. Solve intricate puzzles, uncover hidden secrets, or craft your own escape rooms with Room Editor 2.0.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/EscapeSimulator2.jpg
@@ -516,7 +516,15 @@ MainPart2: https://gofile.io/d/InW2LK
 MainPart3: https://gofile.io/d/aGaKY7
 Fix: https://gofile.io/d/erFxOK
 
-
+GoFile (Arizona Sunshine® Remake) [11112024]
+ApproxSize: 40 GB
+Description: Arizona Sunshine® Remake elevates the original, award-winning game, completely rebuilt with GORE-geous VR graphics and next-gen VR combat and weapons. Face the undead alone or with up to three fellow survivors in a post-apocalyptic southwestern America overrun by zombies.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ArizonaSunshineRemake.jpg
+Origin: https://online-fix.me/games/officialservers/17627-arizona-sunshine-remake-po-seti.html
+MainPart1: https://gofile.io/d/IhcRaN
+MainPart2: https://gofile.io/d/DSKaiM
+MainPart3: https://gofile.io/d/S6hdNF
+Fix: https://gofile.io/d/qU2loz
 
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.8.1]
