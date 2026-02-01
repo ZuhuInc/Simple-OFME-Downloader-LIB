@@ -135,15 +135,14 @@
         .steam-info { flex: 1; }
         .steam-name { font-size: 13px; color: #fff; margin-bottom: 4px; }
         .steam-id { font-size: 10px; color: #888; }
-        .steam-select-btn { padding: 5px 12px; border: 1px solid #00ff7f; color: #00ff7f; background: transparent; cursor: pointer; font-family: 'pixelmix'; font-size: 10px; border-radius: 4px; }
+        .steam-select-btn { padding: 8px 18px; border: 1px solid #00ff7f; color: #00ff7f; background: transparent; cursor: pointer; font-family: 'pixelmix'; font-size: 11px; border-radius: 15px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
         .steam-modal-footer { padding: 10px; text-align: center; font-size: 10px; color: #666; }
     </style>
 </head>
 <body>
-    
     <div id="library-view">
         <div class="header">
-            <div class="header-title">Zuhu's OFME Web-Mode v0.4</div>
+            <div class="header-title">Zuhu's OFME Web-Mode v{{ version }}</div>
             <div class="header-right">
                 <div class="status-filters">
                     <span class="filter-link up-to-date" onclick="filterByStatus(1)">UP-TO-DATE</span>
@@ -163,7 +162,6 @@
             {% endfor %}
         </div>
     </div>
-
     <div id="details-view">
         <div class="back-nav" onclick="closeDetails()"><< Back to Library</div>
         <div class="details-content-wrapper">
@@ -177,12 +175,23 @@
                 </div>
                 <span class="desc-title" style="color:#fff; margin-bottom:12px; display:block;">Description:</span>
                 <div id="det-desc" class="desc-text">---</div>
+                
                 <div class="details-right-actions">
                     <div id="steam-status" class="steam-status-msg"></div>
                     <div class="actions-row" id="det-actions">
                         <button id="det-launch-btn" class="btn-pill btn-launch">LAUNCH (STEAM)</button>
                         <button id="det-add-btn" class="btn-pill btn-steam" onclick="handleSteamStep()">ADD TO STEAM</button>
                     </div>
+
+                    <!-- SYNC SECTION -->
+                    <div id="sync-section" style="margin-top:15px; display:none; border-top:1px solid #333; padding-top:15px;">
+                        <div style="color:#00ff7f; font-size:11px; margin-bottom:10px;">CLOUD SYNC</div>
+                        <div class="actions-row">
+                            <button id="det-sync-btn" class="btn-pill" style="border-color:#00ff7f; color:#00ff7f;" onclick="triggerSync('sync')">SYNC PROGRESS</button>
+                            <button id="det-link-save-btn" class="btn-pill" onclick="linkSavePath()">LINK SAVE FOLDER</button>
+                        </div>
+                    </div>
+
                     <input type="text" id="det-path" class="path-display" placeholder="Select location...">
                 </div>
             </div>
@@ -195,7 +204,6 @@
             <button id="det-main-btn" class="main-action-btn">DOWNLOAD</button>
         </div>
     </div>
-
     <div id="steam-modal" class="modal">
         <div class="modal-content">
             <div class="steam-modal-header">Select your Steam Profile:</div>
@@ -203,7 +211,6 @@
             <div class="steam-modal-footer" id="steam-scan-status">Scanning Steam accounts...</div>
         </div>
     </div>
-
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header"><div class="back-nav" onclick="toggleSettings()"><< Back to Library</div></div>
@@ -218,6 +225,11 @@
             <div id="generalTab" class="tab-content">
                 <div class="settings-row"><div class="settings-label">WinRAR Path:</div><input type="text" id="set_winrar" class="settings-input" value="{{ winrar }}"></div>
                 <div class="settings-row"><div class="settings-label">Default Path:</div><input type="text" id="set_path" class="settings-input" value="{{ default_path }}"></div>
+                <div class="settings-row">
+                    <div class="settings-label">Cloud Save Folder:</div>
+                    <input type="text" id="set_sync_path" class="settings-input" value="{{ sync_path }}">
+                    <button class="steam-select-btn" onclick="socket.emit('pick_sync_path')">Browse</button>
+                </div>
                 <div class="settings-row"><div class="settings-label">Steam Path:</div><input type="text" id="set_steam_path" class="settings-input" value="{{ steam_path }}"></div>
                 <div class="settings-row"><div class="settings-label">Steam User ID:</div><input type="text" id="set_steam_id" class="settings-input" value="{{ steam_id }}"></div>
                 
@@ -275,6 +287,7 @@
     <script>
         var socket = io(); var activeGame = null; var steamStep = "START";
         const consoleEl = document.getElementById('consoleOutput');
+        
         socket.on('console_log', (d) => { if(consoleEl) { consoleEl.innerHTML += d.message; consoleEl.scrollTop = consoleEl.scrollHeight; } });
         window.onload = () => { setTimeout(() => { if(consoleEl) consoleEl.scrollTop = consoleEl.scrollHeight; }, 100); };
 
@@ -282,8 +295,10 @@
             activeGame = game; steamStep = "START";
             document.getElementById('library-view').style.display = 'none';
             document.getElementById('details-view').style.display = 'flex';
+            
             const colors = { 1: '#00ff7f', 2: '#ffd700', 3: '#ff4500' };
             const statusColor = colors[game.status] || '#444';
+            
             document.getElementById('det-img').src = game.Thumbnail;
             document.getElementById('det-img').style.borderColor = statusColor;
             document.getElementById('det-name').innerText = game.name;
@@ -294,26 +309,98 @@
             document.getElementById('det-desc').innerText = game.Description || "No description provided.";
             document.getElementById('det-path').value = "{{ default_path }}";
             document.getElementById('steam-status').innerText = "";
-            const mb = document.getElementById('det-main-btn'); const lb = document.getElementById('det-launch-btn'); const sb = document.getElementById('det-add-btn'); const ar = document.getElementById('det-actions');
-            lb.style.backgroundColor = (game.status == 1) ? '#00ff7f' : '#ffd700'; sb.style.borderColor = statusColor; sb.style.color = statusColor;
-            if(game.status == 1) { mb.innerText = "RE-DOWNLOAD"; lb.classList.add('ready'); ar.style.display='flex'; sb.innerText = game.steam_url ? "RE-ADD TO STEAM" : "ADD TO STEAM"; }
-            else if(game.status == 2) { mb.innerText = "UPDATE"; lb.classList.remove('ready'); ar.style.display='flex'; sb.innerText = "RE-ADD TO STEAM"; }
-            else { mb.innerText = "DOWNLOAD"; ar.style.display='none'; }
+            
+            const mb = document.getElementById('det-main-btn'); 
+            const lb = document.getElementById('det-launch-btn'); 
+            const sb = document.getElementById('det-add-btn'); 
+            const ar = document.getElementById('det-actions');
+            
+            lb.style.backgroundColor = (game.status == 1) ? '#00ff7f' : '#ffd700'; 
+            sb.style.borderColor = statusColor; 
+            sb.style.color = statusColor;
+
+            if(game.status == 1) { 
+                mb.innerText = "RE-DOWNLOAD"; lb.classList.add('ready'); ar.style.display='flex'; 
+                sb.innerText = game.steam_url ? "RE-ADD TO STEAM" : "ADD TO STEAM"; 
+            }
+            else if(game.status == 2) { 
+                mb.innerText = "UPDATE"; lb.classList.remove('ready'); ar.style.display='flex'; 
+                sb.innerText = "RE-ADD TO STEAM"; 
+            }
+            else { 
+                mb.innerText = "DOWNLOAD"; ar.style.display='none'; 
+            }
+
+            // Sync Logic handling
+            const syncSection = document.getElementById('sync-section');
+            const syncBtn = document.getElementById('det-sync-btn');
+            const linkBtn = document.getElementById('det-link-save-btn');
+            const subActions = document.getElementById('sync-sub-actions');
+
+            if (game.status === 1 || game.status === 2) {
+                syncSection.style.display = 'block';
+                if (game.save_path) {
+                    syncBtn.style.display = 'block';
+                    subActions.style.display = 'flex';
+                    linkBtn.innerText = "CHANGE SAVE FOLDER";
+                } else {
+                    syncBtn.style.display = 'none';
+                    subActions.style.display = 'none';
+                    linkBtn.innerText = "LINK SAVE FOLDER";
+                }
+            } else {
+                syncSection.style.display = 'none';
+            }
+
             mb.onclick = () => socket.emit('start_download', {name: game.name, path: document.getElementById('det-path').value});
             lb.onclick = () => { if(game.steam_url) socket.emit('launch_game', {url: game.steam_url}); else alert("Sync Steam ID first!"); };
         }
 
+        // --- SYNC FUNCTIONS ---
+        function linkSavePath() {
+            socket.emit('pick_game_save_path', { game_name: activeGame.name });
+        }
+
+        function triggerSync(mode) {
+            const btn = document.getElementById('det-sync-btn');
+            btn.innerText = "SYNCING...";
+            btn.disabled = true;
+            socket.emit('trigger_sync', { name: activeGame.name, mode: mode });
+        }
+
+        socket.on('sync_path_picked', (data) => {
+            document.getElementById('set_sync_path').value = data.path;
+        });
+
+        socket.on('save_path_linked', (data) => {
+            activeGame.save_path = data.path;
+            document.getElementById('det-sync-btn').style.display = 'block';
+            document.getElementById('sync-sub-actions').style.display = 'flex';
+            document.getElementById('det-link-save-btn').innerText = "CHANGE SAVE FOLDER";
+        });
+
+        socket.on('sync_finished', (data) => {
+            const btn = document.getElementById('det-sync-btn');
+            btn.innerText = "SYNC PROGRESS";
+            btn.disabled = false;
+            if(data.status === 'success') alert("Sync Task Finished!");
+        });
+
+        // --- STEAM FUNCTIONS ---
         function handleSteamStep() {
             if (steamStep === "START") { socket.emit('request_steam_accounts'); document.getElementById('steam-modal').style.display = 'block'; document.getElementById('steam-list').innerHTML = ""; document.getElementById('steam-scan-status').innerText = "Scanning Steam accounts..."; } 
             else if (steamStep === "SELECT_EXE") { socket.emit('pick_steam_exe', {game_name: activeGame.name}); }
             else if (steamStep === "CONFIRM") { socket.emit('finalize_steam', {game_name: activeGame.name}); }
         }
+
         socket.on('steam_account_found', (data) => {
             const list = document.getElementById('steam-list'); const row = document.createElement('div'); row.className = 'steam-account-row';
             row.innerHTML = `<img class="steam-avatar" src="${data.avatar || ''}"><div class="steam-info"><div class="steam-name">${data.name}</div><div class="steam-id">ID: ${data.id}</div></div><button class="steam-select-btn" onclick="selectSteamAccount('${data.id}')">Select</button>`;
             list.appendChild(row);
         });
+
         function selectSteamAccount(id) { socket.emit('set_steam_account', {id: id}); document.getElementById('steam-modal').style.display = 'none'; document.getElementById('steam-status').innerText = `Steam Account ${id} selected.`; document.getElementById('det-add-btn').innerText = "SELECT GAME EXE"; steamStep = "SELECT_EXE"; }
+        
         socket.on('steam_exe_picked', (data) => { document.getElementById('steam-status').innerText = `Target selected: ${data.filename}`; document.getElementById('det-add-btn').innerText = "CONFIRM STEAM SHORTCUT"; document.getElementById('det-add-btn').style.background = "#00ff7f"; document.getElementById('det-add-btn').style.color = "#000"; steamStep = "CONFIRM"; });
         socket.on('steam_require_close', () => { if (confirm("Steam must be closed to add the game. Close Steam automatically?")) socket.emit('close_steam_and_continue'); });
         socket.on('steam_sync_prompt', (data) => { 
@@ -327,12 +414,14 @@
                 const sb = document.getElementById('det-add-btn'); sb.innerText = "ADD TO STEAM"; steamStep = "START";
             }
         });
+
         socket.on('steam_integration_success', (data) => { 
             activeGame.steam_url = data.url; document.getElementById('steam-status').innerText = "Success! ID Grabbed."; 
             const sb = document.getElementById('det-add-btn'); sb.innerText = "RE-ADD TO STEAM"; sb.disabled = false; sb.style.background = "transparent"; sb.style.color = "#66c0f4";
             const lb = document.getElementById('det-launch-btn'); lb.classList.add('ready'); lb.style.backgroundColor = "#00ff7f";
             alert(`Integration Complete!\nURL: ${data.url}`);
         });
+
         socket.on('steam_error', (data) => { alert(data.message); const sb = document.getElementById('det-add-btn'); sb.disabled = false; sb.innerText = "ADD TO STEAM"; steamStep = "START"; document.getElementById('steam-status').innerText = "Detection failed."; });
 
         function closeDetails() { document.getElementById('library-view').style.display = 'block'; document.getElementById('details-view').style.display = 'none'; }
@@ -342,11 +431,17 @@
         
         function saveWebSettings() {
             const data = {
-                winrar: document.getElementById('set_winrar').value, path: document.getElementById('set_path').value,
-                steam_path: document.getElementById('set_steam_path').value, steam_id: document.getElementById('set_steam_id').value,
-                web_mode: document.getElementById('set_web_mode').checked, mbps: document.getElementById('set_mbps').checked,
-                size_gb: document.getElementById('set_size_gb').checked, notifs: document.getElementById('set_notifs').checked,
-                webhook_on: document.getElementById('set_wh_on').checked, webhook_url: document.getElementById('set_webhook').value
+                winrar: document.getElementById('set_winrar').value, 
+                path: document.getElementById('set_path').value,
+                sync_path: document.getElementById('set_sync_path').value,
+                steam_path: document.getElementById('set_steam_path').value, 
+                steam_id: document.getElementById('set_steam_id').value,
+                web_mode: document.getElementById('set_web_mode').checked, 
+                mbps: document.getElementById('set_mbps').checked,
+                size_gb: document.getElementById('set_size_gb').checked, 
+                notifs: document.getElementById('set_notifs').checked,
+                webhook_on: document.getElementById('set_wh_on').checked, 
+                webhook_url: document.getElementById('set_webhook').value
             };
             socket.emit('save_settings', data);
             const btn = document.getElementById('saveBtn'); btn.innerText = "SAVED!";
@@ -354,6 +449,7 @@
         }
 
         function searchGames() { let q = document.getElementById('searchBar').value.toLowerCase(); let c = document.getElementsByClassName('game-card'); for (let card of c) card.style.display = card.getAttribute('data-name').includes(q) ? "block" : "none"; }
+        
         let currentFilter = null;
         function filterByStatus(s) { let c = document.getElementsByClassName('game-card'); let l = document.getElementsByClassName('filter-link'); if (currentFilter === s) { for (let link of l) link.classList.remove('active'); for (let card of c) card.style.display = "block"; currentFilter = null; } else { for (let link of l) link.classList.remove('active'); event.target.classList.add('active'); for (let card of c) card.style.display = (card.getAttribute('data-status') == s) ? "block" : "none"; currentFilter = s; } }
     </script>

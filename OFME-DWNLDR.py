@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.8-Beta5
+Zuhu's OFME GUI Downloader V1.5.8-Beta6
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -35,7 +35,7 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout,
                              QProgressBar, QLineEdit, QFormLayout, QTabWidget,
                              QPlainTextEdit, QFileDialog, QCheckBox, QMessageBox, 
                              QFrame, QTableWidget, QTableWidgetItem, QHeaderView,
-                             QDialog, QComboBox)
+                             QDialog, QComboBox, QMenu)
 from PyQt6.QtGui import (QPixmap, QFontDatabase, QFont, QTextCursor, QIcon, 
                          QPainter, QColor, QDesktopServices, QPen)
 from PyQt6.QtCore import (Qt, QSize, pyqtSignal, QObject, QThread, QTimer, 
@@ -46,7 +46,7 @@ from flask_socketio import SocketIO, emit
 import threading
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.8-Beta5"
+CURRENT_VERSION = "V1.5.8-Beta6"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DOCUMENTS_DIR = os.path.join(os.path.expanduser('~'), 'Documents')
 PROJECTS_DIR = os.path.join(DOCUMENTS_DIR, 'ZuhuProjects')
@@ -87,6 +87,7 @@ OFME_PASSWORD = ""
 VERSION_CHECK_BYPASS_LIST = []
 SELECTED_BROWSER_PATH = ""
 WEB_MODE = False
+SYNC_PATH = ""
 
 # --- BROWSER DETECTION ---
 def normalize_browser_name(raw_name):
@@ -312,7 +313,7 @@ STYLESHEET = """
 def load_settings():
     global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
     global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD, VERSION_CHECK_BYPASS_LIST
-    global STEAM_PATH, STEAM_USER_ID, SELECTED_BROWSER_PATH, WEB_MODE
+    global STEAM_PATH, STEAM_USER_ID, SELECTED_BROWSER_PATH, WEB_MODE, SYNC_PATH
     
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -332,6 +333,7 @@ def load_settings():
                 VERSION_CHECK_BYPASS_LIST = settings.get('version_check_bypass_list', [])
                 SELECTED_BROWSER_PATH = settings.get('selected_browser_path', "")
                 WEB_MODE = settings.get('web_mode', False)
+                SYNC_PATH = settings.get('sync_path', "")
 
         except (json.JSONDecodeError, IOError): pass
     if not OFME_USERNAME or not OFME_PASSWORD:
@@ -363,7 +365,8 @@ def save_settings_to_file():
         'ofme_password': OFME_PASSWORD,
         'version_check_bypass_list': VERSION_CHECK_BYPASS_LIST,
         'selected_browser_path': SELECTED_BROWSER_PATH,
-        'web_mode': WEB_MODE
+        'web_mode': WEB_MODE,
+        'sync_path': SYNC_PATH
     }
     try:
         with open(SETTINGS_FILE, 'w') as f: json.dump(settings, f, indent=4)
@@ -775,6 +778,52 @@ class PyToggle(QCheckBox):
     def set_circle_position(self, pos): self._circle_position = pos; self.update()
     circle_position = pyqtProperty(float, get_circle_position, set_circle_position)
 
+# --- SYNC WORKER ---
+class SyncWorker(QThread):
+    finished = pyqtSignal(bool, str)
+    def __init__(self, local_path, cloud_path, mode="sync"):
+        super().__init__()
+        self.local = local_path; self.cloud = cloud_path; self.mode = mode
+        
+    def run(self):
+        try:
+            import datetime
+            if not os.path.exists(self.cloud): os.makedirs(self.cloud, exist_ok=True)
+            
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            silent_flags = ['/E', '/FFT', '/DST', '/R:1', '/W:1', '/XO', '/NJH', '/NJS', '/NDL', '/NFL', '/NC', '/NS', '/NP']
+
+            # --- CUSTOM HEADER ---
+            start_dt = datetime.datetime.now().strftime("%d %B %Y %H:%M:%S")
+            print(f"\n  Started : {start_dt}")
+            
+            if self.mode == "push":
+                print(f"   Source = {self.local}")
+                print(f"     Dest : {self.cloud}")
+                subprocess.run(['robocopy', self.local, self.cloud] + silent_flags, startupinfo=si, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                msg = "Force Upload Complete!"
+            elif self.mode == "pull":
+                print(f"   Source = {self.cloud}")
+                print(f"     Dest : {self.local}")
+                subprocess.run(['robocopy', self.cloud, self.local] + silent_flags, startupinfo=si, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                msg = "Force Download Complete!"
+            else:
+                print(f"   Source = {self.cloud} <-> {self.local}")
+                print(f"     Dest : Bidirectional Sync")
+                subprocess.run(['robocopy', self.cloud, self.local] + silent_flags, startupinfo=si, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(['robocopy', self.local, self.cloud] + silent_flags, startupinfo=si, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                msg = "Sync Complete!"
+
+            # --- CUSTOM FOOTER ---
+            end_dt = datetime.datetime.now().strftime("%d %B %Y %H:%M:%S")
+            print(f"   Ended : {end_dt}")
+            print("Files synced successfully.\n")
+                
+            self.finished.emit(True, msg)
+        except Exception as e: 
+            self.finished.emit(False, str(e))
+
 # --- SETTINGS PAGE ---
 class SettingsPage(QWidget):
     back_requested = pyqtSignal()
@@ -925,6 +974,18 @@ class SettingsPage(QWidget):
         self.download_path_edit.setFont(self.settings_font)
         self.download_path_edit.setPlaceholderText("Leave empty to prompt every time...")
         form_layout.addRow(lbl_dl, self.download_path_edit)
+
+        lbl_sync = QLabel("Cloud Save Folder:")
+        lbl_sync.setFont(self.settings_font)
+        sync_cont = QWidget(); sync_lay = QHBoxLayout(sync_cont); sync_lay.setContentsMargins(0,0,0,0)
+        self.sync_path_edit = QLineEdit(SYNC_PATH)
+        self.sync_path_edit.setFont(self.settings_font)
+        self.sync_path_edit.setPlaceholderText("Folder to sync saves to (e.g. OneDrive)")
+        btn_browse_sync = QPushButton("...")
+        btn_browse_sync.setFixedWidth(40)
+        btn_browse_sync.clicked.connect(self.browse_sync_path)
+        sync_lay.addWidget(self.sync_path_edit); sync_lay.addWidget(btn_browse_sync)
+        form_layout.addRow(lbl_sync, sync_cont)
 
         # --- STEAM SETTINGS ---
         lbl_steam_p = QLabel("Steam Path:")
@@ -1159,6 +1220,10 @@ class SettingsPage(QWidget):
         QMessageBox.warning(self, "Login Error", "Could not log in to Online-Fix.me.\nPlease check your username and password in the fields above.")
         self.creds_container.setVisible(True)
 
+    def browse_sync_path(self):
+        path = QFileDialog.getExistingDirectory(self, "Select Cloud Sync Folder")
+        if path: self.sync_path_edit.setText(path)
+
     def save_settings(self):
         global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, SHOW_SIZE_IN_GB, SHOW_SPEED_IN_MBPS, ENABLE_NOTIFICATIONS
         global ENABLE_WEBHOOK, WEBHOOK_URL, OFME_USERNAME, OFME_PASSWORD, VERSION_CHECK_BYPASS_LIST
@@ -1172,6 +1237,7 @@ class SettingsPage(QWidget):
         if os.path.exists(new_winrar_path): WINRAR_PATH = new_winrar_path
         
         new_download_path = self.download_path_edit.text()
+        global SYNC_PATH; SYNC_PATH = self.sync_path_edit.text()
         
         DEFAULT_DOWNLOAD_PATH = new_download_path 
         STEAM_PATH = self.steam_path_edit.text()
@@ -1258,6 +1324,14 @@ class DataManager(QObject):
         with open(DATA_FILE, 'w') as f:
             json.dump(data, f, indent=4)
         print(f"Saved game data for {name_key} at location {location}")
+
+    def update_save_path(self, game_name, path):
+        data = self._load_local_data()
+        name_key = game_name.upper()
+        if name_key not in data: data[name_key] = {}
+        data[name_key]['save_path'] = path
+        with open(DATA_FILE, 'w') as f: json.dump(data, f, indent=4)
+        self.local_data = data
 
     def _determine_game_statuses(self):
         processed_games = []
@@ -1833,9 +1907,16 @@ class GameDetailsWidget(QWidget):
         bypass_layout.addWidget(self.bypass_toggle)
         right_layout.addWidget(self.bypass_container)
         buttons_container = QWidget()
-        buttons_layout = QHBoxLayout(buttons_container)
+        buttons_layout = QVBoxLayout(buttons_container)
         buttons_layout.setContentsMargins(0, 0, 0, 0)
         buttons_layout.setSpacing(10)
+        
+        top_buttons_layout = QHBoxLayout()
+        top_buttons_layout.setSpacing(10)
+        bottom_buttons_layout = QHBoxLayout()
+        bottom_buttons_layout.setSpacing(10)
+        buttons_layout.addLayout(top_buttons_layout)
+        buttons_layout.addLayout(bottom_buttons_layout)
         
         self.launch_button = QPushButton("LAUNCH GAME")
         self.launch_button.setFont(self.pixel_font)
@@ -1848,8 +1929,25 @@ class GameDetailsWidget(QWidget):
         self.steam_button.setFont(self.pixel_font)
         self.steam_button.setFixedHeight(32)
         self.steam_button.clicked.connect(self.handle_steam_click)
-        buttons_layout.addWidget(self.launch_button, 1) 
-        buttons_layout.addWidget(self.steam_button, 1)
+        top_buttons_layout.addWidget(self.launch_button, 1) 
+        top_buttons_layout.addWidget(self.steam_button, 1)
+        
+        self.locate_path_button = QPushButton("LOCATE GAME EXE")
+        self.locate_path_button.hide() 
+        
+        self.locate_save_button = QPushButton("LINK SAVE FOLDER")
+        self.locate_save_button.setFont(self.pixel_font); self.locate_save_button.setFixedHeight(32)
+        self.locate_save_button.clicked.connect(self.manually_select_save_folder)
+        self.sync_button = QPushButton("SYNC PROGRESS")
+        self.sync_button.setFont(self.pixel_font); self.sync_button.setFixedHeight(32)
+        self.sync_button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.sync_button.customContextMenuRequested.connect(self.show_sync_menu)
+        self.sync_button.setToolTip("Right-click for Force Upload/Download options")
+        self.sync_button.clicked.connect(lambda: self.handle_sync_click(mode="sync")); self.sync_button.hide()
+        
+        bottom_buttons_layout.addWidget(self.locate_path_button, 1)
+        bottom_buttons_layout.addWidget(self.locate_save_button, 1)
+        bottom_buttons_layout.addWidget(self.sync_button, 1)
         right_layout.addWidget(buttons_container)
         self.location_bar = QLineEdit()
         self.location_bar.setFont(self.pixel_font)
@@ -2142,6 +2240,21 @@ class GameDetailsWidget(QWidget):
             self.thumbnail_label.clear()
             self.thumbnail_label.setText("No Image")
 
+        game_key = game_data.get('name', '').upper()
+        local_info = self.data_manager.local_data.get(game_key, {})
+        
+        if status == GameStatus.NOT_DOWNLOADED:
+            self.sync_button.hide()
+            self.locate_save_button.hide()
+        else:
+            self.locate_save_button.show()
+            if local_info.get('save_path'):
+                self.sync_button.show()
+                self.locate_save_button.setText("CHANGE SAVE FOLDER")
+            else:
+                self.sync_button.hide()
+                self.locate_save_button.setText("LINK SAVE FOLDER")
+
         game_name = game_data.get('name')
         if game_name in VERSION_CHECK_BYPASS_LIST:
             self.bypass_toggle.set_state_immediate(True)
@@ -2292,6 +2405,65 @@ class GameDetailsWidget(QWidget):
         self.download_button.setText("INSTALLED"); self.download_button.setEnabled(False)
         
     def update_progress(self, value, stats_text): self.download_progress.setValue(value); self.stats_label.setText(stats_text)
+
+    def manually_select_save_folder(self):
+        game_name = self.current_game_data.get('name')
+        start_dir = os.path.expanduser("~")
+        folder = QFileDialog.getExistingDirectory(self, f"Select the folder where {game_name} stores SAVES/PROGRESS", start_dir)
+        
+        if folder:
+            self.data_manager.update_save_path(game_name, folder)
+            QMessageBox.information(self, "Saves Linked", f"Progress for {game_name} is now ready to sync!")
+            self.set_game_data(self.current_game_data)
+
+    def show_sync_menu(self, pos):
+        menu = QMenu(self)
+        menu.setStyleSheet("QMenu { background-color: #2d2d2d; color: #e0e0e0; border: 1px solid #444; } QMenu::item:selected { background-color: #00ff7f; color: #000; }")
+        
+        action_sync = menu.addAction("🔄 Standard Sync (Merge)")
+        action_push = menu.addAction("⬆️ Force Upload (Local -> Cloud)")
+        action_pull = menu.addAction("⬇️ Force Download (Cloud -> Local)")
+        
+        action = menu.exec(self.sync_button.mapToGlobal(pos))
+        
+        if action == action_sync: self.handle_sync_click(mode="sync")
+        elif action == action_push: self.handle_sync_click(mode="push")
+        elif action == action_pull: self.handle_sync_click(mode="pull")
+
+    def handle_sync_click(self, mode="sync"):
+        if isinstance(mode, bool): mode = "sync"
+        global SYNC_PATH
+        game_name = self.current_game_data.get('name')
+        game_key = game_name.upper()
+        
+        if not SYNC_PATH or not os.path.exists(SYNC_PATH):
+            QMessageBox.warning(self, "Cloud Not Set", "Please set your OneDrive/Cloud folder in Settings first.")
+            return
+
+        local_info = self.data_manager.local_data.get(game_key, {})
+        save_path = local_info.get('save_path')
+
+        if not save_path or not os.path.exists(save_path):
+            QMessageBox.warning(self, "No Save Folder", "Please click 'LINK SAVE FOLDER' first so I know what to sync!")
+            return
+
+        safe_game_name = re.sub(r'[\\/*?:"<>|]', "", game_name).strip()
+        target_cloud_dir = os.path.join(SYNC_PATH, "ZuhuOFME_Saves", safe_game_name)
+
+        self.sync_button.setEnabled(False)
+        self.sync_button.setText("SYNCING..." if mode == "sync" else mode.upper() + "ING...")
+        
+        self.sync_thread_obj = SyncWorker(save_path, target_cloud_dir, mode=mode)
+        self.sync_thread_obj.finished.connect(self.on_sync_finished)
+        self.sync_thread_obj.start()
+
+    def on_sync_finished(self, success, message):
+        self.sync_button.setEnabled(True)
+        self.sync_button.setText("SYNC PROGRESS")
+        if success:
+            QMessageBox.information(self, "Sync Complete", "Your saves are now synced with the cloud!")
+        else:
+            QMessageBox.warning(self, "Sync Failed", f"Error: {message}")
 
 # --- MAIN LAUNCHER WINDOW ---
 class GameLauncher(QWidget):
@@ -2538,6 +2710,7 @@ class OFMEWebServer:
         @self.app.route('/')
         def index():
             initial_logs = "".join(self.log_buffer)
+            global SYNC_PATH
             return render_template('index.html', 
                                  games=self.data_manager.games, 
                                  version=CURRENT_VERSION,
@@ -2545,6 +2718,7 @@ class OFMEWebServer:
                                  default_path=DEFAULT_DOWNLOAD_PATH,
                                  steam_path=STEAM_PATH,
                                  steam_id=STEAM_USER_ID,
+                                 sync_path=SYNC_PATH,
                                  web_mode=WEB_MODE,
                                  mbps=SHOW_SPEED_IN_MBPS,
                                  size_gb=SHOW_SIZE_IN_GB,
@@ -2557,12 +2731,13 @@ class OFMEWebServer:
         def handle_save_settings(data):
             global WINRAR_PATH, DEFAULT_DOWNLOAD_PATH, STEAM_PATH, STEAM_USER_ID
             global SHOW_SPEED_IN_MBPS, SHOW_SIZE_IN_GB, ENABLE_NOTIFICATIONS, ENABLE_WEBHOOK, WEBHOOK_URL
-            global WEB_MODE
+            global WEB_MODE, SYNC_PATH
             
             WINRAR_PATH = data.get('winrar')
             DEFAULT_DOWNLOAD_PATH = data.get('path')
             STEAM_PATH = data.get('steam_path')
             STEAM_USER_ID = data.get('steam_id')
+            SYNC_PATH = data.get('sync_path')
             SHOW_SPEED_IN_MBPS = data.get('mbps')
             SHOW_SIZE_IN_GB = data.get('size_gb')
             ENABLE_NOTIFICATIONS = data.get('notifs')
@@ -2573,6 +2748,80 @@ class OFMEWebServer:
             save_settings_to_file()
             self.handle_new_log("Web UI: Settings successfully saved.\n")
             self.socketio.emit('settings_saved', {'status': 'success'})
+
+        @self.socketio.on('pick_sync_path')
+        def handle_pick_sync():
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk(); root.withdraw(); root.attributes("-topmost", True)
+            path = filedialog.askdirectory(title="Select Cloud Sync Folder")
+            root.destroy()
+            if path:
+                self.socketio.emit('sync_path_picked', {'path': path})
+
+        @self.socketio.on('pick_game_save_path')
+        def handle_pick_save(data):
+            game_name = data.get('game_name')
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk(); root.withdraw(); root.attributes("-topmost", True)
+            path = filedialog.askdirectory(title=f"Select Save Folder for {game_name}")
+            root.destroy()
+            if path:
+                self.data_manager.update_save_path(game_name, path)
+                self.handle_new_log(f"Web UI: Linked save path for {game_name}\n")
+                self.socketio.emit('save_path_linked', {'game_name': game_name, 'path': path})
+
+        @self.socketio.on('trigger_sync')
+        def handle_sync(data):
+            game_name = data.get('name')
+            mode = data.get('mode', 'sync')
+            
+            def run_sync_thread():
+                import datetime
+                game_key = game_name.upper()
+                local_info = self.data_manager.local_data.get(game_key, {})
+                save_path = local_info.get('save_path')
+
+                if not SYNC_PATH or not save_path:
+                    self.handle_new_log("Error: Cloud Path or Game Save Path not set!\n")
+                    self.socketio.emit('sync_finished', {'status': 'error'})
+                    return
+
+                # Create the cloud folder
+                safe_game_name = re.sub(r'[\\/*?:"<>|]', "", game_name).strip()
+                target_cloud_dir = os.path.join(SYNC_PATH, "ZuhuOFME_Saves", safe_game_name)
+                os.makedirs(target_cloud_dir, exist_ok=True)
+                
+                si = subprocess.STARTUPINFO(); si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                # Silencing Robocopy table
+                flags = ['/E', '/FFT', '/DST', '/R:1', '/W:1', '/XO', '/NJH', '/NJS', '/NDL', '/NFL', '/NC', '/NS', '/NP']
+
+                # --- CLEAN LOG START ---
+                start_dt = datetime.datetime.now().strftime("%d %B %Y %H:%M:%S")
+                self.handle_new_log(f"\n  Started : {start_dt}")
+                
+                if mode == "push":
+                    self.handle_new_log(f"   Source = {save_path}")
+                    self.handle_new_log(f"     Dest : {target_cloud_dir}")
+                    subprocess.run(['robocopy', save_path, target_cloud_dir] + flags, startupinfo=si, stdout=subprocess.DEVNULL)
+                elif mode == "pull":
+                    self.handle_new_log(f"   Source = {target_cloud_dir}")
+                    self.handle_new_log(f"     Dest : {save_path}")
+                    subprocess.run(['robocopy', target_cloud_dir, save_path] + flags, startupinfo=si, stdout=subprocess.DEVNULL)
+                else: # Bidirectional Sync
+                    self.handle_new_log(f"   Source = {target_cloud_dir} <-> {save_path}")
+                    self.handle_new_log(f"     Dest : Bidirectional Sync")
+                    subprocess.run(['robocopy', target_cloud_dir, save_path] + flags, startupinfo=si, stdout=subprocess.DEVNULL)
+                    subprocess.run(['robocopy', save_path, target_cloud_dir] + flags, startupinfo=si, stdout=subprocess.DEVNULL)
+
+                # --- CLEAN LOG END ---
+                end_dt = datetime.datetime.now().strftime("%d %B %Y %H:%M:%S")
+                self.handle_new_log(f"   Ended : {end_dt}")
+                self.handle_new_log(f"Files synced successfully for {game_name}.\n")
+                self.socketio.emit('sync_finished', {'status': 'success'})
+
+            threading.Thread(target=run_sync_thread, daemon=True).start()
 
         @self.socketio.on('connect')
         def handle_connect():
@@ -2587,14 +2836,14 @@ class OFMEWebServer:
                 timeout = 180.0 if self.detection_mode else 15.0
                 if self.detection_mode:
                     self.handle_new_log(f"Detection mode active: Postponing shutdown for {timeout} seconds...\n")
-                
                 threading.Timer(timeout, self.shutdown_check).start()
 
         @self.socketio.on('start_download')
         def handle_download(data):
             game_name = data.get('name')
             custom_path = data.get('path')
-            print(f"Web UI: Downloading {game_name} to {custom_path}")
+            self.handle_new_log(f"Web UI: Requesting download for {game_name}...\n")
+            # Logic for trigger_download_from_main_app could be placed here or signaled
             
         @self.socketio.on('launch_game')
         def handle_launch(data):
@@ -2640,12 +2889,9 @@ class OFMEWebServer:
             
             import tkinter as tk
             from tkinter import filedialog
-            root = tk.Tk()
-            root.withdraw()
-            root.attributes("-topmost", True)
+            root = tk.Tk(); root.withdraw(); root.attributes("-topmost", True)
             exe_path = filedialog.askopenfilename(title="Select Game EXE", initialdir=game_folder, filetypes=[("Executable", "*.exe")])
             root.destroy()
-
             if exe_path:
                 self.temp_selected_exe = exe_path 
                 self.socketio.emit('steam_exe_picked', {'filename': os.path.basename(exe_path)})
@@ -2654,7 +2900,6 @@ class OFMEWebServer:
         def handle_finalize(data):
             game_name = data.get('game_name')
             self.last_finalizing_game = game_name 
-            
             steam_running = any(p.name().lower() == "steam.exe" for p in psutil.process_iter())
             if steam_running:
                 self.socketio.emit('steam_require_close')
@@ -2674,19 +2919,15 @@ class OFMEWebServer:
             game_name = data.get('name')
             self.detection_mode = True 
             watch_start_time = time.time() 
-            
             def watch():
                 desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
                 safe_name = re.sub(r'[\\/*?:"<>|]', "", game_name)
                 path = os.path.join(desktop, f"{safe_name}.url")
-                
                 self.handle_new_log(f"Watch started for: {safe_name} on Desktop\n")
-                
                 start_loop = time.time()
                 while time.time() - start_loop < 120:
                     if os.path.exists(path):
-                        file_mod_time = os.path.getmtime(path)
-                        if file_mod_time >= watch_start_time:
+                        if os.path.getmtime(path) >= watch_start_time:
                             time.sleep(1.5)
                             try:
                                 with open(path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -2704,10 +2945,8 @@ class OFMEWebServer:
                             except Exception as e:
                                 self.handle_new_log(f"Error reading shortcut: {e}\n")
                     time.sleep(1)
-                
                 self.detection_mode = False 
                 self.socketio.emit('steam_error', {'message': "Timeout: No new shortcut detected."})
-            
             threading.Thread(target=watch, daemon=True).start()
 
     def process_vdf_write(self, game_name):
@@ -2721,7 +2960,6 @@ class OFMEWebServer:
             exe_path = self.temp_selected_exe
             real_exe = os.path.abspath(exe_path)
             real_dir = os.path.dirname(real_exe)
-            
             exists = any(v.get('AppName') == game_name for k, v in data['shortcuts'].items())
             if not exists:
                 idx = str(len(data['shortcuts']))
@@ -2746,14 +2984,12 @@ class OFMEWebServer:
         if self.client_count <= 0 and not self.detection_mode:
             print("No active web sessions. Closing ZuhuOFME...")
             os._exit(0)
-        elif self.detection_mode:
-            print("Shutdown blocked: Detection Mode is active.")
 
     def run(self):
         print(f"Starting Web Mode on http://127.0.0.1:5000")
         webbrowser.open("http://127.0.0.1:5000")
         self.socketio.run(self.app, port=5000, debug=False, use_reloader=False)
-
+        
 if __name__ == '__main__':
     myappid = 'OFME-DWNLDR'
     try: ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
