@@ -905,7 +905,7 @@ MainGame: https://gofile.io/d/VqwFff
 BuzzHeavier (The Coffin of Andy and Leyley) [v3.0.2]
 ApproxSize: 627 MB
 Description: Walk-n-talk adventure with light puzzling. Brother and sister practice cannibalism after witnessing a botched satanic ritual.
-Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheCoffinofAndyandLeyley.png
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheCoffinofAndyandLeyley.jpg
 Origin: https://steamrip.com/the-coffin-of-andy-and-leyley-free-download-1u/
 MainGame: https://buzzheavier.com/bbt6syokayav
 
