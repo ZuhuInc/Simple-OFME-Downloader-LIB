@@ -920,11 +920,18 @@ Origin: https://steamrip.com/thief-vr-legacy-of-shadow-free-download/
 MainGame: https://gofile.io/d/VqwFff
 
 BuzzHeavier (The Coffin of Andy and Leyley) [3.0.2]
-ApproxSize: 627 MB
+ApproxSize: 627MB
 Description: Walk-n-talk adventure with light puzzling. Brother and sister practice cannibalism after witnessing a botched satanic ritual.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheCoffinofAndyandLeyley.jpg
 Origin: https://steamrip.com/the-coffin-of-andy-and-leyley-free-download-1u/
 MainGame: https://buzzheavier.com/bbt6syokayav
+
+BuzzHeavier (Contraband Police) [10.6.4]
+ApproxSize: 8.7GB
+Description: Take over the duties of a border guard inspector in a communist country of the 80's. Smuggling, corruption and forgery are the order of the day here. Be vigilant and earn the respect of your superiors.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ContrabandPolice.jpg
+Origin: https://steamrip.com/contraband-police-free-download-h17/
+MainGame: https://buzzheavier.com/2stkeeiagxnn
 
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
