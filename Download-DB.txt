@@ -534,6 +534,14 @@ Origin: https://online-fix.me/games/simulator/16892-motor-town-behind-the-wheel-
 MainGame: https://gofile.io/d/Oayy98
 Fix: https://gofile.io/d/a2ntez
 
+GoFile (Supermarket Simulator) [1.1.7.152]
+ApproxSize: 5GB
+Description: Run your own supermarket! Stock shelves, set your prices, take payments, hire staff, expand your store, handle shoplifters, and design your layout. Purchase goods from online or local markets around town, and personally deliver online orders to your customers.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SupermarketSimulator.jpg
+Origin: https://online-fix.me/games/officialservers/17904-supermarket-simulator-po-seti.html
+MainGame: https://gofile.io/d/VQBiwy
+Fix: https://gofile.io/d/n5O4C9
+
 
 
 
