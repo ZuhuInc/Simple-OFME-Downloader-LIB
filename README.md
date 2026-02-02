@@ -127,6 +127,7 @@ This project is kept up-to-date by the following awesome people.
 *   **[ZuhuInc](https://github.com/ZuhuInc)**
 *   **[TurfBoy27](https://github.com/Turfboy27)**
 *   **[lceqx](https://github.com/lceqx)**
+*   **[ReTr0](https://github.com/ReTr0777)**
 
 ---
 
