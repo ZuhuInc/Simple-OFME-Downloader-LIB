@@ -23,12 +23,12 @@ Origin: https://online-fix.me/games/adventures/17913-rv-there-yet-po-seti.html
 MainGame: https://gofile.io/d/16cVap
 Fix: https://gofile.io/d/xHVjsW
 
-GoFile (Schedule I) [0.4.2f9]
+GoFile (Schedule I) [0.4.3f3]
 ApproxSize: 8GB
 Description: From small-time dope pusher to kingpin - manufacture and distribute a range of drugs throughout the grungy city of Hyland Point. Expand your empire with properties, businesses, employees and more.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Schedule1.jpg
 Origin: https://online-fix.me/games/adventures/17729-schedule-i-po-seti.html
-MainGame: https://gofile.io/d/7ORYQa
+MainGame: https://gofile.io/d/aUULri
 Fix: https://gofile.io/d/Ta1lFW
 
 GoFile (Crime Simulator) [1.21]
