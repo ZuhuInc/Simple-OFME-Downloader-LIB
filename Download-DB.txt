@@ -559,7 +559,7 @@ Fix: https://gofile.io/d/n5O4C9
 GoFile (YAPYAP) [1.0.512 + Online]
 ApproxSize: 2GB
 Description: A magic-themed co-op horror game where you and up to 5 friends are minions summoned by a wizard to break into their rival's towers to cause mayhem. Try to fufill your vandalism target with an assortment of spells while avoiding magical beasts and monsters that protect the tower.
-Thumbnail: yapyap.jpg
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/yapyap.jpg
 Origin: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/yapyap.jpg
 MainGame: https://gofile.io/d/p6zP1m
 
