@@ -554,6 +554,15 @@ Fix: https://gofile.io/d/n5O4C9
 
 
 
+
+
+GoFile (YAPYAP) [1.0.512 + Online]
+ApproxSize: 2GB
+Description: A magic-themed co-op horror game where you and up to 5 friends are minions summoned by a wizard to break into their rival's towers to cause mayhem. Try to fufill your vandalism target with an assortment of spells while avoiding magical beasts and monsters that protect the tower.
+Thumbnail: yapyap.jpg
+Origin: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/yapyap.jpg
+MainGame: https://gofile.io/d/p6zP1m
+
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.8.1]
 ApproxSize: 155GB
 Description: Discover the vast Chornobyl Exclusion Zone full of dangerous enemies, deadly anomalies and powerful artifacts. Unveil your own epic story as you make your way to the Heart of Chornobyl. Make your choices wisely, as they will determine your fate in the end.
