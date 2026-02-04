@@ -343,24 +343,23 @@ MainPart12: https://gofile.io/d/YqaSS8
 MainPart13: https://gofile.io/d/83LrXc
 Fix: https://gofile.io/d/DOedqX
 
-GoFile (INAZUMA ELEVEN Victory Road) [2.0.4]
+GoFile (INAZUMA ELEVEN Victory Road) [3.0.1]
 ApproxSize: 75GB
 Description: The latest entry in the character collection and football simulation RPG series, "Inazuma Eleven!" With an original story featuring new main characters, over 5,400 players from across the series' history to collect and train, as well as exciting online tournaments, you can play the game your way!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/INAZUMAELEVENVictoryRoad.jpg
 Origin: https://online-fix.me/games/officialservers/17939-inazuma-eleven-victory-road-po-seti.html
-MainPart1: https://gofile.io/d/A3e1QU
-MainPart2: https://gofile.io/d/L8HwKe
-MainPart3: https://gofile.io/d/iXCjJy
-MainPart4: https://gofile.io/d/67nlON
-MainPart5: https://gofile.io/d/YgGz6M
-MainPart6: https://gofile.io/d/UF7Vxf
-MainPart7: https://gofile.io/d/VINDcE
-MainPart8: https://gofile.io/d/eJKZqq
-MainPart9: https://gofile.io/d/4tmS3S
-MainPart10: https://gofile.io/d/FCqS7h
-MainPart11: https://gofile.io/d/KCzI7T
-MainPart12: https://gofile.io/d/5nmZ0k
-MainPaRT13 https://gofile.io/d/oEZUJl
+MainPart1: https://gofile.io/d/JIPXtG
+MainPart2: https://gofile.io/d/1fn1GO
+MainPart3: https://gofile.io/d/S9xouT
+MainPart4: https://gofile.io/d/b4I5lJ
+MainPart5: https://gofile.io/d/7nqaox
+MainPart6: https://gofile.io/d/YXeoRy
+MainPart7: https://gofile.io/d/8ZVb3N
+MainPart8: https://gofile.io/d/idNALp
+MainPart9: https://gofile.io/d/2rOkcJ
+MainPart10: https://gofile.io/d/d8pCcH
+MainPart11: https://gofile.io/d/SKaXqE
+MainPart12: https://gofile.io/d/k02gFm
 Fix: https://gofile.io/d/PeUy8Y
 
 GoFile (SILENT BREATH) [0.99D]
@@ -844,12 +843,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/resident-evil-7-biohazard-free-download-2k/
 MainGame: https://gofile.io/d/8hOzjw
 
-GoFile (Resident Evil Village) [11260452]
+BuzzHeavier (Resident Evil Village) [21519280]
 ApproxSize: 30GB
 Description: Experience survival horror like never before in the 8th major installment in the Resident Evil franchise - Resident Evil Village. With detailed graphics, intense first-person action and masterful storytelling, the terror has never felt more realistic.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvilVillage.jpg
 Origin: https://steamrip.com/resident-evil-village-1g/
-MainGame: https://gofile.io/d/HwoUid
+MainGame: https://buzzheavier.com/f6jmxld7l5bb
 
 BuzzHeavier (Sekiro™: Shadows Die Twice - GOTY Edition) [1.06]
 ApproxSize: 25GB
