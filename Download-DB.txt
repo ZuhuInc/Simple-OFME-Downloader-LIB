@@ -575,7 +575,18 @@ Origin: https://online-fix.me/games/adventures/17909-slime-rancher-2-po-seti.htm
 MainGame: https://gofile.io/d/XjryX2
 Fix: https://gofile.io/d/5n0SeX
 
+GoFile (Alchemy Factory) [0.4.0.3692]
+ApproxSize: 3GB
+Description: Craft your workshop as an alchemist!‌ Harness arcane devices to automate crafting. Sell alchemical goods, fulfill commissions, and rise to become a renowned alchemy magnate. ‌Multiplayer Supported!‌ Invite master designers to (ahem) contribute their expertise—let them optimize your production lines!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AlchemyFactory.jpg
+Origin: https://online-fix.me/games/simulator/17975-alchemy-factory-po-seti.html
+MainGame: https://gofile.io/d/KAMm8R
+Fix: https://gofile.io/d/IXBm6w
 
+
+
+
+ 
 
 
 GoFile (YAPYAP) [1.0.512 + Online]
