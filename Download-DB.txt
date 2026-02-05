@@ -559,6 +559,15 @@ Origin: https://online-fix.me/games/adventures/17847-abyssus-po-seti.html
 MainGame: https://gofile.io/d/psLVIz
 Fix: https://gofile.io/d/sl7WQ6
 
+GoFile (Slime Rancher 2) [1.0.2]
+ApproxSize: 8GB
+Description: Continue the adventures of Beatrix LeBeau as she journeys across the Slime Sea to Rainbow Island, a land brimming with ancient mysteries, and bursting with wiggly, new slimes to wrangle in this sequel to the smash-hit, Slime Rancher
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SlimeRancher2.jpg
+Origin: https://online-fix.me/games/adventures/17909-slime-rancher-2-po-seti.html
+MainGame: https://gofile.io/d/hzCV79
+Fix: https://gofile.io/d/DMRsvq
+
+
 
 
 
