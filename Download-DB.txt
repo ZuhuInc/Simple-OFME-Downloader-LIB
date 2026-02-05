@@ -583,7 +583,13 @@ Origin: https://online-fix.me/games/simulator/17975-alchemy-factory-po-seti.html
 MainGame: https://gofile.io/d/KAMm8R
 Fix: https://gofile.io/d/IXBm6w
 
-
+GoFile (Travellers Rest) [0.7.0.8]
+ApproxSize: 2GB
+Description: Craft, farm, build and cook! In Travellers Rest you will have to use all the available tools to become the best tavern keeper in the realm. Create unique dishes and drinks to please your customers as you discover the world and its colorful characters.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TravellersRest.jpg
+Origin: https://online-fix.me/games/adventures/17715-travellers-rest-po-seti.html
+MainGame: https://gofile.io/d/OeUbyz
+Fix: https://gofile.io/d/XP5qgc
 
 
  
