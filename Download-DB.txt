@@ -1061,6 +1061,13 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/contraband-police-free-download-h17/
 MainGame: https://buzzheavier.com/2stkeeiagxnn
 
+DropBox (DRIVE Rally) [1.3.20]
+ApproxSize: 3GB
+Description: #DRIVE Rally is an arcade-inspired rally-driving experience set in the golden racing era of the ‘90s. Grab your co-driver and burn some rubber on iconic race-winning cars across a variety of terrains in some of the most iconic rallying locations in the world!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DriveRally.jpg
+Origin: https://steamrip.com/drive-rally-free-download/
+MainGame: https://www.dropbox.com/scl/fi/9pq8pzhmsfmb9al2rxcjt/DRIVE-Rally.rar?rlkey=fguzi7r8zdpsyp3aj4bs6frvn&st=wbuxfn8n&dl=1
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
