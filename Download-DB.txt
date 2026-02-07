@@ -643,6 +643,18 @@ MainPart17: https://gofile.io/d/bI7zrY
 MainPart18: https://gofile.io/d/OnlQOJ
 Fix: https://gofile.io/d/7LAHRF
 
+GoFile (Farming Simulator 22) [1.14.0.0]
+ApproxSize: 35GB
+Description: Create your farm and let the good times grow! Harvest crops, tend to animals, manage productions, and take on seasonal challenges.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/FarmingSimulator22.jpg
+Origin: https://online-fix.me/games/simulator/16846-farming-simulator-22-po-seti.html
+MainPart1: https://gofile.io/d/oh5SiX
+MainPart2: https://gofile.io/d/65Hndg
+MainPart3: https://gofile.io/d/nKnnev
+Fix: https://gofile.io/d/AeDJzH
+
+
+
 
 
 GoFile (YAPYAP) [1.0.512 + Online]
