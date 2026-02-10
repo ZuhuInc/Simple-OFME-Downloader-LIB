@@ -669,6 +669,14 @@ Origin: https://online-fix.me/games/adventures/18001-fish-hunters-most-lethal-fi
 MainGame: https://gofile.io/d/ixQPMN
 Fix: https://gofile.io/d/wDUa5H
 
+Both (Stardew Valley) [1.6.15]
+ApproxSize: 500MB
+Description: You've inherited your grandfather's old farm plot in Stardew Valley. Armed with hand-me-down tools and a few coins, you set out to begin your new life. Can you learn to live off the land and turn these overgrown fields into a thriving home?
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/StardewValley.jpg
+Origin: https://online-fix.me/games/sandbox/16274-stardew-valley-po-seti.html
+MainGame: https://gofile.io/d/0TQvvH
+Fix: https://www.dropbox.com/scl/fi/mfepr76e4km9yzeokmywp/SW_Fix_Repair_Steam_Generic.rar?rlkey=jl3ej144nh7gazespug569si7&st=i24y0ury&dl=1
+
 
 
 
