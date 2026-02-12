@@ -765,12 +765,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/assetto-corsa-evo-free-download
 MainGame: https://gofile.io/d/fPcif7
 
-GoFile (Assetto Corsa Rally) [20801254]
+GoFile (Assetto Corsa Rally) [0.2]
 ApproxSize: 50GB
 Description: Assetto Corsa Rally is a high-fidelity rally sim built for precision and challenge. With 3D laser-scanned stages and cars, professional co-driver support, and dynamic conditions, it delivers a demanding, immersive experience where every second behind the wheel counts.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AC-Rally.jpg
 Origin: https://steamrip.com/assetto-corsa-rally-free-download/
-MainGame: https://gofile.io/d/FuClSX
+MainGame: https://gofile.io/d/yv2u8m
 
 BuzzHeavier (CloverPit) [20093847]
 ApproxSize: 1GB
@@ -1083,7 +1083,7 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/ultrakill-free-download-1p/
 MainGame: https://gofile.io/d/1SREUC
 
-BuzzHeavier (Graveyard Keeper) [v1.407 HF2]
+BuzzHeavier (Graveyard Keeper) [1.407 HF2]
 ApproxSize: 519MB
 Description: Build and manage a medieval graveyard while facing ethical dilemmas and making questionable decisions. Welcome to Graveyard Keeper, the most inaccurate medieval cemetery sim of the year.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/GraveyardKeeper.jpg
