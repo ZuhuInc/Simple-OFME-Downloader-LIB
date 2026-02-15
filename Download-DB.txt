@@ -677,6 +677,17 @@ Origin: https://online-fix.me/games/sandbox/16274-stardew-valley-po-seti.html
 MainGame: https://gofile.io/d/0TQvvH
 Fix: https://www.dropbox.com/scl/fi/mfepr76e4km9yzeokmywp/SW_Fix_Repair_Steam_Generic.rar?rlkey=jl3ej144nh7gazespug569si7&st=i24y0ury&dl=1
 
+GoFile (EARTH DEFENSE FORCE 6) [22012025]
+ApproxSize: 35GB
+Description: Live the future of despair.The year is 2024 AD. The survivors fought against the remaining threats while trying their best to continue their recovery.Three years passed in the year 2027. In a new world without hope, the time has come to once again resist the fate of the Earth.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/EDF6.jpg
+Origin: https://online-fix.me/games/arcade/17560-earth-defense-force-6-po-seti.html
+MainPart1: https://gofile.io/d/KRke7m
+MainPart2: https://gofile.io/d/LEwvaG
+MainPart3: https://gofile.io/d/rEQLxT
+MainPart4: https://gofile.io/d/rLxo48
+Fix: https://gofile.io/d/ABRNcc
+
 
 
 
