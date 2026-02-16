@@ -1107,3 +1107,12 @@ Description: All-in-one gaming utility for frame generation and scaling
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/LossLessScaling.jpg
 Origin: https://steamrip.com/lossless-scaling-free-download/
 MainGame: https://www.dropbox.com/scl/fi/gfa0g4maenjcfwt10v9xn/Lossless-Scaling.rar?rlkey=3wluq8jvve61pjuqge0gllq69&st=0f2s26dj&dl=1
+
+GoFile (REANIMAL) [13022026]
+ApproxSize: 18GB
+Description: The creators of Little Nightmares™ I & II have returned to take you on a darker, more terrifying journey than ever before.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/REANIMAL.png
+Origin: https://steamrip.com/reanimal-free-download/
+MainPart1: https://gofile.io/d/Abuw6s
+MainPart2: https://gofile.io/d/wMr7AQ
+MainPart3: https://gofile.io/d/v8w033
