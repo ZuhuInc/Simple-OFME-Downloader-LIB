@@ -31,13 +31,13 @@ Origin: https://online-fix.me/games/adventures/17729-schedule-i-po-seti.html
 MainGame: https://gofile.io/d/aUULri
 Fix: https://gofile.io/d/Ta1lFW
 
-GoFile (Crime Simulator) [1.21]
+GoFile (Crime Simulator) [1.35b]
 ApproxSize: 18GB
 Description: You’re out of jail, but the debt isn’t gone. Sneak, steal, and break into houses solo or in 4-player co-op. Use lockpicks, sleeping gas, and brute force to complete jobs, outsmart security, and make enough money before time runs out. Will you pay back what you owe, or lose everything?
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CrimeSimulator.png
 Origin: https://online-fix.me/games/simulator/17805-crime-simulator-po-seti.html
-MainPart1: https://gofile.io/d/EhqGzt
-MainPart2: https://gofile.io/d/IOUViL
+MainPart1: https://gofile.io/d/1OMecB
+MainPart2: https://gofile.io/d/3usTjn
 Fix: https://gofile.io/d/yOnTYN
 
 GoFile (Liar's Bar) [0.956]
@@ -566,13 +566,13 @@ Origin: https://online-fix.me/games/adventures/17909-slime-rancher-2-po-seti.htm
 MainGame: https://gofile.io/d/hzCV79
 Fix: https://gofile.io/d/DMRsvq
 
-GoFile (Car Service Together) [0.9F3]
+GoFile (Car Service Together) [0.91F19]
 ApproxSize: 6GB
 Description: Car Service Together is a 1-4 co-op & single player simulation game where you and/or with your friends start from scratch and build your way up. Work together to successfully run your own service center. Team up, manage your business, and create the ultimate car service!
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CarServiceTogether.jpg
 Origin: https://online-fix.me/games/simulator/18004-car-service-together-po-seti.html
-MainGame: https://gofile.io/d/XjryX2
-Fix: https://gofile.io/d/5n0SeX
+MainGame: https://gofile.io/d/yeDrG8
+Fix: https://gofile.io/d/W2SgJs
 
 GoFile (Alchemy Factory) [0.4.0.3692]
 ApproxSize: 3GB
@@ -769,12 +769,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/hades-2-free-download/
 MainGame: https://gofile.io/d/y5FRGB
 
-GoFile (Assetto Corsa EVO) [0.4]
+GoFile (Assetto Corsa EVO) [0.5]
 ApproxSize: 100GB
 Description: Assetto Corsa EVO redefines the realism and features of one of the most popular multiplatform driving simulations ever developed. Featuring cars and tracks from different classes spanning across years of motoring history.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AC-EVO.jpg
 Origin: https://steamrip.com/assetto-corsa-evo-free-download
-MainGame: https://gofile.io/d/fPcif7
+MainGame: https://gofile.io/d/GlGJsO
 
 GoFile (Assetto Corsa Rally) [0.2]
 ApproxSize: 50GB
@@ -953,12 +953,12 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/resident-evil-3-free-download-3l/
 MainGame: https://gofile.io/d/NhLxHQ
 
-GoFile (Resident Evil 4) [B11025382]
+BuzzHeavier (Resident Evil 4) [1.5.0.0]
 ApproxSize: 65GB
 Description: Survival is just the beginning. Six years have passed since the biological disaster in Raccoon City. Leon S. Kennedy, one of the survivors, tracks the president's kidnapped daughter to a secluded European village, where there is something terribly wrong with the locals.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ResidentEvil4.jpg
 Origin: https://steamrip.com/resident-evil-iv-r-i2/
-MainGame: https://gofile.io/d/vLe5ze
+MainGame: https://buzzheavier.com/wximkx3l02g2
 
 BuzzHeavier (Resident Evil 5) [1.2.0]
 ApproxSize: 15GB
