@@ -1111,6 +1111,13 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/graveyard-keeper-free-download-2a/
 MainGame: https://buzzheavier.com/guhoaffxwv2c
 
+BuzzHeavier (Apex Rush) [22006936]
+ApproxSize: 3GB
+Description: A physics-driven arcade racer where racing, drifting, and stunting come together. Set faster times, customize your cars, and keep pushing for better runs on global leaderboards!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ApexRush.jpg
+Origin: https://steamrip.com/apex-rush-free-download/
+MainGame: https://buzzheavier.com/v93ztej7bnv0
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
