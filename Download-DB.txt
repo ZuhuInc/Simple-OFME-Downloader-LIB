@@ -1118,6 +1118,34 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/apex-rush-free-download/
 MainGame: https://buzzheavier.com/v93ztej7bnv0
 
+BuzzHeavier (The Binding of Isaac: Rebirth) [1.9.7.14]
+ApproxSize: 1GB
+Description: When Isaac’s mother starts hearing the voice of God demanding a sacrifice be made to prove her faith, Isaac escapes into the basement facing droves of deranged enemies, lost brothers and sisters, his fears, and eventually his mother. Gameplay The Binding of Isaac is a randomly generated action RPG shooter with heavy Rogue-like elements. Following Isaac on his journey players will find bizarre treasures that change Isaac’s form giving him super human abilities and enabling him to fight off droves of mysterious creatures, discover secrets and fight his way to safety. About the Binding Of Isaac: Rebirth The Binding of Isaac: Rebirth is the ultimate of remakes with an all-new highly efficient game engine (expect 60fps on most PCs), all-new hand-drawn pixel style artwork, highly polished visual effects, all-new soundtrack and audio by the the sexy Ridiculon duo Matthias Bossi + Jon Evans. Oh yeah, and hundreds upon hundreds of designs, redesigns and re-tuned enhancements by series creator, Edmund McMillen. Did we mention the poop?
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/the_binding_of_isaac.jpg
+Origin: https://steamrip.com/the-binding-of-isaac-rebirth-free-download3u/
+MainGame: https://buzzheavier.com/5d8o817ff9fq
+
+GoFile (The Binding of Isaac: Repentance) [1.9.7.12 + Co-op]
+ApproxSize: 1GB
+Description: When Isaac’s mother starts hearing the voice of God demanding a sacrifice be made to prove her faith, Isaac escapes into the basement facing droves of deranged enemies, lost brothers and sisters, his fears, and eventually his mother. Gameplay The Binding of Isaac is a randomly generated action RPG shooter with heavy Rogue-like elements. Following Isaac on his journey players will find bizarre treasures that change Isaac’s form giving him super human abilities and enabling him to fight off droves of mysterious creatures, discover secrets and fight his way to safety. About the Binding Of Isaac: Rebirth The Binding of Isaac: Rebirth is the ultimate of remakes with an all-new highly efficient game engine (expect 60fps on most PCs), all-new hand-drawn pixel style artwork, highly polished visual effects, all-new soundtrack and audio by the the sexy Ridiculon duo Matthias Bossi + Jon Evans. Oh yeah, and hundreds upon hundreds of designs, redesigns and re-tuned enhancements by series creator, Edmund McMillen. Did we mention the poop?
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/The_Isaac_2.jpg
+Origin: https://steamrip.com/the-binding-of-isaac-repentance-free-download-2w/
+MainGame: https://gofile.io/d/QWeNed
+
+BuzzHeavier (Escape from Yandere) [21829606]
+ApproxSize: 3GB
+Description: Yandera has locked you in your house and is asking for a declaration of love. You can stay with her or try to escape. Explore the house, but be careful, Yandera can kill you.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Yandre.jpg
+Origin: https://steamrip.com/escape-from-yandere-free-download/
+MainGame: https://buzzheavier.com/np65o7bvr6qp
+
+BuzzHeavier (Insider Trading) [22037555]
+ApproxSize: 1GB
+Description: Insider Trading is a roguelike deckbuilder where you bend the market to your will. Synergize perks, manipulate stock prices, and trade wisely or risk pricing yourself out.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Insider_trading.jpg
+Origin: https://steamrip.com/insider-trading-free-download/
+MainGame: https://buzzheavier.com/83tud01gtudg
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
