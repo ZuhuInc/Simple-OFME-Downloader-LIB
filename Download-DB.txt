@@ -40,6 +40,14 @@ MainPart1: https://gofile.io/d/1OMecB
 MainPart2: https://gofile.io/d/3usTjn
 Fix: https://gofile.io/d/yOnTYN
 
+GoFile (iRacing Arcade) [03032026]
+ApproxSize: 4GB
+Description: Race across global licensed series and build your own racing team to secure your motorsport legacy in this third person arcade racer.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/iRacingArcade.jpg
+Origin: https://online-fix.me/games/officialservers/18022-iracing-arcade-po-seti.html
+MainGame: https://gofile.io/d/7Ct9d1
+Fix: https://gofile.io/d/ZAq6kd
+
 GoFile (Liar's Bar) [0.956]
 ApproxSize: 10GB
 Description: Dive into this multiplayer online experience set in a sketchy bar where the games are as dangerous as the patrons. Join a table of 4 and test your skills in Liar's Dice and Liar's Deck, where lying and bluffing are key to victory. Ready for a night at Liar's Bar?
