@@ -709,7 +709,7 @@ Fix: https://gofile.io/d/KYU9uM
 GoFile (Smack Talk) [24022026]
 ApproxSize: 800MB
 Description: Say your moves out loud, trash-talk your friends, and fight to win. Smack Talk is a 1–4 player online PvP platform fighter where your voice controls your attacks. Call moves, land one-liners, and finish foes with wild ultimates.
-Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SmackTalk.png
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SmackTalk.jpg
 Origin: https://online-fix.me/games/fighting/18024-smack-talk-po-seti.html
 MainGame: https://gofile.io/d/zIY5aF
 Fix: https://gofile.io/d/uq7d6o
