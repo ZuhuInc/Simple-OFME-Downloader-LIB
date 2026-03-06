@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.8-Beta6
+Zuhu's OFME GUI Downloader V1.5.8-Beta7
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -46,7 +46,7 @@ from flask_socketio import SocketIO, emit
 import threading
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.8-Beta6"
+CURRENT_VERSION = "V1.5.8-Beta7"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DOCUMENTS_DIR = os.path.join(os.path.expanduser('~'), 'Documents')
 PROJECTS_DIR = os.path.join(DOCUMENTS_DIR, 'ZuhuProjects')
@@ -1451,18 +1451,17 @@ class DownloadManager(QObject):
     status_update = pyqtSignal(str)
     finished = pyqtSignal(bool, str, dict)
 
-    def __init__(self, game_data):
+    def __init__(self, game_data, target_base_path):
         super().__init__()
         self.game_data = game_data
+        self.target_base_path = target_base_path
         self._is_running = True
 
-    def stop(self):
-        self._is_running = False
-
     def run(self):
-        temp_download_folder = "temp_downloads"
+        drive = os.path.splitdrive(os.path.abspath(self.target_base_path))[0]
+        temp_download_folder = os.path.join(drive, os.sep, "Temp_Download")
+        
         os.makedirs(temp_download_folder, exist_ok=True)
-
         main_parts = {}
         for key, value in self.game_data.items():
             if key == 'MainGame': main_parts[0] = value
@@ -1714,6 +1713,9 @@ class InstallManager(QObject):
         self.fix_path = fix_path
         self.base_install_path = install_path
         self.is_new_install = is_new_install
+        
+        drive = os.path.splitdrive(os.path.abspath(self.base_install_path))[0]
+        self.temp_folder = os.path.join(drive, os.sep, "Temp_Download")
 
     @pyqtSlot()
     def start_main_extraction(self):
@@ -1763,8 +1765,10 @@ class InstallManager(QObject):
             all_files_to_delete = self.main_paths + ([self.fix_path] if self.fix_path else [])
             for path in all_files_to_delete:
                 if path and os.path.exists(path): os.remove(path)
-            temp_folder = "temp_downloads"
-            if os.path.exists(temp_folder) and not os.listdir(temp_folder): os.rmdir(temp_folder)
+            
+            # Use the dynamic temp_folder instead of TEMP_DOWNLOAD_DIR
+            if os.path.exists(self.temp_folder) and not os.listdir(self.temp_folder):
+                os.rmdir(self.temp_folder)
             self.cleanup_finished.emit(True, "Cleanup complete.")
         except OSError as e:
             self.cleanup_finished.emit(False, f"Cleanup failed: {e}")
@@ -2298,32 +2302,34 @@ class GameDetailsWidget(QWidget):
                     self.launch_button.setStyleSheet("border-radius: 15px; border: 1px solid #444;")
 
     def start_or_cancel_download(self):
-        if self.worker_thread is not None:
-            try:
-                if self.worker_thread.isRunning():
-                    if hasattr(self, 'worker'): self.worker.stop()
-                    self.download_button.setText("DOWNLOAD")
-                    return
-            except RuntimeError: self.worker_thread = None
+            if self.worker_thread is not None:
+                try:
+                    if self.worker_thread.isRunning():
+                        if hasattr(self, 'worker'): self.worker.stop()
+                        self.download_button.setText("DOWNLOAD")
+                        return
+                except RuntimeError: self.worker_thread = None
 
-        if self.installer_thread and self.installer_thread.isRunning(): return
-        is_new_install = self.current_game_data['status'] == GameStatus.NOT_DOWNLOADED    
-        path_to_use = self.location_bar.text()
-        if not os.path.isdir(path_to_use):
-            self.status_label.setText("Invalid location path!"); return
-        
-        self.download_button.setText("CANCEL")
-        self.worker_thread = QThread()
-        self.worker = DownloadManager(self.current_game_data)
-        self.worker.moveToThread(self.worker_thread)
-        self.worker_thread.started.connect(self.worker.run)
-        self.worker.finished.connect(lambda s, m, p: self.on_download_complete(s, m, p, path_to_use, is_new_install))
-        self.worker.finished.connect(self.worker_thread.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
-        self.worker.progress.connect(self.update_progress)
-        self.worker.status_update.connect(self.status_label.setText)
-        self.worker_thread.start()
+            if self.installer_thread and self.installer_thread.isRunning(): return
+            
+            is_new_install = self.current_game_data['status'] == GameStatus.NOT_DOWNLOADED    
+            path_to_use = self.location_bar.text()
+            
+            if not os.path.isdir(path_to_use):
+                self.status_label.setText("Invalid location path!"); return
+            
+            self.download_button.setText("CANCEL")
+            self.worker_thread = QThread()
+            self.worker = DownloadManager(self.current_game_data, path_to_use) 
+            self.worker.moveToThread(self.worker_thread)
+            self.worker_thread.started.connect(self.worker.run)
+            self.worker.finished.connect(lambda s, m, p: self.on_download_complete(s, m, p, path_to_use, is_new_install))
+            self.worker.finished.connect(self.worker_thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.worker_thread.finished.connect(self.worker_thread.deleteLater)
+            self.worker.progress.connect(self.update_progress)
+            self.worker.status_update.connect(self.status_label.setText)
+            self.worker_thread.start()
 
     def on_download_complete(self, success, message, path_dict, base_path, is_new_install):
         self.status_label.setText(message)
