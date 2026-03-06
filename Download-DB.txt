@@ -706,6 +706,27 @@ MainPart2: https://gofile.io/d/hg6JoG
 MainPart3: https://gofile.io/d/BFYS0m
 Fix: https://gofile.io/d/KYU9uM
 
+GoFile (Smack Talk) [24022026]
+ApproxSize: 800MB
+Description: Say your moves out loud, trash-talk your friends, and fight to win. Smack Talk is a 1–4 player online PvP platform fighter where your voice controls your attacks. Call moves, land one-liners, and finish foes with wild ultimates.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SmackTalk.png
+Origin: https://online-fix.me/games/fighting/18024-smack-talk-po-seti.html
+MainGame: https://gofile.io/d/zIY5aF
+Fix: https://gofile.io/d/uq7d6o
+
+GoFile (Drug Dealer Simulator 2) [1.1]
+ApproxSize: 32GB
+Description: What turns a drug dealer into a drug lord? Find out in DDS2, a first-person co-op sim set in a dynamic open world. Make contacts, cook drugs, and manage your cartel on Isla Sombra, where power is the only law.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DrugDealerSimulator2.jpg
+Origin: https://online-fix.me/games/simulator/17538-drug-dealer-simulator-2-po-seti.html
+MainPart1: https://gofile.io/d/7lkqi6
+MainPart2: https://gofile.io/d/Z8Yuuq
+MainPart3: https://gofile.io/d/eOZNLN
+MainPart4: https://gofile.io/d/pkwqbK
+MainPart5: https://gofile.io/d/SGKqZO
+MainPart6: https://gofile.io/d/2iTuBB
+Fix: https://gofile.io/d/4XlSnb
+
 
 
 
