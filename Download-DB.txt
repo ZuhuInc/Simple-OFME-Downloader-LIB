@@ -40,13 +40,13 @@ MainPart1: https://gofile.io/d/1OMecB
 MainPart2: https://gofile.io/d/3usTjn
 Fix: https://gofile.io/d/yOnTYN
 
-GoFile (iRacing Arcade) [03032026]
+GoFile (iRacing Arcade) [04032026]
 ApproxSize: 4GB
 Description: Race across global licensed series and build your own racing team to secure your motorsport legacy in this third person arcade racer.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/iRacingArcade.jpg
 Origin: https://online-fix.me/games/officialservers/18022-iracing-arcade-po-seti.html
-MainGame: https://gofile.io/d/7Ct9d1
-Fix: https://gofile.io/d/ZAq6kd
+MainGame: https://gofile.io/d/ZfeqQr
+Fix: https://gofile.io/d/ZCcrlT
 
 GoFile (Liar's Bar) [0.956]
 ApproxSize: 10GB
@@ -626,7 +626,7 @@ Origin: https://online-fix.me/games/officialservers/17845-prison-boss-prohibitio
 MainGame: https://gofile.io/d/QSDQNi
 Fix: https://gofile.io/d/h1F4Sh
 
-GoFile (Nioh 3) [1.02.02]
+GoFile (Nioh 3) [1.03.04]
 ApproxSize: 125GB
 Description: In the third game in the dark samurai action RPG series Nioh, you will need to use both Samurai and Ninja combat styles in your battles against formidable yokai as you explore a thrilling open field.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Nioh3.jpg
@@ -649,7 +649,7 @@ MainPart15: https://gofile.io/d/cxmFWW
 MainPart16: https://gofile.io/d/KckIx0
 MainPart17: https://gofile.io/d/bI7zrY
 MainPart18: https://gofile.io/d/OnlQOJ
-Fix: https://gofile.io/d/7LAHRF
+Fix: https://gofile.io/d/wRCV6O
 
 GoFile (Farming Simulator 22) [1.14.0.0]
 ApproxSize: 35GB
