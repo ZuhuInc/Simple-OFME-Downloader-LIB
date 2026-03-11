@@ -1,5 +1,5 @@
 """
-Zuhu's OFME GUI Downloader V1.5.8-Beta7
+Zuhu's OFME GUI Downloader V1.5.8-Beta7b
 
 By Zuhu | DC: ZuhuInc | DCS: https://discord.gg/Wr3wexQcD3
 """
@@ -46,7 +46,7 @@ from flask_socketio import SocketIO, emit
 import threading
 
 # --- CONFIGURATION ---
-CURRENT_VERSION = "V1.5.8-Beta7"
+CURRENT_VERSION = "V1.5.8-Beta7b"
 DB_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
 DOCUMENTS_DIR = os.path.join(os.path.expanduser('~'), 'Documents')
 PROJECTS_DIR = os.path.join(DOCUMENTS_DIR, 'ZuhuProjects')
@@ -1457,6 +1457,10 @@ class DownloadManager(QObject):
         self.target_base_path = target_base_path
         self._is_running = True
 
+    def stop(self):
+        self._is_running = False
+        self.status_update.emit("Cancelling download...")
+    
     def run(self):
         drive = os.path.splitdrive(os.path.abspath(self.target_base_path))[0]
         temp_download_folder = os.path.join(drive, os.sep, "Temp_Download")
