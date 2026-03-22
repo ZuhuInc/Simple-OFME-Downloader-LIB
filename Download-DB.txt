@@ -1172,8 +1172,8 @@ MainGame: https://buzzheavier.com/83tud01gtudg
 BuzzHeavier (DEADLINE DELIVERY) [0.973]
 ApproxSize: 3GB
 Description: Strap in, floor it, and deliver the goods... before the bomb goes off. Play as Carl, a monkey driving a wildly unstable mail truck that's rigged with explosives on a tight deadline.
-Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Insider_trading.jpg
-Origin: https://steamrip.com/deadline-delivery-free-download/DEADLINEDELIVERY.jpg
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DEADLINEDELIVERY.jpg
+Origin: https://steamrip.com/deadline-delivery-free-download/
 MainGame: https://buzzheavier.com/ijhwpr7gn7ky
 
 DropBox (LossLess Scaling) [3.2]
