@@ -40,7 +40,7 @@ MainPart1: https://gofile.io/d/1OMecB
 MainPart2: https://gofile.io/d/3usTjn
 Fix: https://gofile.io/d/yOnTYN
 
-GoFile (iRacing Arcade) []
+GoFile (iRacing Arcade) [Patched]
 ApproxSize: 4GB
 Description: [!Iracing Patched multiplayer Buy The Game] Race across global licensed series and build your own racing team to secure your motorsport legacy in this third person arcade racer.
 Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/iRacingArcade.jpg
