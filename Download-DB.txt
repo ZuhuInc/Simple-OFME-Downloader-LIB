@@ -725,7 +725,15 @@ MainPart3: https://gofile.io/d/eOZNLN
 MainPart4: https://gofile.io/d/pkwqbK
 MainPart5: https://gofile.io/d/SGKqZO
 MainPart6: https://gofile.io/d/2iTuBB
-Fix: https://gofile.io/d/4XlSnb
+Fix: https://gofile.io/d/4XlSnb 
+
+ GoFile (Chained Wheels) [30032026]
+ApproxSize: 5GB
+Description: Embark on a chaotic co-op drive in Chained Wheels, where two vehicles are chained together and every move turns into a shared adventure or a DISASTER.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ChainedWheels.jpg
+Origin: https://online-fix.me/games/adventures/18052-chained-wheels-po-seti.html
+MainGame: https://gofile.io/d/pfNonX
+Fix: https://gofile.io/d/8oI0TR
 
 
 
