@@ -742,7 +742,14 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://online-fix.me/games/arcade/16254-human-fall-flat-po-seti.html
 MainGame: https://gofile.io/d/GXNnm1
 
-
+GoFile (Cooking Simulator 2) [1.4.6717bcc]
+ApproxSize: 20GB
+Description: Cooking Simulator is back – bigger, better, and with multiplayer! Create your own recipes and take advantage of new and improved controls to become the best restaurant cook in the city! Or just have fun and enjoy cooking at your own pace. You’re the chef here!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CookingSimulator2.png
+Origin: https://online-fix.me/games/simulator/18051-cooking-simulator-2-better-together-po-seti.html
+MainPart1: https://gofile.io/d/iEw8w0
+MainPart2: https://gofile.io/d/ZeIyj2
+Fix: https://gofile.io/d/KBkWyk
 
 
 
