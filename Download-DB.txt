@@ -1183,6 +1183,13 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/deadline-delivery-free-download/
 MainGame: https://buzzheavier.com/ijhwpr7gn7ky
 
+BuzzHeavier (Samson) [22679769]
+ApproxSize: 15GB
+Description: Samson returns to Tyndalston, a city that shaped him hard, where every fight is close and every escape is earned. He owes dangerous people more than he can pay, and they’re using his sister to force his hand. The clock is ticking. The only way out is through anyone who stands in his way.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/SamSon.jpg
+Origin: hhttps://steamrip.com/samson-free-download/
+MainGame: https://buzzheavier.com/iazggnzy4dyk
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
