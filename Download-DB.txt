@@ -758,6 +758,15 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://online-fix.me/games/adventures/16610-overcooked-all-you-can-eat-po-seti.html
 MainGame: https://gofile.io/d/DeS5zZ
 
+GoFile (ASTRONEER) [1.36.43.0]
+ApproxSize: 4GB
+Description: Interact with strange new worlds in a unique and tactile way, molding the environment itself as if it were clay in your hands. Build your base, master resource management, automate your production lines, and more as you unravel the mysteries of the universe, alone or with friends.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ASTRONEER.jpg
+Origin: https://online-fix.me/games/sandbox/16169-astroneer-po-seti.html
+MainGame: https://gofile.io/d/xZ22Kg
+Fix: https://gofile.io/d/4DBmGO
+
+
 
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.8.1]
