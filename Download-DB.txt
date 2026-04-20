@@ -767,6 +767,14 @@ MainGame: https://gofile.io/d/xZ22Kg
 Fix: https://gofile.io/d/4DBmGO
 
 
+GoFile (Teardown) [12032026]
+ApproxSize: 12GB
+Description: Prepare the perfect heist in a fully destructible, simulated voxel world. Tear down walls with vehicles or use explosives to create your own shortcuts. Shape the environment to your advantage in the most creative ways you can imagine. Play solo or with up to 12 players in multiplayer.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Teardown.jpg
+Origin: https://online-fix.me/games/sandbox/17208-teardown-po-seti.html
+MainGame: https://gofile.io/d/UYmpFX
+Fix: https://gofile.io/d/2U5F1n
+
 
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.8.1]
