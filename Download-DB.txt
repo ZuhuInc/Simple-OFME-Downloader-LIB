@@ -1228,6 +1228,13 @@ Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/
 Origin: https://steamrip.com/samson-free-download/
 MainGame: https://buzzheavier.com/iazggnzy4dyk
 
+BuzzHeavier (Little Nightmares II) [5.8]
+ApproxSize: 9GB
+Description: Little Nightmares II is the second game in a series that has thrilled and captivated millions of players worldwide since 2017. Now it’s your turn to try to survive this critically acclaimed entry in the most charming horror series ever made.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/little_nightmares_ii.jpg
+Origin: https://steamrip.com/little-nightmares-ii-free-download-k2/
+MainGame: https://bzzhr.to/lvb1gd1atuxa
+
 DropBox (LossLess Scaling) [3.2]
 ApproxSize: 0.3GB
 Description: All-in-one gaming utility for frame generation and scaling
