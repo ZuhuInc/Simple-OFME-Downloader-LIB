@@ -775,6 +775,15 @@ Origin: https://online-fix.me/games/sandbox/17208-teardown-po-seti.html
 MainGame: https://gofile.io/d/UYmpFX
 Fix: https://gofile.io/d/2U5F1n
 
+GoFile (Dome Keeper) [5.0.0]
+ApproxSize: 1GB
+Description: Defend against waves of alien monsters in this unique roguelike action miner. Dig for resources, collect useful gadgets, and upgrade equipment to increase odds of survival – just hurry back before your dome is destroyed!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/DomeKeeper.jpg
+Origin: https://online-fix.me/games/officialservers/18062-dome-keeper-po-seti.html
+MainGame: https://gofile.io/d/mIL293
+Fix: https://gofile.io/d/mIL293
+
+
 
 
 GoFile (S.T.A.L.K.E.R. 2: Heart of Chornobyl) [1.8.1]
