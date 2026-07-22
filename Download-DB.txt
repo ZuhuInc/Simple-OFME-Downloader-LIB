@@ -800,6 +800,31 @@ MainPart1: https://gofile.io/d/z3veaD
 MainPart2: https://gofile.io/d/650xWn
 Fix: https://gofile.io/d/KEe5oI
 
+GoFile (Funnel Runners) [0.34.28]
+ApproxSize: 20GB
+Description: Trapped in a doomed city, you and up to 7 friends must scavenge parts, fix your van, and escape the brutal tornado that approaches. A first-person co-op survival game with escalating disasters and total environmental destruction.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/FunnelRunners.jpg
+Origin: https://online-fix.me/games/horror/18168-funnel-runners-po-seti.html
+MainGame: https://gofile.io/d/CbVLXQ
+Fix: https://gofile.io/d/PmlDnq
+
+GoFile (Ore Factory) [1.0.4]
+ApproxSize: 11GB
+Description: Ore Factory Squad is a co-op mining and factory-building game with procedural mining and fun at its core! Play alone or with friends, buy properties, dig deep for valuable resources, complete contracts, upgrade and automate production lines and grow your factory from zero to industry!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/OreFactory.jpg
+Origin: https://online-fix.me/games/simulator/18167-ore-factory-squad-online.html
+MainPart1: https://gofile.io/d/fVB9MB
+MainPart2: https://gofile.io/d/miG2ak
+Fix: https://gofile.io/d/EiX7l4
+
+GoFile (Kebab Chefs! Restaurant Simulator) [04072026]
+ApproxSize: 6GB
+Description: Kebab Chefs! is a Co-Op, cooking and restaurant management game that can be played up to 4 players. Design your own restaurant. Cook delicious foods, fill your menu with various recipes, feed customers and become the biggest kebab restaurant in town!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/KebabChefs!RestaurantSimulator.jpg
+Origin: https://online-fix.me/games/simulator/17430-kebab-chefs-restaurant-simulator-po-seti.html
+MainGame: https://gofile.io/d/qxAlrL
+Fix: https://gofile.io/d/gmM7o2
+
 
 
 
