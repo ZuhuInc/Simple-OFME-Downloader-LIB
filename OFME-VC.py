@@ -14,13 +14,47 @@ import time
 import json
 import sys
 import os
+import re
 
 options = Options()
 options.add_argument("--headless=new") 
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-gpu")
+options.add_argument("--remote-allow-origins=*")
+options.add_argument("--log-level=3")
+options.add_argument("--silent")
+options.add_experimental_option('excludeSwitches', ['enable-logging'])
+
 brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
-options.binary_location = brave_path
-driver1 = webdriver.Chrome(options = options)
-driver2 = Driver(browser='brave', uc = True)
+if os.path.exists(brave_path):
+    options.binary_location = brave_path
+
+driver1 = None
+try:
+    driver1 = webdriver.Chrome(options=options)
+except Exception as e:
+    print(f"Brave driver failed: {e}. Trying fallback to standard Chrome...")
+    options.binary_location = ""
+    try:
+        driver1 = webdriver.Chrome(options=options)
+    except Exception as e2:
+        print(f"Fallback driver failed: {e2}")
+        driver1 = None
+
+driver2 = None
+driver2_kwargs = {}
+if brave_path and os.path.exists(brave_path):
+    driver2_kwargs["binary_location"] = brave_path
+
+try:
+    driver2 = Driver(browser='chrome', uc=True, **driver2_kwargs)
+except Exception as e:
+    try:
+        driver2 = Driver(browser='chrome', uc=True)
+    except Exception as e2:
+        print(f"Failed to init Driver 2: {e2}")
+        driver2 = None
 os.system('cls')
 DISCORD_ICON_URL = "https://i.imgur.com/01wdU6Q.png" 
 APP_ICON_URL = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/Assets/OFME-VC-ICO.ico"
@@ -113,6 +147,7 @@ counter = 0
 game_update = {}
 for game in games:
     if 'https://online-fix.me/' in game['Origin']:
+        if not driver1: continue
         driver1.get(game['Origin'])
         if counter == 0:
             search = driver1.find_element(By.NAME, 'login_name')
@@ -136,8 +171,8 @@ for game in games:
                         except Exception as error:
                             print(f"Could not open the file. Please navigate to it manually: {DATA_FILE}")
                             print(f"Error: {error}")
-                driver1.quit()
-                driver2.quit()
+                if driver1: driver1.quit()
+                if driver2: driver2.quit()
                 sys.exit()
             counter += 1
         driver1.get(game['Origin'])
@@ -151,11 +186,34 @@ for game in games:
             continue 
                  
     elif 'https://steamrip.com/' in game['Origin']:
+        if not driver2: continue
         Origin_URL = game['Origin']
-        driver2.uc_open_with_reconnect(Origin_URL, 6) 
-        driver2.uc_gui_click_captcha()
-        version = driver2.find_element(By.TAG_NAME, 'h1').text.split('(')[1].replace(')','')
-        pass
+        try:
+            driver2.uc_open_with_reconnect(Origin_URL, 6) 
+            driver2.uc_gui_click_captcha()
+            try:
+                h1_elem = WebDriverWait(driver2, 10).until(
+                    EC.presence_of_element_located((By.TAG_NAME, 'h1'))
+                )
+                h1_text = h1_elem.text.strip()
+            except Exception:
+                try:
+                    h1_elem = driver2.find_element(By.CLASS_NAME, 'entry-title')
+                    h1_text = h1_elem.text.strip()
+                except Exception:
+                    h1_text = ""
+
+            if '(' in h1_text and ')' in h1_text:
+                version = h1_text.split('(')[1].split(')')[0].strip()
+            else:
+                ver_match = re.search(r'(?:v|Build\s*)([\d\.\w\-]+)', h1_text, re.IGNORECASE)
+                if ver_match:
+                    version = ver_match.group(0).strip()
+                else:
+                    version = h1_text.replace("Free Download", "").strip()
+        except Exception as e:
+            print(f"SteamRIP error for {game['Name']}: {e}")
+            continue
     else:
         continue
     if "Build" in version:
@@ -170,8 +228,8 @@ for game in games:
             'url': game['Origin']
         }
 
-driver1.quit()
-driver2.quit()
+if driver1: driver1.quit()
+if driver2: driver2.quit()
 print("-" * 60)
 num_updates = len(game_update)
 

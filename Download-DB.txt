@@ -825,6 +825,22 @@ Origin: https://online-fix.me/games/simulator/17430-kebab-chefs-restaurant-simul
 MainGame: https://gofile.io/d/qxAlrL
 Fix: https://gofile.io/d/gmM7o2
 
+GoFile (Ship Graveyard Simulator 2) [8962]
+ApproxSize: 12GB
+Description: Dust off your torch and hammer - it's time to get back to work, you have a new job to do. Visit the new beach coast with the largest, biggest ship graveyard in the world, dismantle huge ship parts and collect tons of precious steel. Roll up your sleeves, it's time to get back to the business.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/ShipGraveyardSimulator2.jpg
+Origin: https://online-fix.me/games/sandbox/17556-ship-graveyard-simulator-2-po-seti.html
+MainGame: https://gofile.io/d/z2fM8i
+Fix: https://gofile.io/d/bbNloU
+
+GoFile (Burglin Gnomes) [10062026]
+ApproxSize: 7GB
+Description: An online Co-op game about breaking into houses and causing havoc as a tiny gnome. Avoid danger, repurpose stolen household items, and complete tasks to meet the High-Gnome’s demands. Craft equipment and upgrade your home to make your missions easier and more successful.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BurglinGnomes.jpg
+Origin: https://online-fix.me/games/horror/18139-burglin-gnomes-po-seti.html
+MainGame: https://gofile.io/d/1xx8go
+Fix: https://gofile.io/d/DjQwUG
+
 
 
 

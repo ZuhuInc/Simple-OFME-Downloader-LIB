@@ -514,6 +514,13 @@ class VersionCheckWorker(QThread):
 
         options = Options()
         options.add_argument("--headless=new") 
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--remote-allow-origins=*")
+        options.add_argument("--log-level=3")
+        options.add_argument("--silent")
+        options.add_experimental_option('excludeSwitches', ['enable-logging'])
         browser_exe = SELECTED_BROWSER_PATH
         if not browser_exe or not os.path.exists(browser_exe):
             self.log_message.emit("Selected browser not found or unset, fallback to default...")
@@ -535,22 +542,53 @@ class VersionCheckWorker(QThread):
                 driver1 = webdriver.Chrome(options=options)
             except Exception as e:
                 self.log_message.emit(f"Failed to init standard driver: {e}")
-                if "binary is not a Chrome" in str(e) or "binary" in str(e).lower():
-                    self.log_message.emit("Binary error. Trying default system Chrome...")
-                    options.binary_location = "" 
+                self.log_message.emit("Attempting fallback with system default Chrome...")
+                options.binary_location = "" 
+                try:
                     driver1 = webdriver.Chrome(options=options)
+                except Exception as e2:
+                    self.log_message.emit(f"Failed fallback driver: {e2}")
+            if driver1:
+                try:
+                    driver1.execute_cdp_cmd("Network.enable", {})
+                    driver1.execute_cdp_cmd("Network.setBlockedURLs", {
+                        "urls": [
+                            "*adexchangerapid*", "*adsterra*", "*popcash*", "*popads*",
+                            "*exoclick*", "*juicyads*", "*adservice*", "*doubleclick*",
+                            "*googlesyndication*", "*onclickads*", "*propellerads*"
+                        ]
+                    })
+                except Exception:
+                    pass
 
             self.log_message.emit("Initializing Driver 2 (SteamRIP - VISIBLE)...")
             try:
                 sb_browser = "chrome"
+                extra_kwargs = {}
                 if browser_exe:
                     lower_path = browser_exe.lower()
-                    if "brave" in lower_path: sb_browser = "brave"
-                    elif "firefox" in lower_path: sb_browser = "firefox"
-                    elif "edge" in lower_path: sb_browser = "edge"
-                    elif "opera" in lower_path: sb_browser = "opera"
+                    if "firefox" in lower_path:
+                        sb_browser = "firefox"
+                    elif "edge" in lower_path:
+                        sb_browser = "edge"
+                    else:
+                        sb_browser = "chrome"
+                        if os.path.exists(browser_exe):
+                            extra_kwargs["binary_location"] = browser_exe
                 
-                driver2 = Driver(browser=sb_browser, uc=True, headless=False)
+                driver2 = Driver(browser=sb_browser, uc=True, headless=False, **extra_kwargs)
+                if driver2:
+                    try:
+                        driver2.execute_cdp_cmd("Network.enable", {})
+                        driver2.execute_cdp_cmd("Network.setBlockedURLs", {
+                            "urls": [
+                                "*adexchangerapid*", "*adsterra*", "*popcash*", "*popads*",
+                                "*exoclick*", "*juicyads*", "*adservice*", "*doubleclick*",
+                                "*googlesyndication*", "*onclickads*", "*propellerads*"
+                            ]
+                        })
+                    except Exception:
+                        pass
             except Exception as e:
                 self.log_message.emit(f"Failed to init UC driver: {e}")
 
@@ -637,7 +675,26 @@ class VersionCheckWorker(QThread):
                         driver2.uc_open_with_reconnect(Origin_URL, 6) 
                         driver2.uc_gui_click_captcha()
                         
-                        version = driver2.find_element(By.TAG_NAME, 'h1').text.split('(')[1].replace(')','')
+                        try:
+                            h1_elem = WebDriverWait(driver2, 10).until(
+                                EC.presence_of_element_located((By.TAG_NAME, 'h1'))
+                            )
+                            h1_text = h1_elem.text.strip()
+                        except Exception:
+                            try:
+                                h1_elem = driver2.find_element(By.CLASS_NAME, 'entry-title')
+                                h1_text = h1_elem.text.strip()
+                            except Exception:
+                                h1_text = ""
+
+                        if '(' in h1_text and ')' in h1_text:
+                            version = h1_text.split('(')[1].split(')')[0].strip()
+                        else:
+                            ver_match = re.search(r'(?:v|Build\s*)([\d\.\w\-]+)', h1_text, re.IGNORECASE)
+                            if ver_match:
+                                version = ver_match.group(0).strip()
+                            else:
+                                version = h1_text.replace("Free Download", "").strip()
                     except Exception as e:
                         self.log_message.emit(f"SteamRIP error for {game['Name']}: {e}")
                         continue
@@ -1574,12 +1631,24 @@ class DownloadManager(QObject):
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument("--window-size=1920,1080")
             options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
-            options.binary_location = BRAVE_PATH 
             try:
                 driver = webdriver.Chrome(options=options)
             except Exception:
                 options.binary_location = ""
                 driver = webdriver.Chrome(options=options)
+
+            if driver:
+                try:
+                    driver.execute_cdp_cmd("Network.enable", {})
+                    driver.execute_cdp_cmd("Network.setBlockedURLs", {
+                        "urls": [
+                            "*adexchangerapid*", "*adsterra*", "*popcash*", "*popads*",
+                            "*exoclick*", "*juicyads*", "*adservice*", "*doubleclick*",
+                            "*googlesyndication*", "*onclickads*", "*propellerads*"
+                        ]
+                    })
+                except Exception:
+                    pass
 
             driver.get(gofile_url)
             try:
