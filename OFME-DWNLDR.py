@@ -22,6 +22,7 @@ import winreg
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -382,14 +383,127 @@ STATUS_INFO = {
 }
 
 # --- DRIVER HELPERS ---
-def create_chrome_driver(options):
-    """Start plain Chrome, ignoring the (often stale) chromedriver seleniumbase
-    puts on PATH so Selenium Manager can fetch one matching the installed Chrome."""
+# GoFile triggers a download by building a temporary <a> element and clicking it.
+# Hooking that (plus window.open / fetch / XHR, in case they change the mechanism)
+# captures the direct URL in any browser, so no DevTools protocol is required.
+DOWNLOAD_HOOK_JS = """
+window.__ofmeHits = [];
+const rec = (u) => {
+    try {
+        if (typeof u !== 'string' && u) u = u.url || String(u);
+        if (u && u.indexOf('/download/') !== -1) window.__ofmeHits.push(u);
+    } catch (e) {}
+};
+document.addEventListener('click', (e) => {
+    const a = e.target && e.target.closest && e.target.closest('a');
+    if (a) rec(a.href);
+}, true);
+const _click = HTMLElement.prototype.click;
+HTMLElement.prototype.click = function () { rec(this.href); return _click.call(this); };
+// Ad networks pop new windows on the first click. Let GoFile's own popups
+// through (the resolver falls back to reading a popup's URL) and swallow the rest.
+const _open = window.open;
+window.open = function (u, ...rest) {
+    rec(u);
+    const url = typeof u === 'string' ? u : '';
+    if (!url || (url.indexOf('gofile.io') === -1 && url.indexOf('/download/') === -1)) {
+        window.__ofmeBlockedPopups = (window.__ofmeBlockedPopups || 0) + 1;
+        return null;
+    }
+    return _open.call(window, u, ...rest);
+};
+const _fetch = window.fetch;
+window.fetch = function (u, ...rest) { rec(u); return _fetch.call(window, u, ...rest); };
+const _xhr = XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open = function (m, u, ...rest) { rec(u); return _xhr.call(this, m, u, ...rest); };
+"""
+
+# Any Chromium-based browser, then Firefox. Chrome is tried first, then whatever
+# else is installed.
+CHROMIUM_BROWSERS = [
+    ("Chrome", None),  # None = let Selenium find the default Chrome install
+    ("Brave", r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"),
+    ("Edge", r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
+    ("Opera", os.path.expandvars(r"%LOCALAPPDATA%\Programs\Opera\opera.exe")),
+    ("Vivaldi", os.path.expandvars(r"%LOCALAPPDATA%\Vivaldi\Application\vivaldi.exe")),
+    ("Chromium", r"C:\Program Files\Chromium\Application\chrome.exe"),
+]
+
+FIREFOX_PATHS = [
+    r"C:\Program Files\Mozilla Firefox\firefox.exe",
+    r"C:\Program Files (x86)\Mozilla Firefox\firefox.exe",
+]
+
+def _build_chromium_options():
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1920,1080")
+    options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
+    return options
+
+def _build_firefox_options(binary=None):
+    options = FirefoxOptions()
+    options.add_argument("-headless")
+    options.add_argument("--width=1920")
+    options.add_argument("--height=1080")
+    # Firefox has no equivalent of Chromium's Network.setBlockedURLs, so lean on
+    # its built-in Enhanced Tracking Protection, which blocks most of the same ad
+    # and tracker domains, plus the popup blocker.
+    options.set_preference("privacy.trackingprotection.enabled", True)
+    options.set_preference("privacy.trackingprotection.socialtracking.enabled", True)
+    options.set_preference("privacy.trackingprotection.cryptomining.enabled", True)
+    options.set_preference("dom.disable_open_during_load", True)
+    options.set_preference("dom.popup_allowed_events", "")
+    options.set_preference("media.autoplay.default", 5)
+    # Cookies stay on: the resolver needs GoFile's own accountToken cookie.
+    if binary:
+        options.binary_location = binary
+    return options
+
+def create_scraper_driver():
+    """Start a browser for scraping, returning (driver, is_chromium).
+
+    Ignores the (often stale) chromedriver that seleniumbase puts on PATH, so
+    Selenium Manager can fetch a driver matching the installed browser. Tries
+    Chrome, then the other Chromium browsers, then Firefox.
+    """
     original_path = os.environ.get("PATH", "")
     filtered = [p for p in original_path.split(os.pathsep) if "seleniumbase" not in p.lower()]
     os.environ["PATH"] = os.pathsep.join(filtered)
     try:
-        return webdriver.Chrome(options=options)
+        last_error = None
+        for name, binary in CHROMIUM_BROWSERS:
+            if binary is not None and not os.path.exists(binary):
+                continue
+            try:
+                options = _build_chromium_options()
+                if binary is not None:
+                    options.binary_location = binary
+                driver = webdriver.Chrome(options=options)
+                if name != "Chrome":
+                    print(f"Using {name} (Chrome not found).")
+                return driver, True
+            except Exception as e:
+                last_error = e
+                continue
+
+        for binary in FIREFOX_PATHS:
+            if not os.path.exists(binary):
+                continue
+            try:
+                driver = webdriver.Firefox(options=_build_firefox_options(binary))
+                print("Using Firefox (no Chromium browser found).")
+                return driver, False
+            except Exception as e:
+                last_error = e
+                continue
+
+        raise RuntimeError(
+            "No supported browser could be started. Install Chrome, Brave, Edge, "
+            f"Opera, Vivaldi or Firefox. Last error: {last_error}"
+        )
     finally:
         os.environ["PATH"] = original_path
 
@@ -1637,19 +1751,9 @@ class DownloadManager(QObject):
         self.status_update.emit(f"Resolving GoFile Link... {progress_str}")
         driver = None
         try:
-            options = Options()
-            options.add_argument("--headless=new") 
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--window-size=1920,1080")
-            options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
-            try:
-                driver = create_chrome_driver(options)
-            except Exception:
-                options.binary_location = ""
-                driver = create_chrome_driver(options)
+            driver, is_chromium = create_scraper_driver()
 
-            if driver:
+            if is_chromium:
                 try:
                     driver.execute_cdp_cmd("Network.enable", {})
                     driver.execute_cdp_cmd("Network.setBlockedURLs", {
@@ -1710,21 +1814,40 @@ class DownloadManager(QObject):
                         return None, None
                     download_btn = buttons[-1]
 
+            # Watch for the download URL in-page, so this works in every browser.
+            driver.execute_script(DOWNLOAD_HOOK_JS)
             driver.execute_script("arguments[0].click();", download_btn)
             start_time = time.time()
             direct_url = None
+            source = "JS Hook"
 
             while time.time() - start_time < 20:
-                logs = driver.get_log("performance")
-                for entry in logs:
+                try:
+                    hits = driver.execute_script("return window.__ofmeHits || [];")
+                except Exception:
+                    hits = []
+                for hit in hits:
+                    if "/d/" not in hit:
+                        direct_url = hit
+                        break
+                if direct_url: break
+
+                # Chromium only: fall back to the DevTools network log.
+                if is_chromium:
                     try:
-                        message = json.loads(entry["message"])["message"]
-                        if message["method"] == "Network.requestWillBeSent":
-                            request_url = message["params"]["request"]["url"]
-                            if "gofile.io" in request_url and "/download/" in request_url and "/d/" not in request_url:
-                                direct_url = request_url
-                                break
-                    except: continue
+                        logs = driver.get_log("performance")
+                    except Exception:
+                        logs = []
+                    for entry in logs:
+                        try:
+                            message = json.loads(entry["message"])["message"]
+                            if message["method"] == "Network.requestWillBeSent":
+                                request_url = message["params"]["request"]["url"]
+                                if "gofile.io" in request_url and "/download/" in request_url and "/d/" not in request_url:
+                                    direct_url = request_url
+                                    source = "Network Tab"
+                                    break
+                        except: continue
                 if direct_url: break
                 time.sleep(0.5)
 
@@ -1735,7 +1858,7 @@ class DownloadManager(QObject):
                     account_token = cookie['value']
                     break
             if direct_url:
-                print(f"GoFile Resolved via Network Tab: {direct_url}")
+                print(f"GoFile Resolved via {source}: {direct_url}")
                 return direct_url, account_token
             if len(driver.window_handles) > 1:
                 driver.switch_to.window(driver.window_handles[-1])

@@ -29,8 +29,11 @@ A command-line utility designed to automate the process of downloading and extra
 <summary>Click here for instructions on running from the Python source code</summary>
 
 #### Prerequisites
-*   **Python 3.6+**
+*   **Python 3.10+** (required by PyQt6)
 *   **WinRAR** installed and accessible via your system's `PATH` or configured in the script.
+*   **A browser** — used behind the scenes to resolve GoFile links. Chrome, Brave,
+    Edge, Opera, Vivaldi, Chromium and Firefox all work. The script tries Chrome
+    first and falls back to whichever of the others it finds installed.
 
 #### Installation Steps
 1.  **Clone the repository:**
@@ -41,8 +44,14 @@ A command-line utility designed to automate the process of downloading and extra
 
 2.  **Install dependencies:**
     ```bash
-    pip install requests PyQt6 plyer selenium seleniumbase beautifulsoup4 vdf psutil flask flask-socketio
+    python -m pip install requests PyQt6 plyer selenium seleniumbase beautifulsoup4 vdf psutil flask flask-socketio
     ```
+    Use `python -m pip` rather than a bare `pip`. If you have more than one Python
+    installed, a bare `pip` can install into a different one than the one you run the
+    script with, and you'll get `ModuleNotFoundError: No module named 'requests'` even
+    though the install looked like it succeeded. If you launch the script with a full
+    path, use that same interpreter here — e.g.
+    `C:\Python314\python.exe -m pip install ...`
 
 3.  **Configure the Script (if needed):**
     Open the main Python script and ensure the `WINRAR_PATH` variable points to your `WinRAR.exe` file.
@@ -52,7 +61,7 @@ A command-line utility designed to automate the process of downloading and extra
     ```
 4. **Run the Script:**
     ```bash
-    OFME-DWNLDR.py
+    python OFME-DWNLDR.py
     ```
     *(Replace `OFME-DWNLDR.py` with the script's name u saved it as)*
 
@@ -79,7 +88,7 @@ The script will guide you through a few simple steps.
 <summary>Click here for instructions on running the update checker from code</summary>
 
 #### Prerequisites
-*   **Python 3.6+**
+*   **Python 3.10+**
 *   **Browser** Brave must be installed unless changed to another browser.
 
 #### Installation Steps
@@ -90,7 +99,7 @@ The script will guide you through a few simple steps.
     ```
 2.  **Install dependencies:**
     ```bash
-    pip install requests selenium seleniumbase plyer
+    python -m pip install requests selenium seleniumbase plyer
     ```
 3.  **Configure the Script (if needed):**
     Open the main Python script and ensure the `Browser` variable points to your `Browser.exe` file.
