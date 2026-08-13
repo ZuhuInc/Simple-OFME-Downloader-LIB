@@ -381,6 +381,18 @@ STATUS_INFO = {
     GameStatus.NOT_DOWNLOADED: {'color': '#ff4500', 'text': 'MISSING'}
 }
 
+# --- DRIVER HELPERS ---
+def create_chrome_driver(options):
+    """Start plain Chrome, ignoring the (often stale) chromedriver seleniumbase
+    puts on PATH so Selenium Manager can fetch one matching the installed Chrome."""
+    original_path = os.environ.get("PATH", "")
+    filtered = [p for p in original_path.split(os.pathsep) if "seleniumbase" not in p.lower()]
+    os.environ["PATH"] = os.pathsep.join(filtered)
+    try:
+        return webdriver.Chrome(options=options)
+    finally:
+        os.environ["PATH"] = original_path
+
 # --- CONSOLE REDIRECTION ---
 class ConsoleStream(QObject):
     _text_written = pyqtSignal(str)
@@ -1632,10 +1644,10 @@ class DownloadManager(QObject):
             options.add_argument("--window-size=1920,1080")
             options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
             try:
-                driver = webdriver.Chrome(options=options)
+                driver = create_chrome_driver(options)
             except Exception:
                 options.binary_location = ""
-                driver = webdriver.Chrome(options=options)
+                driver = create_chrome_driver(options)
 
             if driver:
                 try:
@@ -1651,51 +1663,70 @@ class DownloadManager(QObject):
                     pass
 
             driver.get(gofile_url)
+            # GoFile's frontend uses ".fm-row" rows with '[data-action="download"]' buttons.
+            # The older layout ("item_open" / "item_download") is kept as a fallback.
+            row_selector = ".fm-row, .item_open"
             try:
-                WebDriverWait(driver, 20).until(
-                    EC.presence_of_element_located((By.CLASS_NAME, "item_open"))
+                WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, row_selector))
                 )
             except TimeoutException:
                 print("GoFile: List didn't load.")
                 return None, None
 
-            file_links = driver.find_elements(By.CLASS_NAME, "item_open")
-            target_link = None
-            target_name = self.game_data.get('name', '').lower()
-            for link in file_links:
-                text = link.text.lower()
-                if ".rar" in text:
-                    if target_name in text:
-                        target_link = link
-                        break
-                    if target_link is None:
-                        target_link = link
+            def normalize(text):
+                return re.sub(r'[^a-z0-9]', '', text.lower())
 
-            if not target_link:
+            rows = driver.find_elements(By.CSS_SELECTOR, row_selector)
+            target_row = None
+            target_name = normalize(self.game_data.get('name', ''))
+            for row in rows:
+                text = row.text.lower()
+                if ".rar" in text:
+                    if target_name and target_name in normalize(text):
+                        target_row = row
+                        break
+                    if target_row is None:
+                        target_row = row
+
+            if not target_row:
                 print("GoFile: No suitable .rar file found in the list.")
                 return None, None
-            try:
-                row_ancestor = target_link.find_element(By.XPATH, "./ancestor::div[.//button[contains(@class, 'item_download')]][1]")
-                download_btn = row_ancestor.find_element(By.CSS_SELECTOR, ".item_download")
-            except NoSuchElementException:
-                print("GoFile: Structure fallback used.")
-                download_btn = driver.find_element(By.CSS_SELECTOR, ".item_download")
+
+            btn_selector = '[data-action="download"], .item_download'
+            download_btn = None
+            for candidate in target_row.find_elements(By.CSS_SELECTOR, btn_selector):
+                download_btn = candidate
+                break
+            if download_btn is None:
+                try:
+                    row_ancestor = target_row.find_element(By.XPATH, f"./ancestor::*[.//*[@data-action='download'] or .//*[contains(@class,'item_download')]][1]")
+                    download_btn = row_ancestor.find_element(By.CSS_SELECTOR, btn_selector)
+                except NoSuchElementException:
+                    print("GoFile: Structure fallback used.")
+                    buttons = driver.find_elements(By.CSS_SELECTOR, btn_selector)
+                    if not buttons:
+                        print("GoFile: No download button found.")
+                        return None, None
+                    download_btn = buttons[-1]
+
             driver.execute_script("arguments[0].click();", download_btn)
             start_time = time.time()
             direct_url = None
 
-            while time.time() - start_time < 5:
+            while time.time() - start_time < 20:
                 logs = driver.get_log("performance")
                 for entry in logs:
                     try:
                         message = json.loads(entry["message"])["message"]
                         if message["method"] == "Network.requestWillBeSent":
                             request_url = message["params"]["request"]["url"]
-                            if ".rar" in request_url and "gofile.io" in request_url and "/d/" not in request_url:
+                            if "gofile.io" in request_url and "/download/" in request_url and "/d/" not in request_url:
                                 direct_url = request_url
                                 break
                     except: continue
                 if direct_url: break
+                time.sleep(0.5)
 
             cookies = driver.get_cookies()
             account_token = None
