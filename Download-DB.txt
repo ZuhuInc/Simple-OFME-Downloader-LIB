@@ -851,6 +851,14 @@ Origin: https://online-fix.me/games/horror/18139-burglin-gnomes-po-seti.html
 MainGame: https://gofile.io/d/1xx8go
 Fix: https://gofile.io/d/DjQwUG
 
+GoFile (Aquapark Tycoon) [0.5.4]
+ApproxSize: 2GB
+Description: Build the ultimate waterpark paradise in this classic tycoon simulation game! Design & customize water slides, pools, and saunas to fulfill your guests' needs. Combine creativity, strategy, and management to make a splash in the world of water parks and become the ultimate Aquapark Tycoon!
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/AquaparkTycoon.jpg
+Origin: https://online-fix.me/games/simulator/18193-aquapark-tycoon-po-seti.html
+MainGame: https://gofile.io/d/4AjL7y
+Fix: https://gofile.io/d/ngMRfy
+
 
 
 
