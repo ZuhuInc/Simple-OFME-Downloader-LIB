@@ -859,6 +859,15 @@ Origin: https://online-fix.me/games/simulator/18193-aquapark-tycoon-po-seti.html
 MainGame: https://gofile.io/d/4AjL7y
 Fix: https://gofile.io/d/ngMRfy
 
+GoFile (Big Walk) [1.4.8.2608070648]
+ApproxSize: 6GB
+Description: Hang out and get lost with close friends in a big world. A cooperative online walker-talker from the creators of Untitled Goose Game.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BigWalk.jpg
+Origin: https://online-fix.me/games/officialservers/18184-big-walk-po-seti.html
+MainGame: https://gofile.io/d/rq7Syv
+Fix: https://gofile.io/d/jD0g7J
+
+
 
 
 
