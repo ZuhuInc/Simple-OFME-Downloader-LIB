@@ -867,6 +867,17 @@ Origin: https://online-fix.me/games/officialservers/18184-big-walk-po-seti.html
 MainGame: https://gofile.io/d/rq7Syv
 Fix: https://gofile.io/d/jD0g7J
 
+GoFile (The Ranchers) [0.8.10.562]
+ApproxSize: 12GB
+Description: The Ranchers is an open world country-life sim for 1-4 players. Raise animals, grow tasty crops, craft helpful tools and build your dream house. Explore the open world and earn the villagers' respect and esteem.
+Thumbnail: https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/TheRanchers.jpg
+Origin: https://online-fix.me/games/simulator/18206-the-ranchers-po-seti.html
+MainGame: https://gofile.io/d/PU3NNHGM
+Fix: https://gofile.io/d/5WRLTsL2
+
+
+
+
 
 
 
