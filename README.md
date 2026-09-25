@@ -1,29 +1,29 @@
-# ⚡ FANTA OFME Downloader (v2.0.0)
+# FANTA OFME Downloader (v2.0.0)
 
-> ⚠️ **WORK IN PROGRESS (BETA REWORK)**  
+> **WORK IN PROGRESS (BETA REWORK)**  
 > This branch (`BetaRework`) contains the rewritten Fanta OFME Downloader v2.0.0 featuring a modular architecture, modern Electron glassmorphism interface, and unified Python backend bridge. Features and UI are actively being refined.
 
 ---
 
-## 📖 Overview
+## Overview
 
-**Fanta OFME Downloader** is a modern, full-featured desktop game library manager and downloader for Online-Fix.me releases. It pairs a sleek, responsive Electron frontend with a modular Python backend service to handle downloads, WinRAR extractions, version checking, and Steam shortcuts.
-
----
-
-## ✨ Features
-
-- 🎮 **Interactive Game Library**: Browse 150+ games with instant live search, tag filtering, installed status tracking, and update indicators.
-- 📥 **Multi-Threaded Downloader**: Resume-capable downloads with live download speeds, progress indicators, and host resolution (GoFile, PixelDrain, Mega, etc.).
-- 📦 **Automated Extraction**: Automatic password-protected WinRAR extraction (`online-fix.me`) directly to your games directory.
-- 🔄 **Online-Fix.me Version Checker**: Live scraping and audit scanner to detect outdated local installations and notify you of new updates.
-- 🕹️ **Steam Shortcut Integration**: One-click detection of local Steam installations, user accounts, and direct injection of Non-Steam shortcuts.
-- 🗑️ **Safety-First Game Management**: 3-way uninstall dialog (Files + Registry, Unregister Only, or Cancel) with strict root-path deletion prevention.
-- 🎨 **Fanta UI Aesthetics**: Premium dark glassmorphism design, gold accent palette, shimmering skeleton loaders, and responsive controls.
+**Fanta OFME Downloader** is a modern desktop game library manager and downloader for Online-Fix.me releases. It pairs a responsive Electron frontend with a modular Python backend service to handle downloads, WinRAR extractions, version checking, and Steam shortcuts.
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## Features
+
+- **Interactive Game Library**: Browse 150+ games with instant live search, tag filtering, installed status tracking, and update indicators.
+- **Multi-Threaded Downloader**: Resume-capable downloads with live download speeds, progress indicators, and host resolution (GoFile, PixelDrain, Mega, etc.).
+- **Automated Extraction**: Automatic password-protected WinRAR extraction (`online-fix.me`) directly to your games directory.
+- **Online-Fix.me Version Checker**: Live scraping and audit scanner to detect outdated local installations and notify you of new updates.
+- **Steam Shortcut Integration**: One-click detection of local Steam installations, user accounts, and direct injection of Non-Steam shortcuts.
+- **Safety-First Game Management**: 3-way uninstall dialog (Files + Registry, Unregister Only, or Cancel) with strict root-path deletion prevention.
+- **Fanta UI Aesthetics**: Dark glassmorphism design, gold accent palette, skeleton loaders, and responsive controls.
+
+---
+
+## Tech Stack & Architecture
 
 - **Frontend**: Electron, HTML5, Vanilla CSS3 (Glassmorphism), Vanilla JavaScript, FontAwesome 6, Socket.IO Client
 - **Backend Bridge**: Python 3.10+, Flask, Flask-SocketIO, Requests, BeautifulSoup4
@@ -51,7 +51,7 @@
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - **Node.js**: v18.0.0 or higher
@@ -81,7 +81,7 @@ npm run dev
 
 ---
 
-## 🧪 Running Tests
+## Running Tests
 
 Backend unit tests can be run via:
 ```bash
@@ -90,6 +90,6 @@ python -m unittest discover -s src/backend/tests
 
 ---
 
-## 📝 License
+## License
 
 Internal project by ZuhuInc. All rights reserved.
