@@ -15,7 +15,26 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
     @bp.route('/scan', methods=['POST'])
     def scan_versions():
         data = request.get_json(silent=True) or {}
-        games = data.get('games') or [g.to_dict() for g in db_manager.games]
+        
+        game_id = data.get('game_id')
+        installed_only = data.get('installed_only', False)
+        source = str(data.get('source', 'all')).lower()
+
+        # Step 1: Base game set
+        if game_id:
+            games = [g.to_dict() for g in db_manager.games if g.id == game_id]
+        elif installed_only:
+            games = [g.to_dict() for g in db_manager.games if g.installed_version or g.is_downloaded]
+        elif 'games' in data and data['games']:
+            games = data['games']
+        else:
+            games = [g.to_dict() for g in db_manager.games]
+
+        # Step 2: Filter by source provider (OFME vs SteamRIP vs All)
+        if source in ['ofme', 'onlinefix', 'online-fix']:
+            games = [g for g in games if 'online-fix.me' in (g.get('origin_url') or '').lower()]
+        elif source in ['sr', 'steamrip', 'steam-rip']:
+            games = [g for g in games if 'steamrip.com' in (g.get('origin_url') or '').lower()]
 
         version_checker.update_credentials(
             username=config.get("ofme_username", ""),

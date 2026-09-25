@@ -7,7 +7,8 @@ const exposed = {
   closeWindow: () => ipcRenderer.send('close-window'),
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   selectFile: (options) => ipcRenderer.invoke('select-file', options),
-  openPath: (targetPath) => ipcRenderer.invoke('open-path', targetPath)
+  openPath: (targetPath) => ipcRenderer.invoke('open-path', targetPath),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url)
 };
 
 contextBridge.exposeInMainWorld('api', exposed);

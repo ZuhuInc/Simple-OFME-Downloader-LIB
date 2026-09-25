@@ -33,6 +33,12 @@ class UIController {
         this.tabContents.forEach(content => {
             content.classList.toggle('active', content.id === tabId);
         });
+
+        if (tabId === 'versionCheckerTab' && window.versionCheckerController) {
+            window.versionCheckerController.loadSavedCredentials();
+        } else if (tabId === 'settingsTab' && window.settingsController) {
+            window.settingsController.loadSettings();
+        }
     }
 
     bindWindowControls() {

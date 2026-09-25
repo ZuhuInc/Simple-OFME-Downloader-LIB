@@ -138,6 +138,17 @@ ipcMain.handle('open-path', async (event, targetPath) => {
   return false;
 });
 
+ipcMain.handle('open-external', async (event, url) => {
+  if (!url || typeof url !== 'string' || (!url.startsWith('http://') && !url.startsWith('https://'))) return false;
+  try {
+    await shell.openExternal(url);
+    return true;
+  } catch (err) {
+    console.error('[Main] openExternal error:', err);
+    return false;
+  }
+});
+
 ipcMain.handle('get-app-version', () => app.getVersion());
 
 app.whenReady().then(() => {

@@ -37,6 +37,19 @@ class DetailsController {
             openFolderBtn.addEventListener('click', () => this.openInstallFolder());
         }
 
+        if (this.originLinkEl) {
+            this.originLinkEl.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (this.currentGame && this.currentGame.origin_url) {
+                    if (window.api && window.api.openExternal) {
+                        window.api.openExternal(this.currentGame.origin_url);
+                    } else {
+                        window.open(this.currentGame.origin_url, '_blank');
+                    }
+                }
+            });
+        }
+
         if (this.downloadMainBtn) {
             this.downloadMainBtn.addEventListener('click', () => this.downloadGame('main'));
         }

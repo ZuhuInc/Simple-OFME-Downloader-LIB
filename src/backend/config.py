@@ -39,6 +39,7 @@ class Config:
 
         self.path = os.path.join(self.data_folder, "Settings.json")
         self.data_json_path = os.path.join(self.data_folder, "Data.json")
+        self.login_json_path = os.path.join(self.data_folder, "Login.json")
         self._data: Dict[str, Any] = asdict(ConfigDefaults())
         self._installed_data: Dict[str, Any] = {}
         self.load()
@@ -57,6 +58,21 @@ class Config:
             except Exception as e:
                 print(f"[Config] Settings load error: {e}")
 
+        # Load Login.json (legacy & cross-compatibility credentials)
+        if os.path.exists(self.login_json_path):
+            try:
+                with open(self.login_json_path, "r", encoding="utf-8", errors="ignore") as f:
+                    login_data = json.load(f)
+                if login_data.get("username"):
+                    self._data["ofme_username"] = login_data["username"]
+                if login_data.get("password"):
+                    self._data["ofme_password"] = login_data["password"]
+                if login_data.get("webhook_url"):
+                    self._data["webhook_url"] = login_data["webhook_url"]
+                print(f"[Config] Loaded credentials and webhook from Login.json ({self._data.get('ofme_username')})")
+            except Exception as e:
+                print(f"[Config] Login.json load error: {e}")
+
         # Load Data.json (installed games database)
         if os.path.exists(self.data_json_path):
             try:
@@ -72,6 +88,19 @@ class Config:
                 json.dump(self._data, f, indent=4)
         except Exception as e:
             print(f"[Config] Settings save error: {e}")
+
+        # Keep Login.json in sync
+        if self._data.get("ofme_username") or self._data.get("webhook_url"):
+            try:
+                login_payload = {
+                    "username": self._data.get("ofme_username", ""),
+                    "password": self._data.get("ofme_password", ""),
+                    "webhook_url": self._data.get("webhook_url", "")
+                }
+                with open(self.login_json_path, "w", encoding="utf-8") as f:
+                    json.dump(login_payload, f, indent=4)
+            except Exception as e:
+                print(f"[Config] Login.json save error: {e}")
 
         try:
             with open(self.data_json_path, "w", encoding="utf-8") as f:

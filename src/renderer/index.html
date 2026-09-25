@@ -132,11 +132,17 @@
             <section id="versionCheckerTab" class="tab-content-panel">
                 <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                     <div>
-                        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">Online-Fix Version Audit</h2>
-                        <p style="font-size: 12px; color: var(--text-muted);">Scrapes Online-Fix.me to verify if newer patches or game updates have been released.</p>
+                        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">Version Checker & Online Audit</h2>
+                        <p style="font-size: 12px; color: var(--text-muted);">Scrapes Online-Fix.me and SteamRIP to verify if newer patches or builds have been released.</p>
                     </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button id="startScanBtn" class="btn btn-primary"><i class="fa-solid fa-play"></i> Start Full Audit</button>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; background: rgba(255,255,255,0.04); padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);">
+                            <input type="checkbox" id="vcInstalledOnlyCheck" checked style="accent-color: var(--accent); cursor: pointer;">
+                            <span>Installed Only</span>
+                        </label>
+                        <button id="scanOfmeBtn" class="btn btn-primary" title="Audit Online-Fix releases only"><i class="fa-solid fa-gamepad"></i> Audit OFME</button>
+                        <button id="scanSteamripBtn" class="btn btn-secondary" style="border-color: rgba(96, 165, 250, 0.4); color: #93c5fd;" title="Audit SteamRIP releases only"><i class="fa-solid fa-cloud-arrow-down"></i> Audit SteamRIP (SR)</button>
+                        <button id="scanAllSourcesBtn" class="btn btn-secondary" title="Audit all sources"><i class="fa-solid fa-earth-americas"></i> Audit All</button>
                         <button id="stopScanBtn" class="btn btn-secondary" disabled><i class="fa-solid fa-stop"></i> Stop</button>
                     </div>
                 </div>
@@ -158,15 +164,16 @@
                             <tr>
                                 <th>Game Title</th>
                                 <th>Installed Version</th>
-                                <th>Online-Fix Version</th>
+                                <th>Download-DB (BetaRework)</th>
+                                <th>Live Online Version</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="vcResultsTableBody">
                             <tr class="empty-row">
-                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
-                                    Click "Start Full Audit" to compare installed games against online versions.
+                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                    Click "Start Full Audit" to compare installed games against Download-DB and live online versions.
                                 </td>
                             </tr>
                         </tbody>

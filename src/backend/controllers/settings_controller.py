@@ -46,4 +46,17 @@ def create_settings_blueprint(config, extractor, steam_manager, db_manager, down
         browsers = get_installed_browsers()
         return jsonify({"browsers": browsers})
 
+    @bp.route('/open-url', methods=['POST'])
+    def open_external_url():
+        import webbrowser
+        data = request.get_json(silent=True) or {}
+        url = data.get('url', '')
+        if url and (url.startswith('http://') or url.startswith('https://')):
+            try:
+                webbrowser.open(url)
+                return jsonify({"success": True})
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Invalid URL"}), 400
+
     return bp

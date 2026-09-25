@@ -100,6 +100,7 @@ class ApiClient {
     getSettings() { return this.request('/api/settings'); }
     saveSettings(settings) { return this.request('/api/settings', { method: 'POST', body: settings }); }
     getBrowsers() { return this.request('/api/browsers'); }
+    openExternalUrl(url) { return this.request('/api/open-url', { method: 'POST', body: { url } }); }
 
     // Games
     getGames(params = {}) {
@@ -127,7 +128,7 @@ class ApiClient {
 
     // Version Checker
     getVersionCheckStatus() { return this.request('/api/version-check/status'); }
-    scanVersions(games = null) { return this.request('/api/version-check/scan', { method: 'POST', body: { games } }); }
+    scanVersions(options = {}) { return this.request('/api/version-check/scan', { method: 'POST', body: options }); }
     stopVersionScan() { return this.request('/api/version-check/stop', { method: 'POST' }); }
     saveVCCredentials(creds) { return this.request('/api/version-check/save-creds', { method: 'POST', body: creds }); }
 }
