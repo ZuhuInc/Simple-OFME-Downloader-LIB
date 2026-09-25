@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.cache/
+*.log
+/*.asar
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.idea/
+.vscode/
+

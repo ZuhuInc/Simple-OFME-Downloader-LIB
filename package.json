@@ -1,0 +1,16 @@
+{
+  "name": "fanta-ofme-dwnld",
+  "version": "2.0.0",
+  "description": "Electron scaffold for OFME downloader with Fanta GUI",
+  "main": "./src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "pack": "echo \"Packaging not configured\""
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^26.0.0"
+  }
+}

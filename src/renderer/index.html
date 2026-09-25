@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FANTA OFME Downloader</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+</head>
+<body>
+    <!-- Canvas Particle Background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Custom Title Bar -->
+    <header class="title-bar">
+        <div class="title-bar-left">
+            <img class="app-icon" src="assets/Fanta-Logo.png" alt="Logo" onerror="this.style.display='none'">
+            <span class="app-title">FANTA OFME</span>
+            <span class="app-version-tag">v2.0.0</span>
+        </div>
+        <div class="title-bar-controls">
+            <button id="minBtn" class="control-btn" title="Minimize"><i class="fa-solid fa-minus"></i></button>
+            <button id="maxBtn" class="control-btn" title="Maximize"><i class="fa-solid fa-square"></i></button>
+            <button id="closeBtn" class="control-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </header>
+
+    <!-- Workspace Container -->
+    <div class="workspace-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <img class="sidebar-logo" src="assets/Fanta-Logo.png" alt="Fanta" onerror="this.style.display='none'">
+                <div class="brand-text">
+                    <h2>FANTA</h2>
+                    <span>OFME Downloader</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-nav-item active" data-tab="libraryTab">
+                    <i class="fa-solid fa-gamepad"></i>
+                    <span>Game Library</span>
+                </div>
+                <div class="sidebar-nav-item" data-tab="downloadsTab">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Downloads</span>
+                </div>
+                <div class="sidebar-nav-item" data-tab="versionCheckerTab">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>Version Checker</span>
+                </div>
+                <div class="sidebar-nav-item" data-tab="steamTab">
+                    <i class="fa-brands fa-steam"></i>
+                    <span>Steam & Sync</span>
+                </div>
+                <div class="sidebar-nav-item" data-tab="settingsTab">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings & Logs</span>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="bridge-status-indicator">
+                    <span id="bridgeDot" class="status-dot connected"></span>
+                    <span id="bridgeText">Backend Online</span>
+                </div>
+                <button id="refreshLibraryBtn" class="btn-icon" title="Refresh Database">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Viewport -->
+        <main class="content-area">
+            
+            <!-- 🎮 TAB 1: LIBRARY -->
+            <section id="libraryTab" class="tab-content-panel active">
+                <div class="library-header glass-card">
+                    <div class="search-box-wrapper">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="gameSearchInput" class="search-input" placeholder="Search games by title or description...">
+                    </div>
+
+                    <div class="filter-pills-group">
+                        <div class="filter-pill active" data-filter="all">ALL</div>
+                        <div class="filter-pill" data-filter="1">INSTALLED</div>
+                        <div class="filter-pill" data-filter="2">UPDATE</div>
+                        <div class="filter-pill" data-filter="0">NOT INSTALLED</div>
+                    </div>
+
+                    <select id="hostFilterSelect" class="select-dropdown">
+                        <option value="">All Hosts</option>
+                    </select>
+
+                    <select id="sortFilterSelect" class="select-dropdown">
+                        <option value="default">Default Order</option>
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="size">File Size</option>
+                    </select>
+                </div>
+
+                <div class="library-stats-bar" style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); padding: 0 4px;">
+                    <span id="libraryGameCount">Loading games...</span>
+                </div>
+
+                <!-- Games Grid -->
+                <div id="gameGrid" class="game-grid"></div>
+            </section>
+
+            <!-- ⬇️ TAB 2: DOWNLOADS QUEUE -->
+            <section id="downloadsTab" class="tab-content-panel">
+                <div class="glass-card">
+                    <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #fff;">Download Manager</h2>
+                    <p style="font-size: 12px; color: var(--text-muted);">Monitor live downloads, bandwidth speed, extraction queues, and active jobs.</p>
+                </div>
+
+                <div id="downloadEmptyState" class="glass-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 50px 20px; text-align: center; gap: 12px;">
+                    <i class="fa-solid fa-cloud-arrow-down" style="font-size: 36px; color: var(--text-muted);"></i>
+                    <h3 style="font-size: 14px; font-weight: 600; color: #fff;">No Active Downloads</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary); max-width: 320px;">Pick a game from your Library to begin downloading archives and updates.</p>
+                </div>
+
+                <div id="downloadQueueContainer"></div>
+            </section>
+
+            <!-- 🔄 TAB 3: VERSION CHECKER -->
+            <section id="versionCheckerTab" class="tab-content-panel">
+                <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">Online-Fix Version Audit</h2>
+                        <p style="font-size: 12px; color: var(--text-muted);">Scrapes Online-Fix.me to verify if newer patches or game updates have been released.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="startScanBtn" class="btn btn-primary"><i class="fa-solid fa-play"></i> Start Full Audit</button>
+                        <button id="stopScanBtn" class="btn btn-secondary" disabled><i class="fa-solid fa-stop"></i> Stop</button>
+                    </div>
+                </div>
+
+                <!-- Scan Progress Card -->
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                        <span id="vcScanStatusText" style="color: var(--text-secondary);">Ready to scan.</span>
+                    </div>
+                    <div class="download-progress-bar">
+                        <div id="vcProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Results Table Card -->
+                <div class="glass-card" style="padding: 0; overflow: hidden;">
+                    <table class="fanta-table">
+                        <thead>
+                            <tr>
+                                <th>Game Title</th>
+                                <th>Installed Version</th>
+                                <th>Online-Fix Version</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vcResultsTableBody">
+                            <tr class="empty-row">
+                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                    Click "Start Full Audit" to compare installed games against online versions.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Online-Fix Credentials & Webhooks -->
+                <div class="glass-card">
+                    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #fff;">Online-Fix & Webhook Settings</h3>
+                    <div class="settings-group">
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Online-Fix Username</span>
+                                <span class="form-desc">Required if accessing member-only download mirrors</span>
+                            </div>
+                            <input type="text" id="vcUsernameInput" class="form-input" placeholder="Your username">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Online-Fix Password</span>
+                                <span class="form-desc">Stored locally in your encrypted app config</span>
+                            </div>
+                            <input type="password" id="vcPasswordInput" class="form-input" placeholder="••••••••">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Discord Webhook URL</span>
+                                <span class="form-desc">Receive real-time notifications on your Discord server when game updates drop</span>
+                            </div>
+                            <input type="text" id="vcWebhookInput" class="form-input" placeholder="https://discord.com/api/webhooks/...">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Enable Discord Notifications</span>
+                            </div>
+                            <input type="checkbox" id="vcEnableWebhookCheck">
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button id="saveVcCredsBtn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Credentials</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 💨 TAB 4: STEAM & SYNC -->
+            <section id="steamTab" class="tab-content-panel">
+                <div class="glass-card">
+                    <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">Steam Integration & Cloud Save Sync</h2>
+                    <p style="font-size: 12px; color: var(--text-muted);">Manage non-Steam shortcuts, AppID auto-detection, and synchronize save folders across machines.</p>
+                </div>
+
+                <div class="glass-card">
+                    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #fff;">Steam Shortcut Management</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+                        When you add an Online-Fix game to Steam, this tool creates a non-Steam shortcut in your Steam <code style="color: var(--accent);">shortcuts.vdf</code> file, complete with launch artwork and overlay hooks.
+                    </p>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" onclick="window.steamController.loadSteamInfo()"><i class="fa-solid fa-rotate"></i> Re-scan Steam Profiles</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ⚙️ TAB 5: SETTINGS & LOGS -->
+            <section id="settingsTab" class="tab-content-panel">
+                <div class="glass-card">
+                    <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">General Application Settings</h2>
+                    <p style="font-size: 12px; color: var(--text-muted);">Customize installation directories, WinRAR extraction, speed units, and concurrency.</p>
+                </div>
+
+                <div class="glass-card">
+                    <div class="settings-group">
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">WinRAR Executable Path</span>
+                                <span class="form-desc">Location of WinRAR.exe or UnRAR.exe on your system</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="set_winrar_path" class="form-input" placeholder="C:\Program Files\WinRAR\WinRAR.exe">
+                                <button id="browseWinrarPathBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-folder-open"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Default Downloads Directory</span>
+                                <span class="form-desc">Where raw game archives will be saved during download</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="set_download_path" class="form-input" placeholder="C:\Downloads\OFME">
+                                <button id="browseDownloadPathBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-folder-open"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Default Extract Directory</span>
+                                <span class="form-desc">Where archives will be automatically extracted</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="set_extract_path" class="form-input" placeholder="C:\Games">
+                                <button id="browseExtractPathBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-folder-open"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Default Archive Password</span>
+                                <span class="form-desc">Standard password used by Online-Fix archives</span>
+                            </div>
+                            <input type="text" id="set_rar_password" class="form-input" value="online-fix.me">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Concurrent Downloads</span>
+                                <span class="form-desc">Max parallel download threads allowed</span>
+                            </div>
+                            <input type="number" id="set_concurrency" class="form-input" min="1" max="5" value="2" style="max-width: 100px;">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Speed Display Unit</span>
+                            </div>
+                            <select id="set_speed_unit" class="select-dropdown" style="min-width: 140px;">
+                                <option value="MB/s">MB/s (Megabytes/sec)</option>
+                                <option value="Mbps">Mbps (Megabits/sec)</option>
+                            </select>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button id="saveSettingsBtn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Preferences</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Console Logs Feed -->
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 style="font-size: 14px; font-weight: 600; color: #fff;">Live Console Feed</h3>
+                        <button id="clearConsoleLogsBtn" class="btn-icon" title="Clear Logs"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                    <div id="consoleLogFeed" class="console-feed">
+                        <div class="log-line log-info">[SYSTEM] Fanta OFME Downloader GUI initialized.</div>
+                        <div class="log-line log-success">[BRIDGE] Connected to Python Bridge on port 5004.</div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ℹ️ GAME DETAILS SLIDE-OVER MODAL -->
+    <div id="gameDetailsModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <div class="modal-top-actions">
+                <button id="openGameFolderBtn" class="modal-top-btn" title="Open Install Location"><i class="fa-solid fa-folder-open"></i></button>
+                <button id="closeDetailsBtn" class="modal-top-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="details-layout">
+                <img id="detailsCoverImg" class="details-cover" src="assets/Fanta-Logo.png" alt="Cover" onerror="this.src='assets/Fanta-Logo.png'">
+                
+                <div class="details-info-pane">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                            <h2 id="detailsTitle" style="font-size: 18px; font-weight: 700; color: #fff;">Game Title</h2>
+                            <span id="detailsStatus" class="status-pill status-missing">Not Installed</span>
+                        </div>
+                        <p id="detailsDescription" class="details-desc">Game description will appear here.</p>
+                    </div>
+
+                    <div class="details-meta-grid">
+                        <div class="meta-item">
+                            <span class="meta-label">Version</span>
+                            <span id="detailsVersion" class="meta-value">v1.0</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Approx Size</span>
+                            <span id="detailsSize" class="meta-value">N/A</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Hosting Mirror</span>
+                            <span id="detailsHost" class="meta-value">Direct</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Online-Fix Post</span>
+                            <a id="detailsOriginLink" href="#" target="_blank" class="meta-value" style="color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                View Page <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="details-actions-row">
+                        <button id="detailsDownloadMainBtn" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-down"></i> Download Game</button>
+                        <button id="detailsDownloadFixBtn" class="btn btn-secondary" style="display: none;"><i class="fa-solid fa-wrench"></i> Download Fix</button>
+                        <button id="detailsAddSteamBtn" class="btn btn-secondary"><i class="fa-brands fa-steam"></i> Add to Steam</button>
+                        <button id="detailsRemoveGameBtn" class="btn btn-danger" style="display: none;"><i class="fa-solid fa-trash-can"></i> Remove Game</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 💨 STEAM SHORTCUT MODAL -->
+    <div id="steamShortcutModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 500px;">
+            <button id="closeSteamModalBtn" class="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #fff;">Add to Steam Library</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 18px;">
+                Adding <strong id="steamModalGameTitle" style="color: #fff;">Game</strong> as a Non-Steam Game shortcut.
+            </p>
+            
+            <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px;">
+                <label class="form-label">Game Executable (.exe) Path:</label>
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    <input type="text" id="steamGameExeInput" class="form-input" style="flex: 1;" placeholder="C:\Games\MyGame\game.exe">
+                    <button id="browseSteamExeBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-folder-open"></i></button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn btn-secondary" onclick="window.steamController.closeModal()">Cancel</button>
+                <button id="confirmAddSteamBtn" class="btn btn-primary"><i class="fa-brands fa-steam"></i> Inject Shortcut</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🗑️ REMOVE GAME CONFIRMATION MODAL -->
+    <div id="removeGameModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 480px; text-align: center;">
+            <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(224, 82, 82, 0.15); border: 1px solid rgba(224, 82, 82, 0.35); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px; color: var(--danger); box-shadow: 0 0 20px rgba(224, 82, 82, 0.2);">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 6px;">Remove <span id="removeModalGameTitle" style="color: var(--accent);">Game</span></h3>
+            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px;">
+                How would you like to handle this game?
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="confirmDeleteAllBtn" class="btn btn-danger" style="width: 100%; padding: 12px;">
+                    <i class="fa-solid fa-folder-xmark"></i> Delete Game Files from Disk & Unregister
+                </button>
+                <button id="confirmUnregisterOnlyBtn" class="btn btn-secondary" style="width: 100%; padding: 12px;">
+                    <i class="fa-solid fa-database"></i> Unregister Only (Keep Files on Disk)
+                </button>
+                <button id="cancelRemoveBtn" class="btn btn-secondary" style="width: 100%; background: transparent; border: none; color: var(--text-muted); margin-top: 4px;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Controller Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/controllers/libraryController.js"></script>
+    <script src="js/controllers/detailsController.js"></script>
+    <script src="js/controllers/downloadController.js"></script>
+    <script src="js/controllers/versionCheckerController.js"></script>
+    <script src="js/controllers/steamController.js"></script>
+    <script src="js/controllers/settingsController.js"></script>
+    <script src="js/controllers/uiController.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
