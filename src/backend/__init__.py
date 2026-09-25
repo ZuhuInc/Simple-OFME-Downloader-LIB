@@ -1,10 +1,10 @@
 """Fanta OFME Downloader backend package
-
-Public API modules are provided as submodules (config, downloader, version_checker, etc.).
+Modular Python backend for Fanta OFME Downloader v2.0.0.
 """
 
 __all__ = [
-    'config', 'utils', 'downloader', 'version_checker', 'web_template', 'browser', 'ui_bridge'
+    'config', 'database', 'downloader', 'extractor', 'resolver', 'steam', 'version_checker'
 ]
 
-__version__ = '0.1.0'
+__version__ = '2.0.0'
+
