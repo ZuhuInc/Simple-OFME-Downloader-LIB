@@ -207,11 +207,11 @@ class LibraryController {
             const statusLabel = game.status === 1 ? 'INSTALLED' : (game.status === 2 ? 'UPDATE' : 'NOT INSTALLED');
 
             // Fallback poster if local image not found
-            const thumbSrc = game.thumbnail || 'assets/Fanta-Logo.png';
+            const thumbSrc = game.thumbnail || 'assets/OFME-DWND-ICO.ico';
 
             card.innerHTML = `
                 <div class="card-cover-wrapper">
-                    <img class="card-cover-img" src="${thumbSrc}" alt="${game.title}" loading="lazy" onerror="this.src='assets/Fanta-Logo.png'">
+                    <img class="card-cover-img" src="${thumbSrc}" alt="${game.title}" loading="lazy" onerror="this.src='assets/OFME-DWND-ICO.ico'">
                     <span class="card-status-badge ${statusClass}">${statusLabel}</span>
                     <div class="card-overlay">
                         <button class="card-view-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</button>

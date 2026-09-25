@@ -80,6 +80,11 @@ class DetailsController {
             unregisterBtn.addEventListener('click', () => this.executeRemoval(false));
         }
 
+        const removeSteamBtn = document.getElementById('confirmRemoveSteamOnlyBtn');
+        if (removeSteamBtn) {
+            removeSteamBtn.addEventListener('click', () => this.executeSteamRemoval());
+        }
+
         const cancelRemoveBtn = document.getElementById('cancelRemoveBtn');
         if (cancelRemoveBtn) {
             cancelRemoveBtn.addEventListener('click', () => this.closeRemoveModal());
@@ -90,7 +95,7 @@ class DetailsController {
         this.currentGame = game;
         if (!this.modal) return;
 
-        if (this.coverEl) this.coverEl.src = game.thumbnail || 'assets/Fanta-Logo.png';
+        if (this.coverEl) this.coverEl.src = game.thumbnail || 'assets/OFME-DWND-ICO.ico';
         if (this.titleEl) this.titleEl.textContent = game.title || 'Unknown Game';
         if (this.descEl) this.descEl.textContent = game.description || 'No description available.';
         if (this.hostEl) this.hostEl.textContent = game.host || 'Direct';
@@ -110,6 +115,17 @@ class DetailsController {
                 this.originLinkEl.style.display = 'inline-flex';
             } else {
                 this.originLinkEl.style.display = 'none';
+            }
+        }
+
+        // Steam button state: If already added to Steam (has steam_url), show "Play on Steam"
+        if (this.addSteamBtn) {
+            if (game.steam_url) {
+                this.addSteamBtn.innerHTML = '<i class="fa-brands fa-steam"></i> Play on Steam';
+                this.addSteamBtn.title = 'Launch via Steam shortcut';
+            } else {
+                this.addSteamBtn.innerHTML = '<i class="fa-brands fa-steam"></i> Add to Steam';
+                this.addSteamBtn.title = 'Create Steam non-game shortcut';
             }
         }
 
@@ -204,7 +220,12 @@ class DetailsController {
 
     async addToSteam() {
         if (!this.currentGame) return;
-        window.steamController.openAddShortcutDialog(this.currentGame);
+        if (this.currentGame.steam_url) {
+            window.uiController.showToast(`Launching ${this.currentGame.title} on Steam...`, 'info');
+            window.apiClient.openUrl(this.currentGame.steam_url);
+        } else {
+            window.steamController.openAddShortcutDialog(this.currentGame);
+        }
     }
 
     async launchGame() {
@@ -217,12 +238,44 @@ class DetailsController {
         const removeModal = document.getElementById('removeGameModal');
         const titleSpan = document.getElementById('removeModalGameTitle');
         if (titleSpan) titleSpan.textContent = this.currentGame.title;
+
+        // Toggle "Remove Steam Shortcut Link Only" option
+        const removeSteamBtn = document.getElementById('confirmRemoveSteamOnlyBtn');
+        if (removeSteamBtn) {
+            removeSteamBtn.style.display = this.currentGame.steam_url ? 'block' : 'none';
+        }
+
         if (removeModal) removeModal.classList.add('active');
     }
 
     closeRemoveModal() {
         const removeModal = document.getElementById('removeGameModal');
         if (removeModal) removeModal.classList.remove('active');
+    }
+
+    async executeSteamRemoval() {
+        if (!this.currentGame) return;
+        const title = this.currentGame.title;
+        this.closeRemoveModal();
+
+        try {
+            const res = await window.apiClient.removeSteamLink({
+                id: this.currentGame.id,
+                title: title
+            });
+
+            if (res.success) {
+                window.uiController.showToast(`Steam shortcut link removed for "${title}".`, 'success');
+                this.currentGame.steam_url = null;
+                if (this.addSteamBtn) {
+                    this.addSteamBtn.innerHTML = '<i class="fa-brands fa-steam"></i> Add to Steam';
+                    this.addSteamBtn.title = 'Create Steam non-game shortcut';
+                }
+                await window.libraryController.loadGames();
+            }
+        } catch (err) {
+            window.uiController.showToast(`Failed to remove Steam link: ${err.message}`, 'danger');
+        }
     }
 
     async executeRemoval(deleteFromDisk) {

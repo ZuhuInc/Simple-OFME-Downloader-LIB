@@ -28,7 +28,8 @@ class GameEntry:
         installed_version: Optional[str] = None,
         is_downloaded: bool = False,
         location: Optional[str] = None,
-        parts: Optional[List[str]] = None
+        parts: Optional[List[str]] = None,
+        steam_url: Optional[str] = None
     ):
         self.id = raw_id
         self.index = index
@@ -47,6 +48,7 @@ class GameEntry:
         self.installed_version = installed_version
         self.is_downloaded = is_downloaded
         self.location = location
+        self.steam_url = steam_url
 
     @property
     def status_code(self) -> int:
@@ -110,7 +112,8 @@ class GameEntry:
             "status_text": self.status,
             "installed_version": self.installed_version,
             "is_downloaded": bool(self.is_downloaded or self.installed_version),
-            "location": self.location
+            "location": self.location,
+            "steam_url": self.steam_url
         }
 
 
@@ -239,7 +242,8 @@ class DatabaseManager:
                             installed_version=inst_ver,
                             is_downloaded=is_dl,
                             location=loc,
-                            parts=parts_list if parts_list else None
+                            parts=parts_list if parts_list else None,
+                            steam_url=game_state.get("steam_url")
                         )
                         entries.append(entry)
                     return entries
@@ -276,7 +280,8 @@ class DatabaseManager:
                             installed_version=inst_ver,
                             is_downloaded=is_dl,
                             location=loc,
-                            parts=parts_list if parts_list else None
+                            parts=parts_list if parts_list else None,
+                            steam_url=game_state.get("steam_url")
                         )
                         entries.append(entry)
                     return entries
@@ -368,7 +373,8 @@ class DatabaseManager:
                 installed_version=inst_ver,
                 is_downloaded=is_dl,
                 location=loc,
-                parts=ordered_parts if ordered_parts else None
+                parts=ordered_parts if ordered_parts else None,
+                steam_url=game_state.get("steam_url")
             )
             entries.append(entry)
             entry_index += 1
@@ -384,6 +390,7 @@ class DatabaseManager:
             g.is_downloaded = bool(game_state.get("location") or game_state.get("downloaded", False) or inst_ver)
             g.installed_version = inst_ver
             g.location = game_state.get("location")
+            g.steam_url = game_state.get("steam_url")
 
     def search_and_filter(
         self,

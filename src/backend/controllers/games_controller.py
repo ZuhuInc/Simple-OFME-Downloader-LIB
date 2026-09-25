@@ -129,4 +129,31 @@ def create_games_blueprint(db_manager, config):
         db_manager.update_installed_states(config.data)
         return jsonify({"success": True, "removed": found_key or title})
 
+    @bp.route('/remove-steam', methods=['POST'])
+    def remove_steam_link():
+        data = request.get_json() or {}
+        game_id = data.get('id', '')
+        title = data.get('title', '')
+
+        if not game_id and not title:
+            return jsonify({"error": "Missing game id or title"}), 400
+
+        norm_title = re.sub(r'[^a-zA-Z0-9]', '', title.lower())
+        norm_id = re.sub(r'[^a-zA-Z0-9]', '', game_id.lower())
+
+        found_key = None
+        for k in list(config.data.keys()):
+            k_norm = re.sub(r'[^a-zA-Z0-9]', '', k.lower())
+            if k.upper() == title.upper() or k_norm in (norm_title, norm_id):
+                found_key = k
+                break
+
+        if found_key and 'steam_url' in config.data[found_key]:
+            del config.data[found_key]['steam_url']
+            config.save()
+            db_manager.update_installed_states(config.data)
+            return jsonify({"success": True, "message": "Steam shortcut link removed", "game": found_key})
+
+        return jsonify({"success": True, "message": "No Steam shortcut link was found for this title"})
+
     return bp

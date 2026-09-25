@@ -85,7 +85,7 @@ class Config:
     def save(self) -> None:
         try:
             with open(self.path, "w", encoding="utf-8") as f:
-                json.dump(self._data, f, indent=4)
+                json.dump(self._data, f, ensure_ascii=False, indent=4)
         except Exception as e:
             print(f"[Config] Settings save error: {e}")
 
@@ -98,13 +98,13 @@ class Config:
                     "webhook_url": self._data.get("webhook_url", "")
                 }
                 with open(self.login_json_path, "w", encoding="utf-8") as f:
-                    json.dump(login_payload, f, indent=4)
+                    json.dump(login_payload, f, ensure_ascii=False, indent=4)
             except Exception as e:
                 print(f"[Config] Login.json save error: {e}")
 
         try:
             with open(self.data_json_path, "w", encoding="utf-8") as f:
-                json.dump(self._installed_data, f, indent=4)
+                json.dump(self._installed_data, f, ensure_ascii=False, indent=4)
         except Exception as e:
             print(f"[Config] Data.json save error: {e}")
 

@@ -110,6 +110,7 @@ class ApiClient {
     refreshGames() { return this.request('/api/games/refresh', { method: 'POST' }); }
     markGameStatus(payload) { return this.request('/api/games/mark-status', { method: 'POST', body: payload }); }
     removeGame(payload) { return this.request('/api/games/remove', { method: 'POST', body: payload }); }
+    removeSteamLink(payload) { return this.request('/api/games/remove-steam', { method: 'POST', body: payload }); }
 
     // Downloads
     getDownloads() { return this.request('/api/downloads'); }

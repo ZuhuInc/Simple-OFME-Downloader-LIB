@@ -55,6 +55,7 @@ function startBackend() {
 }
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '..', 'renderer', 'assets', 'OFME-DWND-ICO.ico');
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 840,
@@ -63,6 +64,7 @@ function createWindow() {
     frame: false,
     titleBarStyle: 'hidden',
     backgroundColor: '#0a0a0d',
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
