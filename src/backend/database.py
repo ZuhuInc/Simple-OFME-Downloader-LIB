@@ -27,7 +27,8 @@ class GameEntry:
         category: str = "General",
         installed_version: Optional[str] = None,
         is_downloaded: bool = False,
-        location: Optional[str] = None
+        location: Optional[str] = None,
+        parts: Optional[List[str]] = None
     ):
         self.id = raw_id
         self.index = index
@@ -39,7 +40,8 @@ class GameEntry:
         self.description = description
         self.thumbnail = thumbnail
         self.origin_url = origin_url
-        self.main_game_url = main_game_url
+        self.parts = parts or ([main_game_url] if main_game_url else [])
+        self.main_game_url = main_game_url or (self.parts[0] if self.parts else "")
         self.fix_url = fix_url
         self.category = category
         self.installed_version = installed_version
@@ -101,6 +103,7 @@ class GameEntry:
             "thumbnail": self.thumbnail,
             "origin_url": self.origin_url,
             "main_game_url": self.main_game_url,
+            "parts": self.parts,
             "fix_url": self.fix_url,
             "category": self.category,
             "status": self.status_code,
@@ -115,7 +118,8 @@ class DatabaseManager:
     def __init__(self, cache_dir: str, default_url: str):
         self.cache_dir = cache_dir
         self.default_url = default_url
-        self.local_db_path = os.path.join(cache_dir, "Download-DB.txt")
+        self.local_json_path = os.path.join(cache_dir, "Data.json")
+        self.local_txt_path = os.path.join(cache_dir, "Download-DB.txt")
         self.games: List[GameEntry] = []
         self.hosts: List[str] = []
         self.last_updated: float = 0.0
@@ -127,50 +131,56 @@ class DatabaseManager:
         installed_data: Optional[Dict[str, Any]] = None
     ) -> List[GameEntry]:
         target_url = url or self.default_url
-        raw_text = ""
+        raw_content = ""
 
-        # Check local cache validity unless force_refresh is requested
-        if not force_refresh and os.path.exists(self.local_db_path):
-            file_age = time.time() - os.path.getmtime(self.local_db_path)
+        # 1. Check local cached Data.json
+        if not force_refresh and os.path.exists(self.local_json_path):
+            file_age = time.time() - os.path.getmtime(self.local_json_path)
             if file_age < 7200:
                 try:
-                    with open(self.local_db_path, "r", encoding="utf-8", errors="ignore") as f:
-                        raw_text = f.read()
+                    with open(self.local_json_path, "r", encoding="utf-8", errors="ignore") as f:
+                        raw_content = f.read()
                 except Exception as e:
-                    print(f"[Database] Cache read error: {e}")
+                    print(f"[Database] Cache JSON read error: {e}")
 
-        # Fetch remote if no text loaded yet
-        if not raw_text:
+        # 2. Fetch remote if not loaded
+        if not raw_content and target_url:
             try:
                 print(f"[Database] Fetching database from {target_url}...")
                 resp = requests.get(target_url, timeout=8)
                 resp.raise_for_status()
-                raw_text = resp.text
+                raw_content = resp.text
                 os.makedirs(self.cache_dir, exist_ok=True)
-                with open(self.local_db_path, "w", encoding="utf-8", errors="ignore") as f:
-                    f.write(raw_text)
+                save_path = self.local_json_path if raw_content.strip().startswith(("{", "[")) else self.local_txt_path
+                with open(save_path, "w", encoding="utf-8", errors="ignore") as f:
+                    f.write(raw_content)
             except Exception as e:
-                print(f"[Database] Remote fetch failed ({e}). Falling back to local cache.")
-                if os.path.exists(self.local_db_path):
-                    try:
-                        with open(self.local_db_path, "r", encoding="utf-8", errors="ignore") as f:
-                            raw_text = f.read()
-                    except Exception:
-                        pass
-                
-                # Check bundled database in package
-                if not raw_text:
-                    bundled_path = os.path.join(os.path.dirname(__file__), "data", "Download-DB.txt")
-                    if os.path.exists(bundled_path):
-                        print(f"[Database] Loading bundled database from {bundled_path}")
-                        try:
-                            with open(bundled_path, "r", encoding="utf-8", errors="ignore") as f:
-                                raw_text = f.read()
-                        except Exception as be:
-                            print(f"[Database] Bundled DB read error: {be}")
+                print(f"[Database] Remote fetch failed ({e}). Falling back to bundled Data.json.")
 
-        if raw_text:
-            self.games = self.parse_database(raw_text, installed_data)
+        # 3. Check bundled Data.json in backend package
+        if not raw_content:
+            bundled_json = os.path.join(os.path.dirname(__file__), "data", "Data.json")
+            if os.path.exists(bundled_json):
+                print(f"[Database] Loading bundled JSON database from {bundled_json}")
+                try:
+                    with open(bundled_json, "r", encoding="utf-8", errors="ignore") as f:
+                        raw_content = f.read()
+                except Exception as be:
+                    print(f"[Database] Bundled JSON read error: {be}")
+
+        # 4. Fallback to bundled Download-DB.txt
+        if not raw_content:
+            bundled_txt = os.path.join(os.path.dirname(__file__), "data", "Download-DB.txt")
+            if os.path.exists(bundled_txt):
+                print(f"[Database] Loading fallback text database from {bundled_txt}")
+                try:
+                    with open(bundled_txt, "r", encoding="utf-8", errors="ignore") as f:
+                        raw_content = f.read()
+                except Exception as be:
+                    print(f"[Database] Bundled TXT read error: {be}")
+
+        if raw_content:
+            self.games = self.parse_database(raw_content, installed_data)
             self.hosts = sorted(list({g.host for g in self.games if g.host}))
             self.last_updated = time.time()
 
@@ -187,10 +197,95 @@ class DatabaseManager:
                 lookup[self._normalize_key(k)] = v
         return lookup
 
-    def parse_database(self, text: str, installed_data: Optional[Dict[str, Any]] = None) -> List[GameEntry]:
+    def parse_database(self, raw_input: Any, installed_data: Optional[Dict[str, Any]] = None) -> List[GameEntry]:
+        import json
         entries: List[GameEntry] = []
-        blocks = text.split("\n\n")
         lookup = self._build_installed_lookup(installed_data)
+
+        # Case A: JSON format (dict keyed by game title, or list of game dicts)
+        if isinstance(raw_input, (dict, list)) or (isinstance(raw_input, str) and raw_input.strip().startswith(("{", "["))):
+            try:
+                parsed = json.loads(raw_input) if isinstance(raw_input, str) else raw_input
+                
+                # Dict keyed by title: { "PEAK": { "version": "...", ... } }
+                if isinstance(parsed, dict):
+                    for idx, (title, info) in enumerate(parsed.items()):
+                        host = info.get("host") or info.get("Host", "GoFile")
+                        raw_id = f"{re.sub(r'[^a-zA-Z0-9]', '_', title.lower())}_{host.lower()}"
+                        norm_title = self._normalize_key(title)
+                        norm_id = self._normalize_key(raw_id)
+                        game_state = lookup.get(norm_id) or lookup.get(norm_title) or {}
+
+                        inst_ver = game_state.get("version") or game_state.get("installed_version")
+                        is_dl = bool(game_state.get("location") or game_state.get("downloaded", False) or inst_ver)
+                        loc = game_state.get("location")
+
+                        parts_list = info.get("parts") or []
+                        main_url = info.get("main_game_url") or info.get("MainGame", "") or (parts_list[0] if parts_list else "")
+
+                        entry = GameEntry(
+                            raw_id=raw_id,
+                            index=idx,
+                            title=title,
+                            version=str(info.get("version", "1.0")),
+                            host=host,
+                            approx_size=info.get("approx_size") or info.get("ApproxSize", "Unknown"),
+                            description=info.get("description") or info.get("Description", "No description available."),
+                            thumbnail=info.get("thumbnail") or info.get("Thumbnail", ""),
+                            origin_url=info.get("origin_url") or info.get("Origin", ""),
+                            main_game_url=main_url,
+                            fix_url=info.get("fix_url") or info.get("Fix", ""),
+                            category=info.get("category", "General"),
+                            installed_version=inst_ver,
+                            is_downloaded=is_dl,
+                            location=loc,
+                            parts=parts_list if parts_list else None
+                        )
+                        entries.append(entry)
+                    return entries
+
+                # Array of objects: [ { "title": "PEAK", ... } ]
+                elif isinstance(parsed, list):
+                    for idx, item in enumerate(parsed):
+                        title = item.get("title") or item.get("name", "Unknown")
+                        host = item.get("host", "GoFile")
+                        raw_id = item.get("id") or f"{re.sub(r'[^a-zA-Z0-9]', '_', title.lower())}_{host.lower()}"
+                        norm_title = self._normalize_key(title)
+                        norm_id = self._normalize_key(raw_id)
+                        game_state = lookup.get(norm_id) or lookup.get(norm_title) or {}
+
+                        inst_ver = game_state.get("version") or game_state.get("installed_version")
+                        is_dl = bool(game_state.get("location") or game_state.get("downloaded", False) or inst_ver)
+                        loc = game_state.get("location")
+                        parts_list = item.get("parts") or []
+                        main_url = item.get("main_game_url", "") or (parts_list[0] if parts_list else "")
+
+                        entry = GameEntry(
+                            raw_id=raw_id,
+                            index=idx,
+                            title=title,
+                            version=str(item.get("version", "1.0")),
+                            host=host,
+                            approx_size=item.get("approx_size", "Unknown"),
+                            description=item.get("description", "No description available."),
+                            thumbnail=item.get("thumbnail", ""),
+                            origin_url=item.get("origin_url", ""),
+                            main_game_url=main_url,
+                            fix_url=item.get("fix_url", ""),
+                            category=item.get("category", "General"),
+                            installed_version=inst_ver,
+                            is_downloaded=is_dl,
+                            location=loc,
+                            parts=parts_list if parts_list else None
+                        )
+                        entries.append(entry)
+                    return entries
+            except Exception as je:
+                print(f"[Database] JSON parsing failed: {je}")
+
+        # Case B: Plain Text Legacy Parser
+        text = str(raw_input)
+        blocks = text.split("\n\n")
         entry_index = 0
 
         for block in blocks:
@@ -228,6 +323,7 @@ class DatabaseManager:
                 "maingame": "",
                 "fix": ""
             }
+            txt_parts = []
 
             for line in lines[1:]:
                 if ":" in line:
@@ -236,6 +332,16 @@ class DatabaseManager:
                     v = val.strip()
                     if k in fields:
                         fields[k] = v
+                    if "part" in k:
+                        part_match = re.search(r"\d+", k)
+                        num = int(part_match.group()) if part_match else 1
+                        txt_parts.append((num, v))
+
+            if txt_parts:
+                txt_parts.sort(key=lambda x: x[0])
+                ordered_parts = [url for _, url in txt_parts]
+            else:
+                ordered_parts = [fields["maingame"]] if fields.get("maingame") else []
 
             raw_id = f"{re.sub(r'[^a-zA-Z0-9]', '_', title.lower())}_{host.lower()}"
             norm_title = self._normalize_key(title)
@@ -252,19 +358,20 @@ class DatabaseManager:
                 title=title,
                 version=version,
                 host=host,
-                approx_size=fields["approxsize"],
-                description=fields["description"],
-                thumbnail=fields["thumbnail"],
-                origin_url=fields["origin"],
-                main_game_url=fields["maingame"],
-                fix_url=fields["fix"],
+                approx_size=fields.get("approxsize", "Unknown"),
+                description=fields.get("description", "No description available."),
+                thumbnail=fields.get("thumbnail", ""),
+                origin_url=fields.get("origin", ""),
+                main_game_url=ordered_parts[0] if ordered_parts else fields.get("maingame", ""),
+                fix_url=fields.get("fix", ""),
+                category="General",
                 installed_version=inst_ver,
                 is_downloaded=is_dl,
-                location=loc
+                location=loc,
+                parts=ordered_parts if ordered_parts else None
             )
             entries.append(entry)
             entry_index += 1
-
         return entries
 
     def update_installed_states(self, installed_data: Dict[str, Any]):

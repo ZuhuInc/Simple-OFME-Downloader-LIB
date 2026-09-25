@@ -151,6 +151,31 @@ class DetailsController {
 
     async downloadGame(type = 'main') {
         if (!this.currentGame) return;
+
+        // Multi-part game support
+        if (type === 'main' && Array.isArray(this.currentGame.parts) && this.currentGame.parts.length > 1) {
+            try {
+                window.uiController.showToast(`Queueing ${this.currentGame.parts.length} parts for ${this.currentGame.title}...`, 'info');
+                for (let i = 0; i < this.currentGame.parts.length; i++) {
+                    const partUrl = this.currentGame.parts[i];
+                    const filename = `${this.currentGame.title}_Part${i + 1}.rar`;
+                    await window.apiClient.addDownload(partUrl, filename, {
+                        game_id: this.currentGame.id,
+                        title: this.currentGame.title,
+                        version: this.currentGame.version,
+                        type: `main_part_${i + 1}`
+                    });
+                }
+                window.uiController.showToast(`Added ${this.currentGame.parts.length} parts to Download Queue`, 'success');
+                window.uiController.switchTab('downloadsTab');
+                this.close();
+                return;
+            } catch (err) {
+                window.uiController.showToast(`Multi-part download failed: ${err.message}`, 'danger');
+                return;
+            }
+        }
+
         const targetUrl = type === 'fix' ? this.currentGame.fix_url : (this.currentGame.main_game_url || this.currentGame.download_url);
         if (!targetUrl) {
             window.uiController.showToast('No direct download link configured for this title.', 'warning');
