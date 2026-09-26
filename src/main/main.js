@@ -3,6 +3,10 @@ const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 
+let mainWindow = null;
+let pythonProcess = null;
+const logBuffer = [];
+
 function findPythonPath() {
   const rootDir = path.join(__dirname, '..', '..');
   const isWin = process.platform === 'win32';
@@ -28,10 +32,47 @@ function findPythonPath() {
   return 'python';
 }
 
+function broadcastLog(text, customLevel = null) {
+  if (!text || typeof text !== 'string') return;
+  const cleanText = text.trim();
+  if (!cleanText) return;
+
+  let level = customLevel;
+  if (!level) {
+    const lower = cleanText.toLowerCase();
+    if (lower.includes('error') || lower.includes('failed') || lower.includes('exception') || lower.includes('traceback') || lower.includes('errno')) {
+      level = 'danger';
+    } else if (lower.includes('warn') || lower.includes('warning') || lower.includes('skipped')) {
+      level = 'warning';
+    } else if (lower.includes('success') || lower.includes('connected') || lower.includes('loaded') || lower.includes('ready') || lower.includes('starting')) {
+      level = 'success';
+    } else {
+      level = 'info';
+    }
+  }
+
+  const logEntry = {
+    text: cleanText,
+    level,
+    time: new Date().toLocaleTimeString()
+  };
+
+  logBuffer.push(logEntry);
+  if (logBuffer.length > 200) {
+    logBuffer.shift();
+  }
+
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('backend-log', logEntry);
+  }
+}
+
 function startBackend() {
   const backendScript = path.join(__dirname, '..', 'backend', 'bridge_server.py');
   const pythonExe = findPythonPath();
-  console.log(`[Main] Spawning Python Backend (${pythonExe}):`, backendScript);
+  const spawnMsg = `[Main] Spawning Python Backend (${pythonExe}): ${backendScript}`;
+  console.log(spawnMsg);
+  broadcastLog(spawnMsg, 'info');
 
   try {
     pythonProcess = spawn(pythonExe, [backendScript], {
@@ -40,24 +81,38 @@ function startBackend() {
     });
 
     pythonProcess.stdout.on('data', (data) => {
-      console.log(`[Python Backend] ${data.toString().trim()}`);
+      const raw = data.toString();
+      console.log(`[Python Backend] ${raw.trim()}`);
+      raw.split(/\r?\n/).forEach(line => {
+        if (line.trim()) broadcastLog(line);
+      });
     });
 
     pythonProcess.stderr.on('data', (data) => {
-      const msg = data.toString().trim();
-      if (msg.includes('HTTP/1.1" 200') || msg.includes('HTTP/1.1" 304') || msg.includes('Running on http://')) {
-        console.log(`[Python Backend] ${msg}`);
-      } else {
-        console.log(`[Python Backend] ${msg}`);
-      }
+      const raw = data.toString();
+      console.log(`[Python Backend] ${raw.trim()}`);
+      raw.split(/\r?\n/).forEach(line => {
+        if (line.trim()) {
+          // Filter common HTTP request info from being treated as errors
+          if (line.includes('HTTP/1.1" 200') || line.includes('HTTP/1.1" 304') || line.includes('Running on http://')) {
+            broadcastLog(line, 'info');
+          } else {
+            broadcastLog(line);
+          }
+        }
+      });
     });
 
     pythonProcess.on('close', (code) => {
-      console.log(`[Python Backend] exited with code ${code}`);
+      const exitMsg = `[Python Backend] Exited with code ${code}`;
+      console.log(exitMsg);
+      broadcastLog(exitMsg, code === 0 ? 'info' : 'warning');
       pythonProcess = null;
     });
   } catch (err) {
-    console.error('[Main] Failed to spawn Python backend process:', err);
+    const errMsg = `[Main] Failed to spawn Python backend process: ${err.message}`;
+    console.error(errMsg);
+    broadcastLog(errMsg, 'danger');
   }
 }
 
@@ -159,10 +214,11 @@ ipcMain.handle('open-external', async (event, url) => {
 });
 
 ipcMain.handle('get-app-version', () => app.getVersion());
+ipcMain.handle('get-initial-logs', () => logBuffer);
 
 app.whenReady().then(() => {
-  startBackend();
   createWindow();
+  startBackend();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

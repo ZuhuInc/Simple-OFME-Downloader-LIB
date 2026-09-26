@@ -8,7 +8,13 @@ const exposed = {
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   selectFile: (options) => ipcRenderer.invoke('select-file', options),
   openPath: (targetPath) => ipcRenderer.invoke('open-path', targetPath),
-  openExternal: (url) => ipcRenderer.invoke('open-external', url)
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  onBackendLog: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('backend-log', handler);
+    return () => ipcRenderer.removeListener('backend-log', handler);
+  },
+  getInitialLogs: () => ipcRenderer.invoke('get-initial-logs')
 };
 
 contextBridge.exposeInMainWorld('api', exposed);

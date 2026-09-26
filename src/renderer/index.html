@@ -318,11 +318,12 @@
                 <div class="glass-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <h3 style="font-size: 14px; font-weight: 600; color: #fff;">Live Console Feed</h3>
-                        <button id="clearConsoleLogsBtn" class="btn-icon" title="Clear Logs"><i class="fa-solid fa-trash-can"></i></button>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button id="copyConsoleLogsBtn" class="btn-icon" title="Copy Console Logs"><i class="fa-solid fa-copy"></i></button>
+                            <button id="clearConsoleLogsBtn" class="btn-icon" title="Clear Logs"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
                     </div>
                     <div id="consoleLogFeed" class="console-feed">
-                        <div class="log-line log-info">[SYSTEM] Fanta OFME Downloader GUI initialized.</div>
-                        <div class="log-line log-success">[BRIDGE] Connected to Python Bridge on port 5004.</div>
                     </div>
                 </div>
             </section>
