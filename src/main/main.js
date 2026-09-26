@@ -4,18 +4,25 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 
 function findPythonPath() {
+  const rootDir = path.join(__dirname, '..', '..');
+  const isWin = process.platform === 'win32';
+
   const candidates = [
     process.env.PYTHON,
-    path.join(process.env.LOCALAPPDATA || '', 'hermes', 'hermes-agent', 'venv', 'Scripts', 'python.exe'),
-    path.join(__dirname, '..', '..', 'venv', 'Scripts', 'python.exe'),
-    path.join(__dirname, '..', '..', '.venv', 'Scripts', 'python.exe'),
-    'python.exe',
-    'python'
+    // Project-specific .venv / venv
+    path.join(rootDir, '.venv', isWin ? 'Scripts' : 'bin', isWin ? 'python.exe' : 'python'),
+    path.join(rootDir, 'venv', isWin ? 'Scripts' : 'bin', isWin ? 'python.exe' : 'python'),
+    // System PATH fallbacks
+    'python3',
+    'python',
+    'py'
   ];
 
   for (const candidate of candidates) {
-    if (candidate && (fs.existsSync(candidate) || candidate === 'python' || candidate === 'python.exe')) {
-      return candidate;
+    if (candidate) {
+      if (fs.existsSync(candidate) || candidate === 'python' || candidate === 'python3' || candidate === 'py') {
+        return candidate;
+      }
     }
   }
   return 'python';

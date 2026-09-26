@@ -69,10 +69,24 @@ cd Simple-OFME-Downloader-LIB
 npm install
 ```
 
-### 3. Install Python Dependencies
-```bash
+### 3. Setup Python Virtual Environment (.venv)
+Create an isolated virtual environment in the project root:
+
+**Windows (PowerShell / Command Prompt):**
+```powershell
+python -m venv .venv
+.\.venv\Scripts\activate
 pip install -r src/backend/requirements.txt
 ```
+
+**macOS / Linux:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r src/backend/requirements.txt
+```
+
+> **Note:** Electron is configured to automatically discover and use `./.venv` when launching the backend bridge server.
 
 ### 4. Run Development Build
 ```bash
