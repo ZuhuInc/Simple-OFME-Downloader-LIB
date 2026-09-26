@@ -132,6 +132,8 @@ class ApiClient {
     scanVersions(options = {}) { return this.request('/api/version-check/scan', { method: 'POST', body: options }); }
     stopVersionScan() { return this.request('/api/version-check/stop', { method: 'POST' }); }
     saveVCCredentials(creds) { return this.request('/api/version-check/save-creds', { method: 'POST', body: creds }); }
+    scrapeGameData(payload) { return this.request('/api/version-check/scrape-game', { method: 'POST', body: payload }); }
+    applyGameData(payload) { return this.request('/api/version-check/apply-game-data', { method: 'POST', body: payload }); }
 }
 
 window.apiClient = new ApiClient();

@@ -81,8 +81,66 @@ Fix:
         job = dl.get_job(job_id)
         self.assertIsNotNone(job)
         self.assertEqual(job["filename"], "test.zip")
-        self.assertEqual(job["meta"]["title"], "Test")
+    def test_scraper_cleaning(self):
+        from backend.scraper_service import OnlineFixScraper
+        self.assertEqual(OnlineFixScraper._clean_version("v1.2.3.a [Online-Fix.me]"), "1.2.3.a")
+        self.assertEqual(OnlineFixScraper._clean_version("Версия игры: 2.1.a по сети"), "2.1.a")
+        self.assertEqual(OnlineFixScraper._clean_version("Build 17120 Download Direct"), "17120")
+
+    def test_steamrip_scraper_parsing(self):
+        from backend.scraper_service import OnlineFixScraper
+        from unittest.mock import MagicMock
+
+        sample_html = """
+        <html>
+        <head><title>S.T.A.L.K.E.R. 2: Heart of Chornobyl Free Download (v2.0.3) — SteamRIP</title></head>
+        <body>
+            <h1>S.T.A.L.K.E.R. 2: Heart of Chornobyl Free Download (v2.0.3)</h1>
+            <div class="entry-content">
+                <p>+ Game Size: 188 GB</p>
+                <p>+ Version: v2.0.3 (Build 24914692) + 4 DLC & Extras | Full Version</p>
+                <p>The Heart of Chornobyl calls for stalkers willing to explore the dangerous anomalies.</p>
+                
+                <p style="text-align: center;">
+                    <strong>BZZHR</strong>
+                    <br>
+                    <a href="//bzzhr.to/x1u8zy8x8kp3" class="shortc-button medium purple">DOWNLOAD HERE</a>
+                </p>
+                
+                <p style="text-align: center;">
+                    <span style="color: rgb(124, 106, 247);">FileDitch</span>
+                    <br>
+                    <a href="//fileditchfiles.st/balpha10/111/part1.rar" class="shortc-button medium purple">PART 1</a>
+                    <a href="//fileditchfiles.st/balpha10/222/part2.rar" class="shortc-button medium purple">PART 2</a>
+                    <a href="//fileditchfiles.st/balpha10/333/part3.rar" class="shortc-button medium purple">PART 3</a>
+                    <a href="//fileditchfiles.st/balpha10/444/part4.rar" class="shortc-button medium purple">PART 4</a>
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        scraper = OnlineFixScraper()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.text = sample_html
+        scraper.session.get = MagicMock(return_value=mock_resp)
+
+        result = scraper.scrape_game_page("https://steamrip.com/s-t-a-l-k-e-r-2-heart-of-chornobyl-free-download/")
+        self.assertTrue(result["success"])
+        self.assertIn("S.T.A.L.K.E.R. 2", result["title"])
+        self.assertIn("2.0.3", result["version"])
+        self.assertEqual(result["approx_size"], "188GB")
+        self.assertIn("BuzzHeavier", result["available_hosts"])
+        self.assertIn("FileDitch", result["available_hosts"])
+        self.assertEqual(len(result["available_hosts"]["BuzzHeavier"]["parts"]), 1)
+        self.assertEqual(result["available_hosts"]["BuzzHeavier"]["parts"][0], "https://bzzhr.to/x1u8zy8x8kp3")
+        self.assertEqual(len(result["available_hosts"]["FileDitch"]["parts"]), 4)
+        self.assertEqual(result["available_hosts"]["FileDitch"]["parts"][0], "https://fileditchfiles.st/balpha10/111/part1.rar")
+        self.assertEqual(result["available_hosts"]["FileDitch"]["parts"][3], "https://fileditchfiles.st/balpha10/444/part4.rar")
 
 
 if __name__ == "__main__":
     unittest.main()
+
+

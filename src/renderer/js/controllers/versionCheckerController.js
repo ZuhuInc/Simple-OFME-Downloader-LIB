@@ -93,6 +93,26 @@ class VersionCheckerController {
             saveCredsBtn.addEventListener('click', () => this.saveCredentials());
         }
 
+        const closeAssistedBtn = document.getElementById('closeAssistedModalBtn');
+        if (closeAssistedBtn) {
+            closeAssistedBtn.addEventListener('click', () => this.closeAssistedModal());
+        }
+
+        const addPartBtn = document.getElementById('assistedAddPartBtn');
+        if (addPartBtn) {
+            addPartBtn.addEventListener('click', () => {
+                const listEl = document.getElementById('assistedPartsList');
+                if (listEl) {
+                    this.appendPartRowElement(listEl, listEl.children.length, '');
+                }
+            });
+        }
+
+        const saveAssistedBtn = document.getElementById('saveAssistedDataBtn');
+        if (saveAssistedBtn) {
+            saveAssistedBtn.addEventListener('click', () => this.saveAssistedData());
+        }
+
         if (window.apiClient) {
             window.apiClient.on('version_check_progress', (data) => {
                 this.handleScanProgress(data);
@@ -217,6 +237,9 @@ class VersionCheckerController {
         const dbVerDisplay = data.db_version ? `v${data.db_version}` : '<span class="text-muted">---</span>';
         const liveVerDisplay = (data.scraped_version && data.scraped_version !== '---') ? `v${data.scraped_version}` : '<span class="text-muted">---</span>';
 
+        const safeTitle = (data.game || 'Game').replace(/'/g, "\\'");
+        const safeUrl = (data.origin_url || '').replace(/'/g, "\\'");
+
         tr.innerHTML = `
             <td><strong>${data.game || 'Unknown'}</strong></td>
             <td>${localVerDisplay}</td>
@@ -224,13 +247,241 @@ class VersionCheckerController {
             <td><span style="color: #60a5fa; font-weight: 600;">${liveVerDisplay}</span></td>
             <td>${statusBadge}</td>
             <td>
-                <button class="btn btn-sm btn-primary" onclick="window.versionCheckerController.openUpdateUrl('${data.origin_url || ''}', '${data.game_id}')" title="Open online release in browser">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Update
-                </button>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button class="btn btn-sm btn-secondary btn-icon" onclick="window.versionCheckerController.openUpdateUrl('${safeUrl}', '${data.game_id || ''}')" title="Open online release in browser">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary btn-icon" onclick="window.versionCheckerController.openAssistedUpdater('${safeUrl}', '${safeTitle}')" title="Assisted Auto-Fill from Online-Fix">
+                        <i class="fa-solid fa-robot"></i>
+                    </button>
+                </div>
             </td>
         `;
 
         this.resultsTable.prepend(tr);
+    }
+
+    async openAssistedUpdater(originUrl, gameTitle) {
+        if (!originUrl && !gameTitle) {
+            window.uiController.showToast('No URL or game title provided', 'warning');
+            return;
+        }
+
+        const modal = document.getElementById('assistedUpdaterModal');
+        if (!modal) return;
+
+        window.uiController.showToast(`Scraping Online-Fix release data for ${gameTitle || 'game'}...`, 'info');
+
+        try {
+            const res = await window.apiClient.scrapeGameData({
+                origin_url: originUrl,
+                game_title: gameTitle,
+                preferred_host: 'GoFile'
+            });
+
+            if (!res || !res.success) {
+                window.uiController.showToast(`Scraper warning: ${res?.error || 'Could not fetch live mirrors'}. Opening form with existing info.`, 'warning');
+            }
+
+            this.currentScrapedData = res || {};
+            this.populateAssistedForm(res, gameTitle, originUrl);
+            modal.classList.add('active');
+        } catch (err) {
+            console.error('[VC Controller] Scrape error:', err);
+            window.uiController.showToast(`Scrape failed: ${err.message}. Opening manual form.`, 'warning');
+            this.populateAssistedForm({}, gameTitle, originUrl);
+            modal.classList.add('active');
+        }
+    }
+
+    populateAssistedForm(data, fallbackTitle, fallbackUrl) {
+        const titleInput = document.getElementById('assistedGameTitleInput');
+        const verInput = document.getElementById('assistedVersionInput');
+        const hostSelect = document.getElementById('assistedHostSelect');
+        const sizeInput = document.getElementById('assistedSizeInput');
+        const fixInput = document.getElementById('assistedFixUrlInput');
+        const originInput = document.getElementById('assistedOriginUrlInput');
+        const catInput = document.getElementById('assistedCategoryInput');
+
+        const reqTitle = (data.title || fallbackTitle || '').trim().toLowerCase();
+        const reqUrl = (data.origin_url || fallbackUrl || '').trim().toLowerCase();
+
+        const existingGame = (window.libraryController?.games || []).find(g => 
+            (reqTitle && g.title?.trim().toLowerCase() === reqTitle) ||
+            (reqUrl && g.origin_url && g.origin_url.trim().toLowerCase() === reqUrl)
+        );
+
+        if (titleInput) titleInput.value = data.title || fallbackTitle || '';
+        if (verInput) verInput.value = data.version || existingGame?.version || '1.0';
+        
+        const oldSize = existingGame?.approx_size || existingGame?.size || '';
+        let resolvedSize = '';
+        if (data.approx_size && data.approx_size !== 'N/A') {
+            resolvedSize = data.approx_size;
+        } else if (oldSize && oldSize !== 'N/A') {
+            resolvedSize = oldSize;
+        }
+        if (sizeInput) sizeInput.value = resolvedSize;
+
+        if (fixInput) fixInput.value = data.fix_url || existingGame?.fix_url || '';
+        if (originInput) originInput.value = data.origin_url || fallbackUrl || existingGame?.origin_url || '';
+        if (catInput) catInput.value = data.category || existingGame?.category || 'General';
+
+        // Populate available hosts in dropdown if scraped
+        if (hostSelect) {
+            hostSelect.innerHTML = '';
+            const hosts = (data.available_hosts && Object.keys(data.available_hosts).length > 0)
+                ? Object.keys(data.available_hosts)
+                : ['GoFile', 'VikingFile', 'Pixeldrain', '1Fichier', 'Google Drive', 'Direct'];
+
+            hosts.forEach(h => {
+                const opt = document.createElement('option');
+                opt.value = h;
+                opt.textContent = h;
+                if (h === (data.host || 'GoFile')) opt.selected = true;
+                hostSelect.appendChild(opt);
+            });
+
+            hostSelect.onchange = () => this.onHostDropdownChanged(hostSelect.value);
+        }
+
+        this.renderPartsList(data.parts && data.parts.length > 0 ? data.parts : ['']);
+    }
+
+    onHostDropdownChanged(selectedHost) {
+        if (!this.currentScrapedData || !this.currentScrapedData.available_hosts) return;
+        const hostData = this.currentScrapedData.available_hosts[selectedHost];
+        if (hostData) {
+            const fixInput = document.getElementById('assistedFixUrlInput');
+            if (fixInput) fixInput.value = hostData.fix_url || '';
+            this.renderPartsList(hostData.parts && hostData.parts.length > 0 ? hostData.parts : ['']);
+            window.uiController.showToast(`Switched to ${selectedHost} mirrors`, 'info');
+        }
+    }
+
+    renderPartsList(parts = ['']) {
+        const listEl = document.getElementById('assistedPartsList');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        if (!parts || parts.length === 0) parts = [''];
+
+        parts.forEach((partUrl, idx) => {
+            this.appendPartRowElement(listEl, idx, partUrl);
+        });
+    }
+
+    appendPartRowElement(container, idx, value = '') {
+        const row = document.createElement('div');
+        row.className = 'part-row';
+        row.dataset.index = idx;
+
+        row.innerHTML = `
+            <span class="part-badge">Part ${idx + 1}</span>
+            <input type="text" class="form-input part-input" placeholder="https://gofile.io/d/..." value="${value}">
+            <button type="button" class="part-btn-del" title="Remove part"><i class="fa-solid fa-minus"></i></button>
+        `;
+
+        row.querySelector('.part-btn-del').addEventListener('click', () => {
+            if (container.children.length <= 1) {
+                row.querySelector('.part-input').value = '';
+            } else {
+                row.remove();
+                this.reindexPartsList();
+            }
+        });
+
+        container.appendChild(row);
+    }
+
+    reindexPartsList() {
+        const listEl = document.getElementById('assistedPartsList');
+        if (!listEl) return;
+        const rows = listEl.querySelectorAll('.part-row');
+        rows.forEach((r, i) => {
+            r.dataset.index = i;
+            const badge = r.querySelector('.part-badge');
+            if (badge) badge.textContent = `Part ${i + 1}`;
+        });
+    }
+
+    closeAssistedModal() {
+        const modal = document.getElementById('assistedUpdaterModal');
+        if (modal) modal.classList.remove('active');
+    }
+
+    async saveAssistedData() {
+        const titleInput = document.getElementById('assistedGameTitleInput');
+        const verInput = document.getElementById('assistedVersionInput');
+        const hostSelect = document.getElementById('assistedHostSelect');
+        const sizeInput = document.getElementById('assistedSizeInput');
+        const fixInput = document.getElementById('assistedFixUrlInput');
+        const originInput = document.getElementById('assistedOriginUrlInput');
+        const catInput = document.getElementById('assistedCategoryInput');
+        const listEl = document.getElementById('assistedPartsList');
+
+        const title = titleInput?.value.trim() || '';
+        const version = verInput?.value.trim() || '1.0';
+        const host = hostSelect?.value || 'GoFile';
+        const approxSize = sizeInput?.value.trim() || '';
+        const fixUrl = fixInput?.value.trim() || '';
+        const originUrl = originInput?.value.trim() || '';
+        const category = catInput?.value.trim() || 'General';
+
+        if (!title) {
+            window.uiController.showToast('Please enter a game title', 'warning');
+            return;
+        }
+
+        const partInputs = listEl ? listEl.querySelectorAll('.part-input') : [];
+        const parts = [];
+        partInputs.forEach(p => {
+            const val = p.value.trim();
+            if (val && (val.startsWith('http://') || val.startsWith('https://'))) {
+                parts.push(val);
+            }
+        });
+
+        if (parts.length === 0) {
+            window.uiController.showToast('Please provide at least one valid download part URL', 'warning');
+            return;
+        }
+
+        const saveBtn = document.getElementById('saveAssistedDataBtn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        }
+
+        try {
+            const payload = {
+                title,
+                version,
+                host,
+                approx_size: approxSize,
+                fix_url: fixUrl,
+                origin_url: originUrl,
+                category,
+                parts
+            };
+
+            const res = await window.apiClient.applyGameData(payload);
+            if (res && res.success) {
+                window.uiController.showToast(`Updated ${title} in Data.json!`, 'success');
+                this.closeAssistedModal();
+                if (window.libraryController) window.libraryController.loadGames();
+            } else {
+                window.uiController.showToast(`Error: ${res?.error || 'Failed to save game'}`, 'danger');
+            }
+        } catch (err) {
+            console.error('[VC Controller] Save error:', err);
+            window.uiController.showToast(`Failed to save: ${err.message}`, 'danger');
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save & Apply to Data.json';
+            }
+        }
     }
 
     async openUpdateUrl(url, gameId) {
@@ -284,3 +535,4 @@ class VersionCheckerController {
 }
 
 window.versionCheckerController = new VersionCheckerController();
+

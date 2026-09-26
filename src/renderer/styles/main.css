@@ -1049,6 +1049,250 @@ html, body {
     word-break: break-all;
 }
 
+/* ─── ASSISTED UPDATER & ICON BUTTONS ─── */
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-glass);
+    cursor: pointer;
+    transition: var(--transition);
+    outline: none;
+    user-select: none;
+}
+
+.btn-icon:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--border-glass-hover);
+    color: var(--text-primary);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.06);
+    transform: translateY(-1px);
+}
+
+.btn-icon:active {
+    transform: scale(0.96);
+}
+
+.btn-icon.btn-icon-danger,
+.btn-icon#clearConsoleLogsBtn {
+    color: var(--text-muted);
+}
+
+.btn-icon.btn-icon-danger:hover,
+.btn-icon#clearConsoleLogsBtn:hover {
+    background: rgba(224, 82, 82, 0.18);
+    border-color: rgba(224, 82, 82, 0.45);
+    color: #ff6b6b;
+    box-shadow: 0 0 12px rgba(224, 82, 82, 0.25);
+}
+
+/* ─── TOGGLE SWITCH & CHECKBOXES ─── */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-glass);
+    border-radius: 24px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background: #cbd5e1;
+    border-radius: 50%;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.toggle-switch:hover .toggle-slider {
+    border-color: var(--border-glass-hover);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+    background: #111;
+}
+
+/* Custom styled standalone checkbox */
+input[type="checkbox"].form-checkbox,
+input[type="checkbox"]#vcInstalledOnlyCheck {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 17px;
+    height: 17px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-glass);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition);
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    vertical-align: middle;
+}
+
+input[type="checkbox"].form-checkbox:hover,
+input[type="checkbox"]#vcInstalledOnlyCheck:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent);
+}
+
+input[type="checkbox"].form-checkbox:checked,
+input[type="checkbox"]#vcInstalledOnlyCheck:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+input[type="checkbox"].form-checkbox:checked::after,
+input[type="checkbox"]#vcInstalledOnlyCheck:checked::after {
+    content: '';
+    width: 4px;
+    height: 8px;
+    border: solid #111;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-bottom: 2px;
+}
+
+.assisted-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.assisted-parts-section {
+    background: rgba(12, 12, 16, 0.6);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.assisted-parts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.assisted-parts-header span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.assisted-parts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.part-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.part-badge {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--accent);
+    background: rgba(212, 168, 83, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    min-width: 55px;
+    text-align: center;
+}
+
+.part-input {
+    flex: 1;
+    font-size: 12px;
+    font-family: var(--font-mono);
+}
+
+.part-btn-add {
+    width: 28px;
+    height: 28px;
+    background: rgba(62, 207, 142, 0.15);
+    border: 1px solid rgba(62, 207, 142, 0.35);
+    color: var(--success);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.part-btn-add:hover {
+    background: var(--success);
+    color: #000;
+}
+
+.part-btn-del {
+    width: 28px;
+    height: 28px;
+    background: rgba(224, 82, 82, 0.15);
+    border: 1px solid rgba(224, 82, 82, 0.35);
+    color: var(--danger);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.part-btn-del:hover {
+    background: var(--danger);
+    color: #fff;
+}
+
 .log-info { color: var(--text-secondary); }
 .log-success { color: var(--success); }
 .log-warning { color: var(--warning); }
