@@ -436,6 +436,10 @@
                                 View Page <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i>
                             </a>
                         </div>
+                        <div class="meta-item" style="grid-column: span 2;">
+                            <span class="meta-label">Install Location</span>
+                            <span id="detailsLocation" class="meta-value" style="font-family: var(--font-mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary);">D:\GAMES2 (Default)</span>
+                        </div>
                     </div>
 
                     <div class="details-actions-row">
@@ -446,6 +450,85 @@
                         <button id="detailsRemoveGameBtn" class="btn btn-danger" style="display: none;"><i class="fa-solid fa-trash-can"></i> Remove Game</button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📥 DOWNLOAD & INSTALL LOCATION CONFIRMATION MODAL -->
+    <div id="downloadSetupModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 580px;">
+            <div class="modal-top-actions">
+                <button id="closeDownloadSetupBtn" class="modal-top-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-right: 36px;">
+                <div id="setupModalIcon" style="width: 42px; height: 42px; border-radius: 10px; background: rgba(212, 168, 83, 0.15); border: 1px solid rgba(212, 168, 83, 0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent); flex-shrink: 0;">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                </div>
+                <div>
+                    <h3 id="setupModalTitle" style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Install Game</h3>
+                    <p id="setupModalSubtitle" style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Confirm target installation directory and download options.</p>
+                </div>
+            </div>
+
+            <!-- Mini Game Info Card -->
+            <div class="glass-card" style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; margin-bottom: 16px; background: rgba(0, 0, 0, 0.25);">
+                <img id="setupGameThumb" src="assets/OFME-DWND-ICO.ico" style="width: 48px; height: 64px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-glass);" onerror="this.src='assets/OFME-DWND-ICO.ico'">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span id="setupGameTitle" style="font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Game Title</span>
+                        <span id="setupActionBadge" class="status-pill" style="font-size: 9px; padding: 2px 8px;">New Install</span>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--text-muted);">
+                        <span>Version: <strong id="setupGameVersion" style="color: #fff;">v1.0</strong></span>
+                        <span>Size: <strong id="setupGameSize" style="color: #fff;">Unknown</strong></span>
+                        <span>Host: <strong id="setupGameHost" style="color: #fff;">GoFile</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Installation Directory Selection -->
+            <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 14px;">
+                <label class="form-label" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-folder-open" style="color: var(--accent);"></i>
+                        <strong id="setupLocationLabel">Installation Directory:</strong>
+                    </span>
+                    <span id="setupLocationStatus" style="font-size: 11px; color: var(--accent);">Default Folder</span>
+                </label>
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    <input type="text" id="setupInstallPathInput" class="form-input" style="flex: 1; font-family: var(--font-mono); font-size: 12px;" placeholder="D:\GAMES2">
+                    <button type="button" id="browseInstallPathBtn" class="btn btn-secondary" style="padding: 0 14px; font-size: 12px; white-space: nowrap;">
+                        <i class="fa-solid fa-folder-open"></i> Browse...
+                    </button>
+                </div>
+                <p id="setupLocationHelp" style="font-size: 11px; color: var(--text-muted); margin: 0; line-height: 1.4;">
+                    <i class="fa-solid fa-circle-info"></i> The game will extract into its own folder inside this directory (e.g. <code>D:\GAMES2\&lt;GameFolder&gt;</code>).
+                </p>
+            </div>
+
+            <!-- Extraction Options -->
+            <div class="glass-card" style="padding: 12px 14px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; gap: 10px;">
+                <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+                    <span style="font-size: 12px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-file-zipper" style="color: var(--accent);"></i> Automatically extract archive after download
+                    </span>
+                    <input type="checkbox" id="setupAutoExtractCheck" checked style="accent-color: var(--accent); cursor: pointer; width: 16px; height: 16px;">
+                </label>
+                <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+                    <span style="font-size: 12px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-trash-can" style="color: #ff6b6b;"></i> Delete archive file (.rar/.zip) after extraction
+                    </span>
+                    <input type="checkbox" id="setupDeleteArchiveCheck" checked style="accent-color: var(--accent); cursor: pointer; width: 16px; height: 16px;">
+                </label>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-secondary" id="cancelSetupDownloadBtn">Cancel</button>
+                <button type="button" id="confirmSetupDownloadBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> Start Download & Install
+                </button>
             </div>
         </div>
     </div>

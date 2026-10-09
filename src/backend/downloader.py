@@ -320,7 +320,9 @@ class Downloader:
                     print(f"[Downloader] [{job.id}] Download SUCCESS: {job.dest_file} (100%)", flush=True)
 
                     # Automated Extraction Workflow
-                    auto_extract = self.config.get("auto_extract", True) if self.config else True
+                    auto_extract = job.meta.get("auto_extract")
+                    if auto_extract is None:
+                        auto_extract = self.config.get("auto_extract", True) if self.config else True
                     is_archive = job.dest_file.lower().endswith((".rar", ".zip", ".7z"))
 
                     if auto_extract and self.extractor and is_archive:
@@ -334,6 +336,8 @@ class Downloader:
                         # Determine if this is a fix or main game
                         job_type = job.meta.get("type", "main")
                         is_fix = (job_type == "fix") or ("fix" in job.filename.lower()) or ("_fix." in job.dest_file.lower())
+
+                        custom_extract_dir = job.meta.get("extract_dir") or job.meta.get("custom_location")
 
                         # Check existing game install location from Data.json
                         existing_location = None
@@ -354,7 +358,9 @@ class Downloader:
                             r"D:\GAMES2"
                         ) if self.config else r"D:\GAMES2"
 
-                        if is_fix:
+                        if custom_extract_dir:
+                            extract_dir = custom_extract_dir
+                        elif is_fix:
                             # Patch must unpack directly inside the existing game directory
                             if existing_location and os.path.isdir(existing_location):
                                 extract_dir = existing_location
@@ -369,7 +375,9 @@ class Downloader:
                                 extract_dir = default_base
 
                         rar_password = self.config.get("rar_password", "online-fix.me") if self.config else "online-fix.me"
-                        delete_after = self.config.get("auto_delete_archive", True) if self.config else True
+                        delete_after = job.meta.get("auto_delete_archive")
+                        if delete_after is None:
+                            delete_after = self.config.get("auto_delete_archive", True) if self.config else True
 
                         print(f"[Downloader] [{job.id}] Destination folder: {extract_dir} (is_fix={is_fix}, delete_after={delete_after})", flush=True)
 
