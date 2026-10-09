@@ -4,7 +4,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows-0078d7.svg)
 ![Electron](https://img.shields.io/badge/Electron-26.6.10-47848F.svg)
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+![License](https://img.shields.io/badge/license-MIT--NC-green.svg)
 ![Maintained](https://img.shields.io/badge/maintained%3F-yes-brightgreen.svg)
 
 A desktop game library manager and automated downloader for Online-Fix releases. **Fanta OFME Downloader** pairs a dark glassmorphism Electron interface with a modular Python backend to manage game downloads, automated WinRAR extractions, live version audits, and one-click Steam shortcut integration.
@@ -197,5 +197,7 @@ python -m unittest discover -s src/backend/tests
 ---
 
 ## License & Credits
+
+This project is licensed under the **MIT Non-Commercial License (MIT-NC)** - see the [LICENSE](LICENSE) file for details. You are free to use, modify, and distribute this software for personal and non-commercial purposes. Commercial use or selling of this software is strictly prohibited.
 
 Developed by **ZuhuInc**. All rights reserved. Game titles and assets are property of their respective creators.
