@@ -8,6 +8,7 @@ const exposed = {
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   selectFile: (options) => ipcRenderer.invoke('select-file', options),
   openPath: (targetPath) => ipcRenderer.invoke('open-path', targetPath),
+  showItemInFolder: (itemPath) => ipcRenderer.invoke('show-item-in-folder', itemPath),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   onBackendLog: (callback) => {
     const handler = (event, data) => callback(data);

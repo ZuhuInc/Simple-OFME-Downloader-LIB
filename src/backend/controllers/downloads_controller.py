@@ -3,6 +3,9 @@ Downloads Controller Blueprint
 Handles adding download jobs, pause/resume/cancel operations, queue querying, and archive extraction.
 """
 
+import os
+import re
+import threading
 from flask import Blueprint, jsonify, request
 
 def create_downloads_blueprint(downloader, extractor, config, socketio):
@@ -56,9 +59,6 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
 
         if not archive_path:
             return jsonify({"error": "Missing archive_path"}), 400
-
-        import threading
-        import re
 
         # Determine if this is a fix or main game
         is_fix = ("fix" in os.path.basename(archive_path).lower()) or ("_fix." in archive_path.lower())

@@ -225,18 +225,97 @@
 
             <!-- 💨 TAB 4: STEAM & SYNC -->
             <section id="steamTab" class="tab-content-panel">
-                <div class="glass-card">
-                    <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">Steam Integration & Cloud Save Sync</h2>
-                    <p style="font-size: 12px; color: var(--text-muted);">Manage non-Steam shortcuts, AppID auto-detection, and synchronize save folders across machines.</p>
+                <!-- Header Card -->
+                <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                    <div>
+                        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-brands fa-steam" style="color: #60a5fa;"></i> Steam Shortcuts & Account Management
+                        </h2>
+                        <p style="font-size: 12px; color: var(--text-muted); margin: 0;">View active Steam profile, inspect registered non-Steam shortcuts, and manage library injection.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="rescanSteamBtn" class="btn btn-secondary" title="Re-scan Steam profiles and shortcuts"><i class="fa-solid fa-rotate"></i> Re-scan</button>
+                        <button id="openAddManualShortcutBtn" class="btn btn-primary" title="Add a custom game shortcut to Steam"><i class="fa-solid fa-plus"></i> Add Shortcut</button>
+                    </div>
                 </div>
 
-                <div class="glass-card">
-                    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #fff;">Steam Shortcut Management</h3>
-                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
-                        When you add an Online-Fix game to Steam, this tool creates a non-Steam shortcut in your Steam <code style="color: var(--accent);">shortcuts.vdf</code> file, complete with launch artwork and overlay hooks.
-                    </p>
-                    <div style="display: flex; gap: 12px;">
-                        <button class="btn btn-secondary" onclick="window.steamController.loadSteamInfo()"><i class="fa-solid fa-rotate"></i> Re-scan Steam Profiles</button>
+                <!-- Active Profile Hero Banner -->
+                <div class="glass-card steam-profile-card">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                        <!-- Profile Left Info -->
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <div class="steam-avatar-box" id="steamAvatarBox">
+                                <img id="steamAvatarImg" class="steam-avatar-img" style="display: none;" alt="Steam Avatar">
+                                <i id="steamAvatarFallbackIcon" class="fa-brands fa-steam steam-avatar-icon"></i>
+                            </div>
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <h3 id="steamPersonaName" style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Zuhu</h3>
+                                    <span id="steamAccountBadge" class="status-pill status-uptodate" style="font-size: 9px; padding: 2px 8px;">Active Profile</span>
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+                                    <span>Account ID: <strong id="steamAccountId" style="color: var(--accent);">1004235037</strong></span>
+                                    <span>Login: <strong id="steamAccountLogin" style="color: #fff;">bodhi20off</strong></span>
+                                    <span>Shortcuts: <strong id="steamShortcutsCount" style="color: #60a5fa;">95</strong></span>
+                                    <span>Path: <span id="steamPathLabel" style="color: var(--text-secondary); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle;">C:\Program Files (x86)\Steam</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Account Switcher on Right -->
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Switch Steam Account:</label>
+                                <select id="steamAccountSelect" class="form-input" style="min-width: 220px; font-size: 12px; padding: 7px 12px; cursor: pointer;">
+                                    <!-- Dynamically populated -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shortcuts Table Card -->
+                <div class="glass-card" style="padding: 0; overflow: hidden;">
+                    <!-- Shortcuts Toolbar -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border-glass); flex-wrap: wrap; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div class="steam-filter-group">
+                                <button id="steamFilterFantaBtn" class="steam-filter-btn active" title="Show only shortcuts managed or installed via Fanta / OnlineFix">
+                                    <i class="fa-solid fa-gamepad"></i> Fanta Games <span id="fantaShortcutsCountBadge" class="steam-badge-pill">0</span>
+                                </button>
+                                <button id="steamFilterAllBtn" class="steam-filter-btn" title="Show all shortcuts in Steam shortcuts.vdf">
+                                    <i class="fa-brands fa-steam"></i> All Steam <span id="allShortcutsCountBadge" class="steam-badge-pill">0</span>
+                                </button>
+                            </div>
+                            <div class="search-box-wrapper" style="min-width: 280px; flex: unset;">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="steamShortcutSearchInput" class="search-input" placeholder="Search shortcuts by title or exe path..." style="font-size: 12px; padding: 7px 12px 7px 34px;">
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-muted);">
+                            <span id="steamShortcutTotalText">Showing 0 Shortcuts</span>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div style="max-height: 520px; overflow-y: auto;" class="custom-scroll">
+                        <table class="fanta-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 28%;">Game Title</th>
+                                    <th style="width: 42%;">Executable (.exe) Target</th>
+                                    <th style="width: 14%;">Shortcut AppID</th>
+                                    <th style="width: 16%; text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="steamShortcutsTableBody">
+                                <tr class="empty-row">
+                                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 36px;">
+                                        Loading Steam shortcuts...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -535,24 +614,37 @@
 
     <!-- 💨 STEAM SHORTCUT MODAL -->
     <div id="steamShortcutModal" class="modal-overlay">
-        <div class="modal-dialog" style="max-width: 500px;">
-            <button id="closeSteamModalBtn" class="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
-            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #fff;">Add to Steam Library</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 18px;">
-                Adding <strong id="steamModalGameTitle" style="color: #fff;">Game</strong> as a Non-Steam Game shortcut.
-            </p>
+        <div class="modal-dialog" style="max-width: 520px;">
+            <div class="modal-top-actions">
+                <button id="closeSteamModalBtn" class="modal-top-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-right: 36px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(96, 165, 250, 0.15); border: 1px solid rgba(96, 165, 250, 0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #60a5fa; flex-shrink: 0;">
+                    <i class="fa-brands fa-steam"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Add to Steam Library</h3>
+                    <p style="font-size: 11px; color: var(--text-muted); margin: 2px 0 0 0;">Create a non-Steam game shortcut in your active Steam profile.</p>
+                </div>
+            </div>
             
-            <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px;">
+            <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 14px;">
+                <label class="form-label">Game Title / Name:</label>
+                <input type="text" id="steamModalGameTitle" class="form-input" style="width: 100%; box-sizing: border-box;" placeholder="e.g. Schedule I or CloverPit">
+            </div>
+
+            <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 20px;">
                 <label class="form-label">Game Executable (.exe) Path:</label>
                 <div style="display: flex; gap: 8px; width: 100%;">
-                    <input type="text" id="steamGameExeInput" class="form-input" style="flex: 1;" placeholder="C:\Games\MyGame\game.exe">
-                    <button id="browseSteamExeBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-folder-open"></i></button>
+                    <input type="text" id="steamGameExeInput" class="form-input" style="flex: 1; font-family: var(--font-mono); font-size: 12px;" placeholder="D:\GAMES2\MyGame\Game.exe">
+                    <button type="button" id="browseSteamExeBtn" class="btn btn-secondary" style="padding: 0 14px; font-size: 12px; white-space: nowrap;"><i class="fa-solid fa-folder-open"></i> Browse...</button>
                 </div>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button class="btn btn-secondary" onclick="window.steamController.closeModal()">Cancel</button>
-                <button id="confirmAddSteamBtn" class="btn btn-primary"><i class="fa-brands fa-steam"></i> Inject Shortcut</button>
+                <button type="button" class="btn btn-secondary" onclick="window.steamController.closeModal()">Cancel</button>
+                <button type="button" id="confirmAddSteamBtn" class="btn btn-primary"><i class="fa-brands fa-steam"></i> Inject Shortcut</button>
             </div>
         </div>
     </div>

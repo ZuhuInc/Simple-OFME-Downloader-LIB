@@ -197,7 +197,13 @@ ipcMain.handle('open-path', async (event, targetPath) => {
   if (!targetPath) return false;
   try {
     if (fs.existsSync(targetPath)) {
-      await shell.openPath(targetPath);
+      const stat = fs.statSync(targetPath);
+      if (stat.isDirectory()) {
+        await shell.openPath(targetPath);
+      } else {
+        // Target is a file (.exe, .txt, etc.) - show it in explorer without executing it!
+        shell.showItemInFolder(targetPath);
+      }
       return true;
     } else {
       const parent = path.dirname(targetPath);
@@ -208,6 +214,25 @@ ipcMain.handle('open-path', async (event, targetPath) => {
     }
   } catch (err) {
     console.error('[Main] openPath error:', err);
+  }
+  return false;
+});
+
+ipcMain.handle('show-item-in-folder', async (event, itemPath) => {
+  if (!itemPath) return false;
+  try {
+    if (fs.existsSync(itemPath)) {
+      shell.showItemInFolder(itemPath);
+      return true;
+    } else {
+      const parent = path.dirname(itemPath);
+      if (fs.existsSync(parent)) {
+        await shell.openPath(parent);
+        return true;
+      }
+    }
+  } catch (err) {
+    console.error('[Main] showItemInFolder error:', err);
   }
   return false;
 });

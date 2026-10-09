@@ -66,7 +66,7 @@ downloader.set_callback(on_download_progress)
 # Register Controller Blueprints
 app.register_blueprint(create_games_blueprint(db_manager, config))
 app.register_blueprint(create_downloads_blueprint(downloader, extractor, config, socketio))
-app.register_blueprint(create_steam_blueprint(steam_manager, config))
+app.register_blueprint(create_steam_blueprint(steam_manager, config, db_manager))
 app.register_blueprint(create_version_checker_blueprint(version_checker, db_manager, config, socketio))
 app.register_blueprint(create_settings_blueprint(config, extractor, steam_manager, db_manager, downloader, version_checker))
 

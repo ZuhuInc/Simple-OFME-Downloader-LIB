@@ -351,7 +351,8 @@ html, body {
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
-    font-size: 14px;
+    font-size: 13px;
+    pointer-events: none;
 }
 
 .search-input {
@@ -1366,3 +1367,132 @@ input[type="checkbox"]#vcInstalledOnlyCheck:checked::after {
 .form-input:focus {
     border-color: var(--accent);
 }
+
+/* ─── STEAM & SYNC TAB STYLES ─── */
+.steam-profile-card {
+    background: linear-gradient(135deg, rgba(20, 24, 36, 0.7) 0%, rgba(12, 14, 22, 0.85) 100%);
+    border: 1px solid rgba(96, 165, 250, 0.25);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(96, 165, 250, 0.08);
+}
+
+.steam-avatar-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1b2838 0%, #171a21 100%);
+    border: 2px solid rgba(96, 165, 250, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 16px rgba(96, 165, 250, 0.25);
+    flex-shrink: 0;
+}
+
+.steam-avatar-icon {
+    font-size: 26px;
+    color: #60a5fa;
+    filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.5));
+}
+
+.shortcut-game-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.shortcut-game-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--accent);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.shortcut-game-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.shortcut-exe-path {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 420px;
+}
+
+.shortcut-appid-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    color: var(--accent);
+    letter-spacing: 0.5px;
+}
+
+.steam-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    object-fit: cover;
+    display: block;
+}
+
+.steam-filter-group {
+    display: inline-flex;
+    background: rgba(15, 15, 20, 0.7);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    gap: 4px;
+}
+
+.steam-filter-btn {
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.steam-filter-btn:hover {
+    color: #fff;
+}
+
+.steam-filter-btn.active {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.steam-badge-pill {
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+

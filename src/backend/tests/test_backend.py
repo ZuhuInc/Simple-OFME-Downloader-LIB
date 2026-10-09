@@ -201,6 +201,69 @@ Fix:
         self.assertTrue(os.path.exists(os.path.join(extract_out, "GameFolder", "Game.exe")))
         self.assertIsNotNone(res.get("exe_path"))
 
+    def test_binary_vdf_and_steam_manager(self):
+        from backend.steam import BinaryVDF, SteamManager
+        # Test BinaryVDF encode/decode
+        sample_dict = {
+            "shortcuts": {
+                "0": {
+                    "appid": 3120485912,
+                    "AppName": "Helldivers 2 (OnlineFix)",
+                    "Exe": "\"C:\\Games\\Helldivers\\game.exe\"",
+                    "StartDir": "\"C:\\Games\\Helldivers\\\"",
+                    "icon": "",
+                    "ShortcutPath": "",
+                    "LaunchOptions": "",
+                    "IsHidden": 0,
+                    "AllowDesktopConfig": 1,
+                    "AllowOverlay": 1,
+                    "OpenVR": 0,
+                    "Devkit": 0,
+                    "DevkitGameID": "",
+                    "DevkitOverrideAppID": 0,
+                    "LastPlayTime": 0,
+                    "FlatpakAppID": "",
+                    "tags": {}
+                }
+            }
+        }
+        encoded = BinaryVDF.serialize(sample_dict)
+        decoded = BinaryVDF.parse(encoded)
+        self.assertIn("shortcuts", decoded)
+        self.assertIn("0", decoded["shortcuts"])
+        self.assertEqual(decoded["shortcuts"]["0"]["AppName"], "Helldivers 2 (OnlineFix)")
+        self.assertEqual(decoded["shortcuts"]["0"]["appid"], 3120485912)
+
+        # Test SteamManager shortcut addition and deletion in temp folder
+        fake_steam = os.path.join(self.temp_dir, "Steam")
+        fake_userdata = os.path.join(fake_steam, "userdata", "1004235037", "config")
+        os.makedirs(fake_userdata, exist_ok=True)
+        
+        steam_mgr = SteamManager()
+        steam_mgr.steam_path = fake_steam
+        
+        # Add non-steam game
+        res_add = steam_mgr.add_non_steam_game(
+            name="Test OFME Game",
+            exe_path="C:\\Games\\Test\\Test.exe",
+            start_dir="C:\\Games\\Test",
+            account_id="1004235037"
+        )
+        self.assertTrue(res_add["success"])
+        self.assertIsNotNone(res_add["appid"])
+        self.assertIn("steam://rungameid/", res_add["steam_url"])
+
+        # Fetch shortcuts
+        shortcuts = steam_mgr.get_shortcuts(account_id="1004235037")
+        self.assertEqual(len(shortcuts), 1)
+        self.assertEqual(shortcuts[0]["name"], "Test OFME Game")
+        self.assertEqual(shortcuts[0]["appid"], res_add["appid"])
+
+        # Delete shortcut
+        res_del = steam_mgr.delete_shortcut(identifier="Test OFME Game", account_id="1004235037")
+        self.assertTrue(res_del["success"])
+        self.assertEqual(len(steam_mgr.get_shortcuts(account_id="1004235037")), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

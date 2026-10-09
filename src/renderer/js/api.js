@@ -127,7 +127,11 @@ class ApiClient {
     // Steam
     getSteamLibraries() { return this.request('/api/steam/libraries'); }
     getSteamAccounts() { return this.request('/api/steam/accounts'); }
-    addSteamShortcut(data) { return this.request('/api/steam/add-shortcut', { method: 'POST', body: data }); }
+    selectSteamAccount(accountId) { return this.request('/api/steam/select-account', { method: 'POST', body: { account_id: accountId } }); }
+    getSteamShortcuts(accountId = '') { return this.request(`/api/steam/shortcuts${accountId ? '?account_id=' + accountId : ''}`); }
+    addSteamShortcut(data) { return this.request('/api/steam/shortcuts/add', { method: 'POST', body: data }); }
+    deleteSteamShortcut(payload) { return this.request('/api/steam/shortcuts/delete', { method: 'POST', body: payload }); }
+    rescanSteam() { return this.request('/api/steam/rescan', { method: 'POST' }); }
 
     // Version Checker
     getVersionCheckStatus() { return this.request('/api/version-check/status'); }

@@ -38,6 +38,8 @@ class UIController {
             window.versionCheckerController.loadSavedCredentials();
         } else if (tabId === 'settingsTab' && window.settingsController) {
             window.settingsController.loadSettings();
+        } else if (tabId === 'steamTab' && window.steamController) {
+            window.steamController.loadSteamInfo();
         }
     }
 
