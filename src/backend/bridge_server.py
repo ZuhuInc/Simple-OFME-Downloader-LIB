@@ -41,11 +41,13 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 # Initialize Core Services
 config = Config()
 db_manager = DatabaseManager(cache_dir=config.cache_folder, default_url=config.get("db_url"), config=config)
+extractor = Extractor(winrar_path=config.get("winrar_path"))
 downloader = Downloader(
     download_path=config.get("download_path"),
-    max_concurrency=int(config.get("concurrent_downloads", 2))
+    max_concurrency=int(config.get("concurrent_downloads", 2)),
+    config=config,
+    extractor=extractor
 )
-extractor = Extractor(winrar_path=config.get("winrar_path"))
 version_checker = VersionChecker(
     webhook_url=config.get("webhook_url", ""),
     enable_notifications=config.get("enable_notifications", True)

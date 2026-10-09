@@ -11,6 +11,8 @@ class SettingsController {
         this.extractPathInput = document.getElementById('set_extract_path');
         this.rarPasswordInput = document.getElementById('set_rar_password');
         this.speedUnitSelect = document.getElementById('set_speed_unit');
+        this.autoExtractCheck = document.getElementById('set_auto_extract');
+        this.autoDeleteArchiveCheck = document.getElementById('set_auto_delete_archive');
         this.concurrencyInput = document.getElementById('set_concurrency');
         this.useLocalDbCheck = document.getElementById('set_use_local_db');
         this.localDbPathInput = document.getElementById('set_local_db_path');
@@ -200,6 +202,8 @@ class SettingsController {
         if (this.rarPasswordInput) this.rarPasswordInput.value = this.settings.rar_password || 'online-fix.me';
         if (this.concurrencyInput) this.concurrencyInput.value = this.settings.concurrent_downloads || 2;
         if (this.speedUnitSelect) this.speedUnitSelect.value = this.settings.speed_unit || 'MB/s';
+        if (this.autoExtractCheck) this.autoExtractCheck.checked = this.settings.auto_extract !== false;
+        if (this.autoDeleteArchiveCheck) this.autoDeleteArchiveCheck.checked = this.settings.auto_delete_archive !== false;
         if (this.useLocalDbCheck) this.useLocalDbCheck.checked = Boolean(this.settings.use_local_db);
         if (this.localDbPathInput) this.localDbPathInput.value = this.settings.local_db_path || '';
     }
@@ -212,6 +216,8 @@ class SettingsController {
             rar_password: this.rarPasswordInput?.value || 'online-fix.me',
             concurrent_downloads: parseInt(this.concurrencyInput?.value || 2, 10),
             speed_unit: this.speedUnitSelect?.value || 'MB/s',
+            auto_extract: Boolean(this.autoExtractCheck?.checked),
+            auto_delete_archive: Boolean(this.autoDeleteArchiveCheck?.checked),
             use_local_db: Boolean(this.useLocalDbCheck?.checked),
             local_db_path: this.localDbPathInput?.value.trim() || ''
         };

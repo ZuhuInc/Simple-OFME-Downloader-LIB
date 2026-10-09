@@ -17,6 +17,7 @@ class DetailsController {
         this.originLinkEl = document.getElementById('detailsOriginLink');
         this.downloadMainBtn = document.getElementById('detailsDownloadMainBtn');
         this.downloadFixBtn = document.getElementById('detailsDownloadFixBtn');
+        this.openMirrorBtn = document.getElementById('detailsOpenMirrorBtn');
         this.addSteamBtn = document.getElementById('detailsAddSteamBtn');
         this.launchBtn = document.getElementById('detailsLaunchBtn');
         this.removeGameBtn = document.getElementById('detailsRemoveGameBtn');
@@ -45,6 +46,23 @@ class DetailsController {
                         window.api.openExternal(this.currentGame.origin_url);
                     } else {
                         window.open(this.currentGame.origin_url, '_blank');
+                    }
+                }
+            });
+        }
+
+        if (this.openMirrorBtn) {
+            this.openMirrorBtn.addEventListener('click', () => {
+                if (this.currentGame) {
+                    const targetUrl = (Array.isArray(this.currentGame.parts) && this.currentGame.parts[0]) || this.currentGame.main_game_url || this.currentGame.download_url || this.currentGame.origin_url;
+                    if (targetUrl) {
+                        if (window.api && window.api.openExternal) {
+                            window.api.openExternal(targetUrl);
+                        } else {
+                            window.open(targetUrl, '_blank');
+                        }
+                    } else {
+                        window.uiController.showToast('No mirror link available.', 'warning');
                     }
                 }
             });
@@ -205,6 +223,7 @@ class DetailsController {
                 game_id: this.currentGame.id,
                 title: this.currentGame.title,
                 version: this.currentGame.version,
+                location: this.currentGame.location || '',
                 type: type
             });
 

@@ -301,6 +301,28 @@
 
                         <div class="form-row">
                             <div class="form-label-area">
+                                <span class="form-label">Auto-Extract Archives</span>
+                                <span class="form-desc">Automatically unpack game archives (RAR/ZIP/7Z) when download finishes</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_auto_extract" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Delete Archive After Extraction</span>
+                                <span class="form-desc">Automatically remove the raw archive after successful extraction to save disk space</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_auto_delete_archive" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
                                 <span class="form-label">Speed Display Unit</span>
                             </div>
                             <select id="set_speed_unit" class="select-dropdown" style="min-width: 140px;">
@@ -419,6 +441,7 @@
                     <div class="details-actions-row">
                         <button id="detailsDownloadMainBtn" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-down"></i> Download Game</button>
                         <button id="detailsDownloadFixBtn" class="btn btn-secondary" style="display: none;"><i class="fa-solid fa-wrench"></i> Download Fix</button>
+                        <button id="detailsOpenMirrorBtn" class="btn btn-secondary" title="Open download link in your browser"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Mirror</button>
                         <button id="detailsAddSteamBtn" class="btn btn-secondary"><i class="fa-brands fa-steam"></i> Add to Steam</button>
                         <button id="detailsRemoveGameBtn" class="btn btn-danger" style="display: none;"><i class="fa-solid fa-trash-can"></i> Remove Game</button>
                     </div>

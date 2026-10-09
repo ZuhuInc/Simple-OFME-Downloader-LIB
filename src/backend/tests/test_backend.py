@@ -66,8 +66,14 @@ Fix:
         self.assertEqual(games[1].host, "PixelDrain")
 
     def test_pixeldrain_resolve(self):
-        url, name = LinkResolver.resolve_url("https://pixeldrain.com/u/sample123")
-        self.assertEqual(url, "https://pixeldrain.com/api/file/sample123")
+        url, name, cookies = LinkResolver.resolve_url("https://pixeldrain.com/u/sample123")
+        self.assertEqual(url, "https://pixeldrain.com/api/file/sample123?download")
+
+    def test_buzzheavier_resolve(self):
+        url, name, cookies = LinkResolver.resolve_url("https://bzzhr.to/liksw0ew4pu8")
+        self.assertTrue("ts.bzzhr.to" in url or "liksw0ew4pu8" in url)
+        self.assertIsNotNone(name)
+        self.assertTrue("CloverPit" in name)
 
     def test_browser_normalize(self):
         self.assertEqual(normalize_browser_name("brave.exe"), "Brave")
@@ -176,6 +182,24 @@ Fix:
         # Custom local game shouldn't be in remote unless added to remote repository
         custom_found = any(g.title == "Super Cool Game" for g in games_remote)
         self.assertFalse(custom_found)
+
+    def test_extractor_detection_and_zip(self):
+        extractor = Extractor()
+        self.assertTrue(extractor.is_any_extractor_available())
+
+        # Test zip creation and extraction
+        import zipfile
+        dummy_zip = os.path.join(self.temp_dir, "test_game.zip")
+        extract_out = os.path.join(self.temp_dir, "extracted_game")
+        
+        with zipfile.ZipFile(dummy_zip, "w") as zf:
+            zf.writestr("GameFolder/Game.exe", b"fake_game_binary_data")
+            zf.writestr("GameFolder/readme.txt", b"Instructions")
+
+        res = extractor.extract_archive(dummy_zip, extract_out)
+        self.assertTrue(res["success"])
+        self.assertTrue(os.path.exists(os.path.join(extract_out, "GameFolder", "Game.exe")))
+        self.assertIsNotNone(res.get("exe_path"))
 
 
 if __name__ == "__main__":

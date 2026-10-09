@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 class ConfigDefaults:
     winrar_path: str = r"C:\Program Files\WinRAR\WinRAR.exe"
     download_path: str = r"C:\Users\ZUHU\Documents\ZuhuProjects\ZuhuOFME\downloads"
-    extract_path: str = r"C:\Users\ZUHU\Documents\ZuhuProjects\ZuhuOFME\extracted"
+    extract_path: str = r"D:\GAMES2"
     default_download_path: str = r"D:\GAMES2"
     steam_path: str = r"C:\Program Files (x86)\Steam"
     steam_user_id: str = "1004235037"
@@ -26,7 +26,10 @@ class ConfigDefaults:
     browser_path: str = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
     db_url: str = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/BetaRework/src/backend/data/Data.json"
     use_local_db: bool = False
-    local_db_path: str = ""
+    sevenzip_path: str = r"C:\Program Files\7-Zip\7z.exe"
+    auto_extract: bool = True
+    auto_delete_archive: bool = True
+    gofile_token: str = ""
 
 
 class Config:
@@ -42,6 +45,8 @@ class Config:
 
         self.path = os.path.join(self.data_folder, "Settings.json")
         self.data_json_path = os.path.join(self.data_folder, "Data.json")
+        self.data_bak_path = os.path.join(self.data_folder, "Data.json.bak")
+        self.data_old_path = os.path.join(self.data_folder, "old.Data.json")
         self.login_json_path = os.path.join(self.data_folder, "Login.json")
         self._data: Dict[str, Any] = asdict(ConfigDefaults())
 
@@ -87,14 +92,34 @@ class Config:
             except Exception as e:
                 print(f"[Config] Login.json load error: {e}")
 
-        # Load Data.json (installed games database)
+        # Load Data.json (installed games database) with corruption protection
         if os.path.exists(self.data_json_path):
             try:
                 with open(self.data_json_path, "r", encoding="utf-8", errors="ignore") as f:
-                    self._installed_data = json.load(f)
-                print(f"[Config] Loaded {len(self._installed_data)} installed games from Data.json")
+                    loaded = json.load(f)
+                if isinstance(loaded, dict):
+                    self._installed_data = loaded
+                    print(f"[Config] Loaded {len(self._installed_data)} installed games from Data.json")
             except Exception as e:
-                print(f"[Config] Data.json load error: {e}")
+                print(f"[Config] Data.json load error / syntax issue: {e}")
+                # Save corrupted file as old.Data.json so user never loses their changes
+                try:
+                    import shutil
+                    shutil.copy2(self.data_json_path, self.data_old_path)
+                    print(f"[Config] Preserved corrupted Data.json copy as: {self.data_old_path}")
+                except Exception:
+                    pass
+
+                # Try to recover from backup Data.json.bak
+                if os.path.exists(self.data_bak_path):
+                    try:
+                        with open(self.data_bak_path, "r", encoding="utf-8", errors="ignore") as bf:
+                            recovered = json.load(bf)
+                        if isinstance(recovered, dict) and recovered:
+                            self._installed_data = recovered
+                            print(f"[Config] Successfully recovered {len(self._installed_data)} installed games from Data.json.bak")
+                    except Exception:
+                        pass
 
     def save(self) -> None:
         try:
@@ -116,11 +141,36 @@ class Config:
             except Exception as e:
                 print(f"[Config] Login.json save error: {e}")
 
-        try:
-            with open(self.data_json_path, "w", encoding="utf-8") as f:
-                json.dump(self._installed_data, f, ensure_ascii=False, indent=4)
-        except Exception as e:
-            print(f"[Config] Data.json save error: {e}")
+        # Save Data.json with automatic backup rotation and atomic writing
+        if self._installed_data is not None:
+            # Avoid wiping a non-empty file on disk with an empty dict
+            if not self._installed_data and os.path.exists(self.data_json_path):
+                try:
+                    if os.path.getsize(self.data_json_path) > 100:
+                        print("[Config] Prevented saving empty installed games dictionary over existing Data.json")
+                        return
+                except Exception:
+                    pass
+
+            try:
+                # Rotate backup if current Data.json is valid
+                if os.path.exists(self.data_json_path) and os.path.getsize(self.data_json_path) > 20:
+                    try:
+                        import shutil
+                        shutil.copy2(self.data_json_path, self.data_bak_path)
+                        shutil.copy2(self.data_json_path, self.data_old_path)
+                    except Exception:
+                        pass
+
+                tmp_path = self.data_json_path + ".tmp"
+                with open(tmp_path, "w", encoding="utf-8") as f:
+                    json.dump(self._installed_data, f, ensure_ascii=False, indent=4)
+                if os.path.exists(self.data_json_path):
+                    try: os.remove(self.data_json_path)
+                    except Exception: pass
+                os.replace(tmp_path, self.data_json_path)
+            except Exception as e:
+                print(f"[Config] Data.json save error: {e}")
 
     @staticmethod
     def is_source_mode() -> bool:

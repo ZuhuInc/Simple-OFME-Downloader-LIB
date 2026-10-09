@@ -174,21 +174,45 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
         if not game_title:
             return jsonify({"success": False, "error": "Game title is required."}), 400
 
+        # Find existing game in database to maintain thumbnail / description
+        db_game = None
+        for g in getattr(db_manager, 'games', []):
+            if g.title.lower() == game_title.lower():
+                db_game = g
+                break
+
         installed = config.data
         game_entry = installed.get(game_title, {})
 
-        if 'version' in data: game_entry['version'] = str(data['version']).strip()
-        if 'host' in data: game_entry['host'] = data['host']
-        if 'parts' in data:
-            # Filter out empty or whitespace lines
+        if 'version' in data and data['version']: game_entry['version'] = str(data['version']).strip()
+        if 'host' in data and data['host']: game_entry['host'] = data['host']
+        if 'parts' in data and data['parts']:
             parts_clean = [p.strip() for p in data['parts'] if p and str(p).strip().startswith('http')]
             game_entry['parts'] = parts_clean
         if 'fix_url' in data: game_entry['fix_url'] = data['fix_url'].strip() if data['fix_url'] else ""
-        if 'approx_size' in data and data['approx_size']: game_entry['approx_size'] = data['approx_size']
-        if 'description' in data and data['description']: game_entry['description'] = data['description']
-        if 'origin_url' in data and data['origin_url']: game_entry['origin_url'] = data['origin_url']
-        if 'thumbnail' in data and data['thumbnail']: game_entry['thumbnail'] = data['thumbnail']
+        
+        if 'approx_size' in data and data['approx_size'] and str(data['approx_size']).lower() not in ('none', 'null', 'unknown', 'n/a'):
+            game_entry['approx_size'] = data['approx_size']
+        elif db_game and db_game.approx_size:
+            game_entry['approx_size'] = db_game.approx_size
+
+        if 'description' in data and data['description'] and str(data['description']).lower() not in ('none', 'null'):
+            game_entry['description'] = data['description']
+        elif db_game and db_game.description:
+            game_entry['description'] = db_game.description
+
+        if 'origin_url' in data and data['origin_url'] and str(data['origin_url']).lower() not in ('none', 'null'):
+            game_entry['origin_url'] = data['origin_url']
+        elif db_game and db_game.origin_url:
+            game_entry['origin_url'] = db_game.origin_url
+
+        if 'thumbnail' in data and data['thumbnail'] and str(data['thumbnail']).lower() not in ('none', 'null'):
+            game_entry['thumbnail'] = data['thumbnail']
+        elif db_game and db_game.thumbnail:
+            game_entry['thumbnail'] = db_game.thumbnail
+
         if 'category' in data and data['category']: game_entry['category'] = data['category']
+        elif db_game and db_game.category: game_entry['category'] = db_game.category
         elif 'category' not in game_entry: game_entry['category'] = 'General'
 
         # Remove legacy main_game_url if present

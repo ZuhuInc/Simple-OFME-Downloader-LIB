@@ -250,18 +250,6 @@ class DatabaseManager:
             if main_url.startswith("http"):
                 clean_parts.append(main_url)
 
-        entry_payload = {
-            "version": str(game_dict.get("version", "1.0")).strip() or "1.0",
-            "host": str(game_dict.get("host", "GoFile")).strip() or "GoFile",
-            "approx_size": str(game_dict.get("approx_size", "Unknown")).strip() or "Unknown",
-            "description": str(game_dict.get("description", "No description available.")).strip(),
-            "thumbnail": str(game_dict.get("thumbnail", "")).strip(),
-            "origin_url": str(game_dict.get("origin_url", "")).strip(),
-            "parts": clean_parts if clean_parts else [str(game_dict.get("download_url", "")).strip()] if game_dict.get("download_url") else [],
-            "fix_url": str(game_dict.get("fix_url", "")).strip(),
-            "category": str(game_dict.get("category", "General")).strip() or "General"
-        }
-
         target_file = self.get_active_db_path()
         current_data = {}
 
@@ -273,6 +261,38 @@ class DatabaseManager:
                         current_data = loaded
             except Exception as e:
                 print(f"[Database] Warning reading {target_file}: {e}")
+
+        # Preserve existing metadata (thumbnail, description, size, etc.) if new values are empty / None / null
+        existing_entry = current_data.get(title, {})
+        if not isinstance(existing_entry, dict):
+            existing_entry = {}
+
+        raw_thumb = str(game_dict.get("thumbnail", "")).strip()
+        final_thumb = raw_thumb if raw_thumb and raw_thumb.lower() not in ("none", "null") else existing_entry.get("thumbnail", "")
+
+        raw_desc = str(game_dict.get("description", "")).strip()
+        final_desc = raw_desc if raw_desc and raw_desc.lower() not in ("none", "null", "no description available.") else existing_entry.get("description", "No description available.")
+
+        raw_size = str(game_dict.get("approx_size", "")).strip()
+        final_size = raw_size if raw_size and raw_size.lower() not in ("none", "null", "unknown", "n/a") else existing_entry.get("approx_size", "Unknown")
+
+        raw_origin = str(game_dict.get("origin_url", "")).strip()
+        final_origin = raw_origin if raw_origin and raw_origin.lower() not in ("none", "null") else existing_entry.get("origin_url", "")
+
+        raw_cat = str(game_dict.get("category", "")).strip()
+        final_cat = raw_cat if raw_cat and raw_cat.lower() not in ("none", "null", "general") else existing_entry.get("category", "General")
+
+        entry_payload = {
+            "version": str(game_dict.get("version", "1.0")).strip() or existing_entry.get("version", "1.0"),
+            "host": str(game_dict.get("host", "GoFile")).strip() or existing_entry.get("host", "GoFile"),
+            "approx_size": final_size or "Unknown",
+            "description": final_desc or "No description available.",
+            "thumbnail": final_thumb or "",
+            "origin_url": final_origin or "",
+            "parts": clean_parts if clean_parts else existing_entry.get("parts", [str(game_dict.get("download_url", "")).strip()] if game_dict.get("download_url") else []),
+            "fix_url": str(game_dict.get("fix_url", "")).strip() if game_dict.get("fix_url") is not None else existing_entry.get("fix_url", ""),
+            "category": final_cat or "General"
+        }
 
         # Update or add game under exact title
         current_data[title] = entry_payload

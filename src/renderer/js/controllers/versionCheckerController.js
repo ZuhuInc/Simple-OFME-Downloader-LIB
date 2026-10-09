@@ -462,7 +462,9 @@ class VersionCheckerController {
                 fix_url: fixUrl,
                 origin_url: originUrl,
                 category,
-                parts
+                parts,
+                thumbnail: this.currentScrapedData?.thumbnail || this.currentExistingGame?.thumbnail || '',
+                description: this.currentScrapedData?.description || this.currentExistingGame?.description || ''
             };
 
             const res = await window.apiClient.applyGameData(payload);
