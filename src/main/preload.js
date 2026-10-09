@@ -16,7 +16,16 @@ const exposed = {
     return () => ipcRenderer.removeListener('backend-log', handler);
   },
   getInitialLogs: () => ipcRenderer.invoke('get-initial-logs'),
-  isSourceMode: () => ipcRenderer.invoke('is-source-mode')
+  isSourceMode: () => ipcRenderer.invoke('is-source-mode'),
+  isPortable: () => ipcRenderer.invoke('is-portable'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  startDownloadUpdate: () => ipcRenderer.invoke('start-download-update'),
+  restartAndInstallUpdate: () => ipcRenderer.invoke('restart-and-install-update'),
+  onUpdaterEvent: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('updater-event', handler);
+    return () => ipcRenderer.removeListener('updater-event', handler);
+  }
 };
 
 contextBridge.exposeInMainWorld('api', exposed);

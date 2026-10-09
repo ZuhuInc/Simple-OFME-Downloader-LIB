@@ -9,4 +9,7 @@ __pycache__/
 venv/
 .idea/
 .vscode/
-
+build/
+dist_backend/
+dist_build_temp/
+*.spec

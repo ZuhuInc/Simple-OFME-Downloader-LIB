@@ -50,29 +50,40 @@ class AddGameController {
             }
 
             const status = await window.apiClient.getStatus().catch(() => ({}));
-            if (status && (status.is_source_mode || status.use_local_db)) {
-                isSource = true;
+            if (status && status.is_source_mode !== undefined) {
+                isSource = Boolean(status.is_source_mode);
             }
 
+            const isLocalDb = Boolean(status && status.use_local_db);
+
             this.isSourceMode = isSource;
-            this.activeDbPath = status.local_db_path || 'Data.json';
+            this.activeDbPath = status?.local_db_path || 'Data.json';
 
             if (this.sourceBadge) {
-                this.sourceBadge.style.display = isSource ? 'inline-block' : 'none';
+                if (isSource) {
+                    this.sourceBadge.textContent = 'SOURCE MODE';
+                    this.sourceBadge.className = 'status-pill status-installed';
+                    this.sourceBadge.style.display = 'inline-block';
+                } else {
+                    this.sourceBadge.style.display = 'none';
+                }
             }
 
             if (this.openBtn) {
-                this.openBtn.style.display = isSource ? 'inline-flex' : 'none';
+                this.openBtn.style.display = (isSource || isLocalDb) ? 'inline-flex' : 'none';
             }
 
             const envStatus = document.getElementById('sourceEnvStatus');
             if (envStatus) {
                 if (isSource) {
                     envStatus.className = 'status-pill status-installed';
-                    envStatus.textContent = 'Source Mode Active';
+                    envStatus.textContent = 'Source Dev Mode';
+                } else if (isLocalDb) {
+                    envStatus.className = 'status-pill status-installed';
+                    envStatus.textContent = 'Local Database Active';
                 } else {
                     envStatus.className = 'status-pill status-missing';
-                    envStatus.textContent = 'Packaged Mode';
+                    envStatus.textContent = 'Packaged Mode (Remote DB)';
                 }
             }
         } catch (err) {

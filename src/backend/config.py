@@ -32,6 +32,24 @@ class ConfigDefaults:
     gofile_token: str = ""
 
 
+def get_bundled_data_path(filename: str = "Data.json") -> str:
+    """Resolves the bundled data file path whether running in source or frozen PyInstaller environment."""
+    if getattr(sys, 'frozen', False):
+        if hasattr(sys, '_MEIPASS'):
+            p = os.path.join(sys._MEIPASS, "data", filename)
+            if os.path.exists(p):
+                return p
+        exe_dir = os.path.dirname(sys.executable)
+        p = os.path.join(exe_dir, "data", filename)
+        if os.path.exists(p):
+            return p
+        p_internal = os.path.join(exe_dir, "_internal", "data", filename)
+        if os.path.exists(p_internal):
+            return p_internal
+    src_data = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", filename))
+    return src_data
+
+
 class Config:
     def __init__(self, data_folder: Optional[str] = None):
         zuhu_default = r"C:\Users\ZUHU\Documents\ZuhuProjects\ZuhuOFME"
@@ -50,8 +68,8 @@ class Config:
         self.login_json_path = os.path.join(self.data_folder, "Login.json")
         self._data: Dict[str, Any] = asdict(ConfigDefaults())
 
-        # Set default local database path if bundled in source
-        bundled_json = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "Data.json"))
+        # Set default local database path if bundled
+        bundled_json = get_bundled_data_path("Data.json")
         if os.path.exists(bundled_json):
             self._data["local_db_path"] = bundled_json
             if self.is_source_mode():
@@ -185,7 +203,7 @@ class Config:
         custom_path = self.get("local_db_path")
         if custom_path and os.path.exists(custom_path):
             return custom_path
-        bundled = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "Data.json"))
+        bundled = get_bundled_data_path("Data.json")
         return bundled if os.path.exists(bundled) else self.data_json_path
 
     def get_installed_games(self) -> Dict[str, Any]:

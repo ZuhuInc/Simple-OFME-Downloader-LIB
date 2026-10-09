@@ -460,6 +460,47 @@
                     </div>
                 </div>
 
+                <!-- 🚀 Application Updates & Release Channel -->
+                <div class="glass-card" id="appUpdatesCard">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <div>
+                            <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-cloud-arrow-down" style="color: var(--accent);"></i> Application Updates
+                            </h3>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Seamless background updates powered by GitHub Releases.</p>
+                        </div>
+                        <span id="updateAppVersionBadge" class="status-pill status-installed" style="font-size: 11px;">v2.0.0</span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div id="updateStatusIcon" style="width: 36px; height: 36px; border-radius: 8px; background: rgba(212, 168, 83, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 16px;">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                            <div>
+                                <div id="updateStatusTitle" style="font-size: 13px; font-weight: 600; color: #fff;">Up to Date</div>
+                                <div id="updateStatusDesc" style="font-size: 11px; color: var(--text-muted);">You are on the latest version of Fanta OFME Downloader.</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button id="checkForUpdatesBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrows-rotate"></i> Check for Updates</button>
+                            <button id="startDownloadUpdateBtn" class="btn btn-primary btn-sm" style="display: none;"><i class="fa-solid fa-cloud-arrow-down"></i> Download Update</button>
+                            <button id="restartAndInstallBtn" class="btn btn-primary btn-sm" style="display: none;"><i class="fa-solid fa-bolt"></i> Restart & Apply</button>
+                        </div>
+                    </div>
+
+                    <!-- Live Update Progress Bar (hidden unless downloading) -->
+                    <div id="updateProgressContainer" style="display: none; flex-direction: column; gap: 6px; margin-top: 8px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
+                            <span id="updateProgressStatus">Downloading update...</span>
+                            <span id="updateProgressPercent">0% (0.0 MB/s)</span>
+                        </div>
+                        <div class="progress-bar-bg" style="height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden;">
+                            <div id="updateProgressBar" class="progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent), #f39c12); transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Console Logs Feed -->
                 <div class="glass-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">

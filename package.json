@@ -1,16 +1,84 @@
 {
   "name": "fanta-ofme-dwnld",
   "version": "2.0.0",
-  "description": "Electron scaffold for OFME downloader with Fanta GUI",
+  "description": "Fanta OFME Downloader - Online-Fix Game Manager & Downloader",
   "main": "./src/main/main.js",
+  "author": "ZuhuInc",
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "pack": "echo \"Packaging not configured\""
+    "build:backend": "node scripts/build.js --target=backend",
+    "build:file": "node scripts/build.js --target=file",
+    "build:installer": "node scripts/build.js --target=installer",
+    "build:all": "node scripts/build.js --target=all",
+    "pack": "node scripts/build.js --target=all"
   },
-  "author": "",
-  "license": "MIT",
+  "build": {
+    "appId": "com.zuhu.fantaofme",
+    "productName": "Fanta OFME Downloader",
+    "directories": {
+      "output": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "dist_backend/bridge_server",
+        "to": "backend/bridge_server",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "src/renderer/assets/OFME-DWND-ICO.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Fanta OFME Downloader",
+      "installerIcon": "src/renderer/assets/OFME-DWND-ICO.ico",
+      "uninstallerIcon": "src/renderer/assets/OFME-DWND-ICO.ico",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "${productName} Setup ${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName} Portable ${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ZuhuInc",
+        "repo": "Simple-OFME-Downloader-LIB",
+        "releaseType": "release"
+      }
+    ]
+  },
   "devDependencies": {
-    "electron": "^26.0.0"
+    "electron": "^26.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

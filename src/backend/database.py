@@ -9,6 +9,14 @@ import time
 import requests
 from typing import List, Dict, Any, Optional
 
+try:
+    from .config import get_bundled_data_path
+except ImportError:
+    try:
+        from src.backend.config import get_bundled_data_path
+    except ImportError:
+        from config import get_bundled_data_path
+
 
 class GameEntry:
     def __init__(
@@ -122,7 +130,8 @@ class DatabaseManager:
         self.cache_dir = cache_dir
         self.default_url = default_url
         self.config = config
-        self.bundled_json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "Data.json"))
+        self.bundled_json_path = get_bundled_data_path("Data.json")
+        self.bundled_txt_path = get_bundled_data_path("Download-DB.txt")
         self.local_json_path = os.path.join(cache_dir, "Data.json")
         self.local_txt_path = os.path.join(cache_dir, "Download-DB.txt")
         self.games: List[GameEntry] = []
@@ -206,7 +215,7 @@ class DatabaseManager:
 
             # 4. Fallback to bundled Download-DB.txt
             if not raw_content:
-                bundled_txt = os.path.join(os.path.dirname(__file__), "data", "Download-DB.txt")
+                bundled_txt = self.bundled_txt_path
                 if os.path.exists(bundled_txt):
                     print(f"[Database] Loading fallback text database from {bundled_txt}")
                     try:

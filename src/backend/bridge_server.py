@@ -5,8 +5,12 @@ Modular server using decoupled controllers for games, downloads, steam, version 
 
 import os
 import sys
+import logging
 from flask import Flask
 from flask_socketio import SocketIO
+
+# Suppress Werkzeug development server startup banner
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 # Ensure backend package can be imported
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -79,4 +83,4 @@ except Exception as e:
 if __name__ == '__main__':
     port = int(os.environ.get('FANTA_BACKEND_PORT', '5004'))
     print(f"[Bridge] Starting Fanta OFME Backend Bridge on 127.0.0.1:{port}")
-    socketio.run(app, host='127.0.0.1', port=port, debug=False, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='127.0.0.1', port=port, debug=False, log_output=False, allow_unsafe_werkzeug=True)

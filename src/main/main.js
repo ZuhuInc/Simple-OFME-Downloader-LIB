@@ -2,6 +2,12 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const https = require('https');
+const { autoUpdater } = require('electron-updater');
+
+// Configure autoUpdater settings (Notify only, download on user click)
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
 
 let mainWindow = null;
 let pythonProcess = null;
@@ -71,17 +77,225 @@ function isSourceMode() {
   return !app.isPackaged || process.env.NODE_ENV === 'development' || Boolean(process.defaultApp);
 }
 
+function isPortable() {
+  return Boolean(process.env.PORTABLE_EXECUTABLE_DIR || process.env.PORTABLE_EXECUTABLE_FILE);
+}
+
+function hasUpdateConfig() {
+  if (!app.isPackaged) return false;
+  const updateYml = path.join(process.resourcesPath, 'app-update.yml');
+  return fs.existsSync(updateYml);
+}
+
+function cleanVersion(v) {
+  if (!v || typeof v !== 'string') return '0.0.0';
+  return v.trim().replace(/^[vV]/, '');
+}
+
+function isNewerVersion(remoteVer, currentVer) {
+  const r = cleanVersion(remoteVer).split('.').map(n => parseInt(n, 10) || 0);
+  const c = cleanVersion(currentVer).split('.').map(n => parseInt(n, 10) || 0);
+
+  for (let i = 0; i < Math.max(r.length, c.length); i++) {
+    const rNum = r[i] || 0;
+    const cNum = c[i] || 0;
+    if (rNum > cNum) return true;
+    if (rNum < cNum) return false;
+  }
+  return false;
+}
+
+function checkGitHubRelease() {
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: '/repos/ZuhuInc/Simple-OFME-Downloader-LIB/releases/latest',
+      headers: {
+        'User-Agent': 'Fanta-OFME-Downloader'
+      }
+    };
+
+    const req = https.get(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            const release = JSON.parse(data);
+            const rawTag = release.tag_name || '';
+            const cleanedTag = cleanVersion(rawTag);
+            const currentVer = app.getVersion();
+            if (isNewerVersion(cleanedTag, currentVer)) {
+              resolve({
+                status: 'update-available',
+                version: cleanedTag,
+                releaseUrl: release.html_url || 'https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases',
+                releaseNotes: release.body || ''
+              });
+            } else {
+              resolve({ status: 'up-to-date', version: currentVer });
+            }
+          } catch (e) {
+            resolve({ status: 'up-to-date', version: app.getVersion() });
+          }
+        } else if (res.statusCode === 404) {
+          resolve({ status: 'no-release', version: app.getVersion() });
+        } else {
+          resolve({ status: 'up-to-date', version: app.getVersion() });
+        }
+      });
+    });
+
+    req.on('error', () => {
+      resolve({ status: 'up-to-date', version: app.getVersion() });
+    });
+  });
+}
+
+function setupAutoUpdater() {
+  if (!app.isPackaged) {
+    console.log('[AutoUpdater] Development/source mode detected: Auto-update checks disabled.');
+    return;
+  }
+
+  if (!hasUpdateConfig()) {
+    console.log('[AutoUpdater] Standalone portable mode: Checking GitHub releases via API...');
+    setTimeout(async () => {
+      const releaseInfo = await checkGitHubRelease();
+      if (releaseInfo.status === 'update-available') {
+        broadcastLog(`[AutoUpdater] New release available on GitHub: v${releaseInfo.version}!`, 'success');
+        if (mainWindow && mainWindow.webContents) {
+          mainWindow.webContents.send('updater-event', {
+            type: 'portable-available',
+            version: releaseInfo.version,
+            releaseUrl: releaseInfo.releaseUrl
+          });
+        }
+      }
+    }, 5000);
+    return;
+  }
+
+  autoUpdater.on('checking-for-update', () => {
+    broadcastLog('[AutoUpdater] Checking GitHub releases for updates...', 'info');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('updater-event', { type: 'checking' });
+    }
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    broadcastLog(`[AutoUpdater] New update found: v${info.version}! Waiting for user confirmation to download...`, 'info');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('updater-event', {
+        type: 'available',
+        version: info.version,
+        releaseDate: info.releaseDate,
+        releaseNotes: info.releaseNotes
+      });
+    }
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    broadcastLog(`[AutoUpdater] Current version (v${app.getVersion()}) is up-to-date.`, 'info');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('updater-event', {
+        type: 'not-available',
+        version: app.getVersion()
+      });
+    }
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    const percent = Math.floor(progressObj.percent || 0);
+    const speedMB = (progressObj.bytesPerSecond / (1024 * 1024)).toFixed(1);
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('updater-event', {
+        type: 'progress',
+        percent: percent,
+        speed: `${speedMB} MB/s`,
+        transferred: progressObj.transferred,
+        total: progressObj.total
+      });
+    }
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    broadcastLog(`[AutoUpdater] Update v${info.version} downloaded successfully and ready for install!`, 'success');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('updater-event', {
+        type: 'downloaded',
+        version: info.version
+      });
+    }
+  });
+
+  autoUpdater.on('error', (err) => {
+    const errText = err?.message || String(err);
+    console.error('[AutoUpdater] Error:', errText);
+    if (errText.includes('404') || errText.includes('HttpError: 404') || errText.includes('Cannot find latest') || errText.includes('ENOENT')) {
+      broadcastLog(`[AutoUpdater] GitHub release check: App is currently on latest v${app.getVersion()}.`, 'info');
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send('updater-event', {
+          type: 'not-available',
+          version: app.getVersion()
+        });
+      }
+    } else {
+      broadcastLog(`[AutoUpdater] Update check notice: ${errText}`, 'warning');
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send('updater-event', {
+          type: 'error',
+          message: errText
+        });
+      }
+    }
+  });
+
+  // Automatically check 5 seconds after startup
+  setTimeout(() => {
+    if (hasUpdateConfig()) {
+      autoUpdater.checkForUpdates().catch(err => {
+        console.warn('[AutoUpdater] Initial check notice:', err?.message || err);
+      });
+    }
+  }, 5000);
+}
+
+
 function startBackend() {
-  const backendScript = path.join(__dirname, '..', 'backend', 'bridge_server.py');
-  const pythonExe = findPythonPath();
   const sourceMode = isSourceMode();
-  const spawnMsg = `[Main] Spawning Python Backend (${pythonExe}, SourceMode=${sourceMode}): ${backendScript}`;
+  let pythonExe;
+  let args = [];
+  let cwd;
+
+  if (app.isPackaged) {
+    // Packaged production mode: Run frozen PyInstaller binary bundled in resources
+    const primaryBin = path.join(process.resourcesPath, 'backend', 'bridge_server', 'bridge_server.exe');
+    const fallbackBin = path.join(process.resourcesPath, 'bridge_server', 'bridge_server.exe');
+    if (fs.existsSync(primaryBin)) {
+      pythonExe = primaryBin;
+    } else if (fs.existsSync(fallbackBin)) {
+      pythonExe = fallbackBin;
+    } else {
+      pythonExe = path.join(__dirname, '..', '..', 'dist_backend', 'bridge_server', 'bridge_server.exe');
+    }
+    args = [];
+    cwd = path.dirname(pythonExe);
+  } else {
+    // Source development mode: Run Python interpreter with bridge_server.py
+    pythonExe = findPythonPath();
+    const backendScript = path.join(__dirname, '..', 'backend', 'bridge_server.py');
+    args = [backendScript];
+    cwd = path.join(__dirname, '..', '..');
+  }
+
+  const spawnMsg = `[Main] Spawning Backend (${app.isPackaged ? 'Frozen Binary' : 'Python Interpreter'}, SourceMode=${sourceMode}): ${pythonExe}`;
   console.log(spawnMsg);
   broadcastLog(spawnMsg, 'info');
 
   try {
-    pythonProcess = spawn(pythonExe, [backendScript], {
-      cwd: path.join(__dirname, '..', '..'),
+    pythonProcess = spawn(pythonExe, args, {
+      cwd: cwd,
       env: {
         ...process.env,
         PYTHONUNBUFFERED: '1',
@@ -103,6 +317,10 @@ function startBackend() {
       console.log(`[Python Backend] ${raw.trim()}`);
       raw.split(/\r?\n/).forEach(line => {
         if (line.trim()) {
+          // Suppress harmless Flask/WSGI server warnings from live UI console
+          if (line.includes('WARNING: This is a development server') || line.includes('WSGI server instead') || line.includes('allow_unsafe_werkzeug')) {
+            return;
+          }
           // Filter common HTTP request info from being treated as errors
           if (line.includes('HTTP/1.1" 200') || line.includes('HTTP/1.1" 304') || line.includes('Running on http://')) {
             broadcastLog(line, 'info');
@@ -251,10 +469,73 @@ ipcMain.handle('open-external', async (event, url) => {
 ipcMain.handle('get-app-version', () => app.getVersion());
 ipcMain.handle('get-initial-logs', () => logBuffer);
 ipcMain.handle('is-source-mode', () => isSourceMode());
+ipcMain.handle('is-portable', () => isPortable());
+
+// Auto-updater IPC handlers
+ipcMain.handle('check-for-updates', async () => {
+  if (!app.isPackaged) {
+    return { status: 'dev-mode', message: 'Auto-updater is inactive in source/development mode.' };
+  }
+  if (!hasUpdateConfig()) {
+    // Portable build: query GitHub API directly
+    try {
+      const releaseInfo = await checkGitHubRelease();
+      if (releaseInfo.status === 'update-available') {
+        return {
+          status: 'portable-update-available',
+          version: releaseInfo.version,
+          releaseUrl: releaseInfo.releaseUrl,
+          message: `New version v${releaseInfo.version} is available on GitHub!`
+        };
+      }
+      return {
+        status: 'up-to-date',
+        message: 'Your standalone version is currently on the latest release.'
+      };
+    } catch (e) {
+      return { status: 'up-to-date', message: 'Checked GitHub for updates.' };
+    }
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { status: 'success', updateInfo: result?.updateInfo };
+  } catch (err) {
+    const msg = err?.message || String(err);
+    if (msg.includes('404') || msg.includes('HttpError: 404') || msg.includes('Cannot find latest') || msg.includes('ENOENT')) {
+      return {
+        status: 'no-release',
+        message: 'No newer release published on GitHub yet (app is up to date).'
+      };
+    }
+    return { status: 'error', error: msg };
+  }
+});
+
+ipcMain.handle('start-download-update', async () => {
+  if (!app.isPackaged || !hasUpdateConfig()) {
+    return { status: 'error', message: 'Download updater is only active in the installed build.' };
+  }
+  try {
+    broadcastLog('[AutoUpdater] User triggered download: Fetching update package...', 'info');
+    await autoUpdater.downloadUpdate();
+    return { status: 'downloading' };
+  } catch (err) {
+    const msg = err?.message || String(err);
+    broadcastLog(`[AutoUpdater] Download failed: ${msg}`, 'warning');
+    return { status: 'error', error: msg };
+  }
+});
+
+ipcMain.handle('restart-and-install-update', () => {
+  // isSilent = true: Headless background install without wizard UI
+  // isForceRunAfter = true: Automatically relaunches the updated application in the same location
+  autoUpdater.quitAndInstall(true, true);
+});
 
 app.whenReady().then(() => {
   createWindow();
   startBackend();
+  setupAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

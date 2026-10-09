@@ -292,7 +292,12 @@ class DetailsController {
         if (type === 'fix') {
             if (this.setupTitle) this.setupTitle.textContent = 'Apply Multiplayer Fix';
             if (this.setupSubtitle) this.setupSubtitle.textContent = 'Confirm target game directory for online fix files.';
-            if (this.setupIcon) this.setupIcon.innerHTML = '<i class="fa-solid fa-wrench" style="color: #60a5fa;"></i>';
+            if (this.setupIcon) {
+                this.setupIcon.style.background = 'rgba(96, 165, 250, 0.15)';
+                this.setupIcon.style.border = '1px solid rgba(96, 165, 250, 0.35)';
+                this.setupIcon.style.color = '#60a5fa';
+                this.setupIcon.innerHTML = '<i class="fa-solid fa-wrench"></i>';
+            }
             if (this.setupActionBadge) {
                 this.setupActionBadge.className = 'status-pill';
                 this.setupActionBadge.style.cssText = 'font-size: 9px; padding: 2px 8px; background: rgba(96, 165, 250, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.35);';
@@ -313,7 +318,12 @@ class DetailsController {
             // Update Game
             if (this.setupTitle) this.setupTitle.textContent = 'Update Game';
             if (this.setupSubtitle) this.setupSubtitle.textContent = 'Confirm installation folder to update the game files.';
-            if (this.setupIcon) this.setupIcon.innerHTML = '<i class="fa-solid fa-arrows-rotate" style="color: var(--warning);"></i>';
+            if (this.setupIcon) {
+                this.setupIcon.style.background = 'rgba(245, 158, 11, 0.15)';
+                this.setupIcon.style.border = '1px solid rgba(245, 158, 11, 0.35)';
+                this.setupIcon.style.color = 'var(--warning)';
+                this.setupIcon.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
+            }
             if (this.setupActionBadge) {
                 this.setupActionBadge.className = 'status-pill status-update';
                 this.setupActionBadge.style.cssText = 'font-size: 9px; padding: 2px 8px;';
@@ -334,11 +344,16 @@ class DetailsController {
             // Re-download
             if (this.setupTitle) this.setupTitle.textContent = 'Re-download Game';
             if (this.setupSubtitle) this.setupSubtitle.textContent = 'Confirm target directory for re-installation.';
-            if (this.setupIcon) this.setupIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-down" style="color: var(--success);"></i>';
+            if (this.setupIcon) {
+                this.setupIcon.style.background = 'rgba(212, 168, 83, 0.15)';
+                this.setupIcon.style.border = '1px solid rgba(212, 168, 83, 0.35)';
+                this.setupIcon.style.color = 'var(--accent)';
+                this.setupIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i>';
+            }
             if (this.setupActionBadge) {
-                this.setupActionBadge.className = 'status-pill status-uptodate';
-                this.setupActionBadge.style.cssText = 'font-size: 9px; padding: 2px 8px;';
-                this.setupActionBadge.innerHTML = '<i class="fa-solid fa-check"></i> Re-download';
+                this.setupActionBadge.className = 'status-pill';
+                this.setupActionBadge.style.cssText = 'font-size: 9px; padding: 2px 8px; background: rgba(212, 168, 83, 0.15); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.35);';
+                this.setupActionBadge.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Re-download';
             }
             if (this.setupLocationLabel) this.setupLocationLabel.textContent = 'Installation Directory:';
 
@@ -355,7 +370,12 @@ class DetailsController {
             // New Installation
             if (this.setupTitle) this.setupTitle.textContent = 'Install Game';
             if (this.setupSubtitle) this.setupSubtitle.textContent = 'Choose the installation directory for this game.';
-            if (this.setupIcon) this.setupIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-down" style="color: var(--accent);"></i>';
+            if (this.setupIcon) {
+                this.setupIcon.style.background = 'rgba(212, 168, 83, 0.15)';
+                this.setupIcon.style.border = '1px solid rgba(212, 168, 83, 0.35)';
+                this.setupIcon.style.color = 'var(--accent)';
+                this.setupIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i>';
+            }
             if (this.setupActionBadge) {
                 this.setupActionBadge.className = 'status-pill';
                 this.setupActionBadge.style.cssText = 'font-size: 9px; padding: 2px 8px; background: rgba(212, 168, 83, 0.15); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.35);';

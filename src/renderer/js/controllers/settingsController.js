@@ -3,6 +3,11 @@
  * Handles configuration preferences (WinRAR, download directories, speed units), live config saves, and console logs.
  */
 
+function formatVersion(v) {
+    if (!v) return 'v2.0.0';
+    return 'v' + String(v).trim().replace(/^[vV]+/i, '');
+}
+
 class SettingsController {
     constructor() {
         this.settings = {};
@@ -18,12 +23,27 @@ class SettingsController {
         this.localDbPathInput = document.getElementById('set_local_db_path');
         this.saveBtn = document.getElementById('saveSettingsBtn');
         this.consoleFeed = document.getElementById('consoleLogFeed');
+
+        // Update UI elements
+        this.checkUpdatesBtn = document.getElementById('checkForUpdatesBtn');
+        this.startDownloadUpdateBtn = document.getElementById('startDownloadUpdateBtn');
+        this.restartInstallBtn = document.getElementById('restartAndInstallBtn');
+        this.updateStatusIcon = document.getElementById('updateStatusIcon');
+        this.updateStatusTitle = document.getElementById('updateStatusTitle');
+        this.updateStatusDesc = document.getElementById('updateStatusDesc');
+        this.updateProgressContainer = document.getElementById('updateProgressContainer');
+        this.updateProgressBar = document.getElementById('updateProgressBar');
+        this.updateProgressPercent = document.getElementById('updateProgressPercent');
+        this.updateProgressStatus = document.getElementById('updateProgressStatus');
+        this.updateVersionBadge = document.getElementById('updateAppVersionBadge');
     }
 
     init() {
         this.bindEvents();
         this.loadSettings();
         this.initLogListeners();
+        this.initUpdaterListeners();
+        this.loadAppVersion();
     }
 
     bindEvents() {
@@ -44,6 +64,27 @@ class SettingsController {
                 if (this.consoleFeed) {
                     this.consoleFeed.innerHTML = '';
                     this.appendLog('Console logs cleared', 'info');
+                }
+            });
+        }
+
+        // Auto-updater buttons
+        if (this.checkUpdatesBtn) {
+            this.checkUpdatesBtn.addEventListener('click', async () => {
+                await this.triggerUpdateCheck();
+            });
+        }
+
+        if (this.startDownloadUpdateBtn) {
+            this.startDownloadUpdateBtn.addEventListener('click', async () => {
+                await this.startUpdateDownload();
+            });
+        }
+
+        if (this.restartInstallBtn) {
+            this.restartInstallBtn.addEventListener('click', () => {
+                if (window.api?.restartAndInstallUpdate) {
+                    window.api.restartAndInstallUpdate();
                 }
             });
         }
@@ -266,6 +307,264 @@ class SettingsController {
         this.consoleFeed.appendChild(line);
         this.consoleFeed.scrollTop = this.consoleFeed.scrollHeight;
     }
+
+    async loadAppVersion() {
+        try {
+            const version = await window.api?.getAppVersion();
+            if (version) {
+                if (this.updateVersionBadge) {
+                    this.updateVersionBadge.textContent = `v${version}`;
+                }
+                const appVersionTags = document.querySelectorAll('.app-version-tag');
+                appVersionTags.forEach(el => el.textContent = `v${version}`);
+            }
+
+            const isPort = await window.api?.isPortable?.();
+            const isSrc = await window.api?.isSourceMode?.();
+            if (isSrc) {
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Development Mode';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Running directly from source code.';
+            } else if (isPort) {
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Standalone Portable Build';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Self-contained executable. Full background auto-updating is active in the NSIS Installer version.';
+            }
+        } catch (e) {
+            console.warn('[Settings] Failed to fetch app version:', e);
+        }
+    }
+
+    initUpdaterListeners() {
+        if (!window.api?.onUpdaterEvent) return;
+
+        window.api.onUpdaterEvent((evt) => {
+            this.handleUpdaterEvent(evt);
+        });
+    }
+
+    async triggerUpdateCheck() {
+        if (!this.checkUpdatesBtn) return;
+        this.checkUpdatesBtn.disabled = true;
+        this.checkUpdatesBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
+
+        try {
+            const res = await window.api?.checkForUpdates();
+            if (res?.status === 'dev-mode') {
+                window.uiController.showToast('Auto-updater is inactive in source/development mode.', 'info');
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Development Mode';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Running from source tree.';
+            } else if (res?.status === 'portable-update-available') {
+                const cleanV = formatVersion(res.version);
+                if (this.updateStatusIcon) {
+                    this.updateStatusIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-down fa-bounce" style="color: var(--accent);"></i>';
+                }
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = `New Release Available: ${cleanV}`;
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = `A newer standalone build is available on GitHub Releases.`;
+                window.uiController.showToast(
+                    `New release ${cleanV} available!`,
+                    'info',
+                    10000,
+                    {
+                        text: 'View Release',
+                        icon: 'fa-arrow-up-right-from-square',
+                        callback: () => {
+                            if (window.api?.openExternal && res.releaseUrl) {
+                                window.api.openExternal(res.releaseUrl);
+                            }
+                        }
+                    }
+                );
+            }
+ else if (res?.status === 'portable-mode') {
+                window.uiController.showToast('Checked GitHub for updates (app is up to date).', 'info');
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Up to Date';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Your standalone portable build is on the latest release.';
+            } else if (res?.status === 'no-release') {
+                window.uiController.showToast('Application is up to date (no newer GitHub releases found).', 'info');
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Up to Date';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'No newer releases published on GitHub repository yet.';
+            } else if (res?.status === 'up-to-date') {
+                window.uiController.showToast('Application is up to date.', 'info');
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Up to Date';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = res.message || 'You are running the latest release.';
+            } else if (res?.status === 'error') {
+                window.uiController.showToast(`Update check notice: ${res.error}`, 'warning');
+            } else if (res?.status === 'success') {
+                window.uiController.showToast('Checked GitHub for updates.', 'info');
+            }
+        } catch (err) {
+            window.uiController.showToast(`Update notice: ${err.message}`, 'warning');
+        } finally {
+            setTimeout(() => {
+                if (this.checkUpdatesBtn) {
+                    this.checkUpdatesBtn.disabled = false;
+                    this.checkUpdatesBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Check for Updates';
+                }
+            }, 2000);
+        }
+    }
+
+    async startUpdateDownload() {
+        if (this.startDownloadUpdateBtn) {
+            this.startDownloadUpdateBtn.disabled = true;
+            this.startDownloadUpdateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Starting Download...';
+        }
+        if (this.updateProgressContainer) {
+            this.updateProgressContainer.style.display = 'flex';
+        }
+        if (this.updateStatusDesc) {
+            this.updateStatusDesc.textContent = 'Downloading update package in background...';
+        }
+        try {
+            window.uiController.showToast('Starting update download...', 'info');
+            const res = await window.api?.startDownloadUpdate?.();
+            if (res?.status === 'error') {
+                window.uiController.showToast(`Update download notice: ${res.error || res.message}`, 'warning');
+                if (this.startDownloadUpdateBtn) {
+                    this.startDownloadUpdateBtn.disabled = false;
+                    this.startDownloadUpdateBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> Download Update';
+                }
+            }
+        } catch (err) {
+            window.uiController.showToast(`Download error: ${err.message}`, 'danger');
+            if (this.startDownloadUpdateBtn) {
+                this.startDownloadUpdateBtn.disabled = false;
+                this.startDownloadUpdateBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> Download Update';
+            }
+        }
+    }
+
+    handleUpdaterEvent(evt) {
+        if (!evt) return;
+
+        switch (evt.type) {
+            case 'checking':
+                if (this.updateStatusIcon) {
+                    this.updateStatusIcon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                }
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Checking for updates...';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Contacting GitHub releases repository...';
+                break;
+
+            case 'portable-available':
+                const cleanPortV = formatVersion(evt.version);
+                if (this.updateStatusIcon) {
+                    this.updateStatusIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-down fa-bounce" style="color: var(--accent);"></i>';
+                }
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = `New Release Available: ${cleanPortV}`;
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'A newer version has been released on GitHub.';
+                window.uiController.showToast(
+                    `Fanta OFME ${cleanPortV} is now available on GitHub!`,
+                    'info',
+                    15000,
+                    {
+                        text: 'View Release',
+                        icon: 'fa-arrow-up-right-from-square',
+                        callback: () => {
+                            if (window.api?.openExternal && evt.releaseUrl) {
+                                window.api.openExternal(evt.releaseUrl);
+                            }
+                        }
+                    }
+                );
+                break;
+
+            case 'available':
+                const cleanAvailV = formatVersion(evt.version);
+                if (this.updateStatusIcon) {
+                    this.updateStatusIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-down fa-bounce" style="color: var(--accent);"></i>';
+                }
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = `New Update Available: ${cleanAvailV}`;
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = `Version ${cleanAvailV} is ready. Click "Download Update" to start downloading.`;
+                if (this.startDownloadUpdateBtn) {
+                    this.startDownloadUpdateBtn.disabled = false;
+                    this.startDownloadUpdateBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> Download Update';
+                    this.startDownloadUpdateBtn.style.display = 'inline-flex';
+                }
+                if (this.restartInstallBtn) this.restartInstallBtn.style.display = 'none';
+                if (this.updateProgressContainer) this.updateProgressContainer.style.display = 'none';
+
+                // Prominent notification with direct action button to download
+                window.uiController.showToast(
+                    `Update ${cleanAvailV} is available!`,
+                    'info',
+                    15000,
+                    {
+                        text: 'Update Now',
+                        icon: 'fa-cloud-arrow-down',
+                        callback: async () => {
+                            await this.startUpdateDownload();
+                        }
+                    }
+                );
+                break;
+
+            case 'not-available':
+                const cleanNotAvailV = formatVersion(evt.version);
+                if (this.updateStatusIcon) {
+                    this.updateStatusIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                }
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Up to Date';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = `You are running the latest release (${cleanNotAvailV}).`;
+                if (this.updateProgressContainer) this.updateProgressContainer.style.display = 'none';
+                if (this.startDownloadUpdateBtn) this.startDownloadUpdateBtn.style.display = 'none';
+                if (this.restartInstallBtn) this.restartInstallBtn.style.display = 'none';
+                break;
+
+            case 'progress':
+                if (this.updateProgressContainer) this.updateProgressContainer.style.display = 'flex';
+                if (this.updateProgressBar) this.updateProgressBar.style.width = `${evt.percent}%`;
+                if (this.updateProgressPercent) this.updateProgressPercent.textContent = `${evt.percent}% (${evt.speed})`;
+                if (this.updateProgressStatus) this.updateProgressStatus.textContent = `Downloading update (${evt.percent}%)...`;
+                if (this.startDownloadUpdateBtn) {
+                    this.startDownloadUpdateBtn.style.display = 'inline-flex';
+                    this.startDownloadUpdateBtn.disabled = true;
+                    this.startDownloadUpdateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Downloading (${evt.percent}%)...`;
+                }
+                break;
+
+            case 'downloaded':
+                const cleanDownV = formatVersion(evt.version);
+                if (this.updateStatusIcon) {
+                    this.updateStatusIcon.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #2ecc71;"></i>';
+                }
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = `Update ${cleanDownV} Ready!`;
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Download completed. Restart application now to install.';
+                if (this.updateProgressContainer) this.updateProgressContainer.style.display = 'none';
+                if (this.startDownloadUpdateBtn) this.startDownloadUpdateBtn.style.display = 'none';
+                if (this.restartInstallBtn) this.restartInstallBtn.style.display = 'inline-flex';
+
+                // Prominent Toast with 1-click Restart
+                window.uiController.showToast(
+                    `Update ${cleanDownV} downloaded! Restart now to apply.`,
+                    'success',
+                    20000,
+                    {
+                        text: 'Restart & Apply',
+                        icon: 'fa-bolt',
+                        callback: () => {
+                            if (window.api?.restartAndInstallUpdate) {
+                                window.api.restartAndInstallUpdate();
+                            }
+                        }
+                    }
+                );
+                break;
+
+            case 'error':
+                if (this.updateStatusIcon) {
+                    this.updateStatusIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #ff6b6b;"></i>';
+                }
+                if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Update Check Notice';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = evt.message || 'Unable to check for updates.';
+                if (this.updateProgressContainer) this.updateProgressContainer.style.display = 'none';
+                if (this.startDownloadUpdateBtn) {
+                    this.startDownloadUpdateBtn.disabled = false;
+                    this.startDownloadUpdateBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> Download Update';
+                }
+                break;
+        }
+    }
 }
 
 window.settingsController = new SettingsController();
+
