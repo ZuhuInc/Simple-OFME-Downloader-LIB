@@ -10,6 +10,8 @@ import sys
 import struct
 import zlib
 import shutil
+import subprocess
+import time
 from typing import List, Dict, Any, Optional
 
 try:
@@ -659,3 +661,61 @@ class SteamManager:
                     except Exception:
                         continue
         return games
+
+    def is_steam_running(self) -> bool:
+        """Checks if steam.exe is currently running."""
+        if sys.platform == "win32":
+            try:
+                output = subprocess.check_output(
+                    ['tasklist', '/FI', 'IMAGENAME eq steam.exe', '/NH'],
+                    shell=True,
+                    text=True,
+                    stderr=subprocess.DEVNULL
+                )
+                return "steam.exe" in output.lower()
+            except Exception:
+                return False
+        return False
+
+    def restart_steam(self) -> Dict[str, Any]:
+        """Gracefully shuts down Steam and restarts it so that shortcuts.vdf is reloaded."""
+        steam_exe = None
+        if self.steam_path and os.path.exists(os.path.join(self.steam_path, "steam.exe")):
+            steam_exe = os.path.join(self.steam_path, "steam.exe")
+        else:
+            steam_exe = "steam.exe"
+
+        was_running = self.is_steam_running()
+        if was_running:
+            print("[Steam] Gracefully requesting Steam shutdown via -shutdown...")
+            try:
+                subprocess.run([steam_exe, "-shutdown"], capture_output=True, timeout=5)
+            except Exception as e:
+                print(f"[Steam] Warning during -shutdown trigger: {e}")
+
+            # Wait up to 6 seconds for steam to close cleanly
+            for _ in range(12):
+                time.sleep(0.5)
+                if not self.is_steam_running():
+                    break
+            else:
+                try:
+                    subprocess.run(["taskkill", "/IM", "steam.exe"], capture_output=True, timeout=3)
+                    time.sleep(1)
+                except Exception:
+                    pass
+
+        # Relaunch Steam
+        try:
+            print(f"[Steam] Launching Steam: {steam_exe}")
+            if sys.platform == "win32":
+                DETACHED_PROCESS = 0x00000008
+                subprocess.Popen([steam_exe], creationflags=DETACHED_PROCESS, close_fds=True)
+            else:
+                subprocess.Popen([steam_exe])
+            return {
+                "success": True,
+                "message": "Steam was restarted successfully. Your updated library shortcuts are now active!"
+            }
+        except Exception as e:
+            return {"success": False, "error": f"Failed to launch Steam: {e}"}

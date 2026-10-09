@@ -18,5 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.settingsController) window.settingsController.init();
     if (window.addGameController) window.addGameController.init();
 
+    // Initialize 1:1 Custom Glass Dropdowns
+    if (window.CustomSelect) window.CustomSelect.initAll();
+
     console.log('[Fanta OFME] All controllers initialized.');
 });

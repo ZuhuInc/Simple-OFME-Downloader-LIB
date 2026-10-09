@@ -56,7 +56,7 @@ class UIController {
         if (closeBtn) closeBtn.addEventListener('click', () => api.closeWindow && api.closeWindow());
     }
 
-    showToast(message, type = 'info', duration = 3500) {
+    showToast(message, type = 'info', duration = 3500, action = null) {
         if (!this.toastContainer) return;
 
         const toast = document.createElement('div');
@@ -67,10 +67,29 @@ class UIController {
         if (type === 'danger') icon = 'fa-triangle-exclamation';
         if (type === 'warning') icon = 'fa-circle-exclamation';
 
+        let actionHtml = '';
+        if (action && action.text) {
+            const actionIcon = action.icon ? `<i class="fa-solid ${action.icon}" style="margin-right: 4px;"></i>` : '';
+            actionHtml = `<button class="toast-action-btn">${actionIcon}${action.text}</button>`;
+        }
+
         toast.innerHTML = `
             <i class="fa-solid ${icon}"></i>
-            <span>${message}</span>
+            <span style="flex: 1;">${message}</span>
+            ${actionHtml}
         `;
+
+        if (action && action.callback) {
+            const btn = toast.querySelector('.toast-action-btn');
+            if (btn) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    action.callback();
+                    toast.classList.remove('visible');
+                    setTimeout(() => toast.remove(), 250);
+                });
+            }
+        }
 
         this.toastContainer.appendChild(toast);
 
@@ -79,8 +98,10 @@ class UIController {
 
         // Remove
         setTimeout(() => {
-            toast.classList.remove('visible');
-            setTimeout(() => toast.remove(), 300);
+            if (toast.parentElement) {
+                toast.classList.remove('visible');
+                setTimeout(() => toast.remove(), 300);
+            }
         }, duration);
     }
 

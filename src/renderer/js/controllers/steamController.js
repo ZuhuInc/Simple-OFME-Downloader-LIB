@@ -27,8 +27,8 @@ class SteamController {
         this.accountSelect = document.getElementById('steamAccountSelect');
         this.tableBody = document.getElementById('steamShortcutsTableBody');
         this.searchInput = document.getElementById('steamShortcutSearchInput');
-        this.totalText = document.getElementById('steamShortcutTotalText');
         this.rescanBtn = document.getElementById('rescanSteamBtn');
+        this.restartSteamBtn = document.getElementById('restartSteamBtn');
         this.openAddBtn = document.getElementById('openAddManualShortcutBtn');
         this.filterFantaBtn = document.getElementById('steamFilterFantaBtn');
         this.filterAllBtn = document.getElementById('steamFilterAllBtn');
@@ -67,6 +67,10 @@ class SteamController {
         }
 
         // Toolbar Events
+        if (this.restartSteamBtn) {
+            this.restartSteamBtn.addEventListener('click', () => this.restartSteam());
+        }
+
         if (this.rescanBtn) {
             this.rescanBtn.addEventListener('click', () => this.rescan());
         }
@@ -447,6 +451,20 @@ class SteamController {
         }
     }
 
+    async restartSteam() {
+        try {
+            window.uiController.showToast('Gracefully restarting Steam to reload library...', 'info', 4000);
+            const res = await window.apiClient.restartSteam();
+            if (res.success) {
+                window.uiController.showToast(res.message || 'Steam restarted successfully!', 'success');
+            } else {
+                window.uiController.showToast(res.error || 'Failed to restart Steam.', 'danger');
+            }
+        } catch (err) {
+            window.uiController.showToast(`Error restarting Steam: ${err.message}`, 'danger');
+        }
+    }
+
     async deleteShortcut(appid, name) {
         if (!appid && !name) return;
         
@@ -459,7 +477,11 @@ class SteamController {
             });
 
             if (res.success) {
-                window.uiController.showToast(`Removed "${name}" from Steam!`, 'success');
+                window.uiController.showToast(`Removed "${name}" from Steam!`, 'success', 6000, {
+                    text: 'Restart Steam',
+                    icon: 'fa-rotate',
+                    callback: () => this.restartSteam()
+                });
                 // Remove from local array
                 this.shortcuts = this.shortcuts.filter(s => String(s.appid) !== String(appid) && s.name !== name);
                 if (this.shortcutsCountEl) {
@@ -525,8 +547,38 @@ class SteamController {
             });
 
             if (res.success) {
-                window.uiController.showToast(`"${title}" added to Steam shortcuts!`, 'success');
+                window.uiController.showToast(
+                    `"${title}" added to Steam!`,
+                    'success',
+                    7000,
+                    {
+                        text: 'Restart Steam',
+                        icon: 'fa-rotate',
+                        callback: () => this.restartSteam()
+                    }
+                );
                 this.closeModal();
+
+                // Update details controller if active
+                if (window.detailsController?.currentGame) {
+                    const curr = window.detailsController.currentGame;
+                    if (curr.title?.toLowerCase() === title.toLowerCase() || curr.id === this.activeGame?.id) {
+                        curr.steam_url = res.steam_url;
+                        if (window.detailsController.addSteamBtn) {
+                            window.detailsController.addSteamBtn.innerHTML = '<i class="fa-brands fa-steam"></i> Play on Steam';
+                            window.detailsController.addSteamBtn.title = 'Launch via Steam shortcut';
+                        }
+                    }
+                }
+
+                // Update game in libraryController list if present
+                if (window.libraryController?.games) {
+                    const match = window.libraryController.games.find(g => g.title?.toLowerCase() === title.toLowerCase());
+                    if (match) {
+                        match.steam_url = res.steam_url;
+                    }
+                }
+
                 await this.loadShortcuts(this.activeAccountId);
             } else {
                 window.uiController.showToast(res.error || res.message || 'Failed to add shortcut', 'danger');

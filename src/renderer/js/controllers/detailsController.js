@@ -450,7 +450,13 @@ class DetailsController {
         if (!this.currentGame) return;
         if (this.currentGame.steam_url) {
             window.uiController.showToast(`Launching ${this.currentGame.title} on Steam...`, 'info');
-            window.apiClient.openUrl(this.currentGame.steam_url);
+            if (window.api && window.api.openExternal) {
+                window.api.openExternal(this.currentGame.steam_url);
+            } else if (window.apiClient && window.apiClient.openExternalUrl) {
+                window.apiClient.openExternalUrl(this.currentGame.steam_url);
+            } else {
+                window.open(this.currentGame.steam_url);
+            }
         } else {
             window.steamController.openAddShortcutDialog(this.currentGame);
         }

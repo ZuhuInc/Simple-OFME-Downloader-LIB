@@ -166,6 +166,11 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
             "total_shortcuts": len(shortcuts)
         })
 
+    @bp.route('/restart', methods=['POST'])
+    def restart_steam():
+        res = steam_manager.restart_steam()
+        return jsonify(res)
+
     @bp.route('/libraries', methods=['GET'])
     def get_steam_libraries():
         return jsonify({

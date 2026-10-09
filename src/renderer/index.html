@@ -234,6 +234,7 @@
                         <p style="font-size: 12px; color: var(--text-muted); margin: 0;">View active Steam profile, inspect registered non-Steam shortcuts, and manage library injection.</p>
                     </div>
                     <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="restartSteamBtn" class="btn btn-secondary" title="Gracefully restart Steam client to reload shortcuts.vdf"><i class="fa-brands fa-steam" style="color: #60a5fa;"></i> Restart Steam</button>
                         <button id="rescanSteamBtn" class="btn btn-secondary" title="Re-scan Steam profiles and shortcuts"><i class="fa-solid fa-rotate"></i> Re-scan</button>
                         <button id="openAddManualShortcutBtn" class="btn btn-primary" title="Add a custom game shortcut to Steam"><i class="fa-solid fa-plus"></i> Add Shortcut</button>
                     </div>
@@ -266,7 +267,7 @@
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <div style="display: flex; flex-direction: column; gap: 4px;">
                                 <label style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Switch Steam Account:</label>
-                                <select id="steamAccountSelect" class="form-input" style="min-width: 220px; font-size: 12px; padding: 7px 12px; cursor: pointer;">
+                                <select id="steamAccountSelect" class="select-dropdown" style="min-width: 240px; font-size: 12px; cursor: pointer;">
                                     <!-- Dynamically populated -->
                                 </select>
                             </div>
@@ -488,9 +489,9 @@
                 <img id="detailsCoverImg" class="details-cover" src="assets/OFME-DWND-ICO.ico" alt="Cover" onerror="this.src='assets/OFME-DWND-ICO.ico'">
                 
                 <div class="details-info-pane">
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                            <h2 id="detailsTitle" style="font-size: 18px; font-weight: 700; color: #fff;">Game Title</h2>
+                    <div class="details-header-section">
+                        <div class="details-title-row">
+                            <h2 id="detailsTitle" class="details-title">Game Title</h2>
                             <span id="detailsStatus" class="status-pill status-missing">Not Installed</span>
                         </div>
                         <p id="detailsDescription" class="details-desc">Game description will appear here.</p>
@@ -707,7 +708,7 @@
                 <div class="assisted-form-grid">
                     <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
                         <label class="form-label">Mirror Hosting</label>
-                        <select id="assistedHostSelect" class="form-input" style="cursor: pointer;">
+                        <select id="assistedHostSelect" class="select-dropdown" style="width: 100%; cursor: pointer;">
                             <option value="GoFile">GoFile</option>
                             <option value="VikingFile">VikingFile</option>
                             <option value="Pixeldrain">Pixeldrain</option>
@@ -930,6 +931,7 @@
 
     <!-- Controller Scripts -->
     <script src="js/api.js"></script>
+    <script src="js/customSelect.js"></script>
     <script src="js/controllers/libraryController.js"></script>
     <script src="js/controllers/detailsController.js"></script>
     <script src="js/controllers/downloadController.js"></script>

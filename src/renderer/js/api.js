@@ -132,6 +132,7 @@ class ApiClient {
     addSteamShortcut(data) { return this.request('/api/steam/shortcuts/add', { method: 'POST', body: data }); }
     deleteSteamShortcut(payload) { return this.request('/api/steam/shortcuts/delete', { method: 'POST', body: payload }); }
     rescanSteam() { return this.request('/api/steam/rescan', { method: 'POST' }); }
+    restartSteam() { return this.request('/api/steam/restart', { method: 'POST' }); }
 
     // Version Checker
     getVersionCheckStatus() { return this.request('/api/version-check/status'); }
