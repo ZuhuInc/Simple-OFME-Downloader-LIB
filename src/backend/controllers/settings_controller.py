@@ -16,13 +16,19 @@ def create_settings_blueprint(config, extractor, steam_manager, db_manager, down
             "version": "2.0.0",
             "winrar_installed": extractor.is_winrar_available(),
             "steam_detected": bool(steam_manager.steam_path),
-            "total_games": len(db_manager.games)
+            "total_games": len(db_manager.games),
+            "is_source_mode": config.is_source_mode(),
+            "use_local_db": bool(config.get("use_local_db", False)),
+            "local_db_path": db_manager.get_active_db_path()
         })
 
     @bp.route('/settings', methods=['GET', 'POST'])
     def handle_settings():
         if request.method == 'POST':
             new_settings = request.get_json() or {}
+            old_use_local = config.get("use_local_db")
+            old_local_path = config.get("local_db_path")
+            
             config.update(new_settings)
             
             # Update live managers
@@ -36,6 +42,11 @@ def create_settings_blueprint(config, extractor, steam_manager, db_manager, down
                 version_checker.webhook_url = config.get("webhook_url", "")
             if hasattr(version_checker, 'enable_notifications'):
                 version_checker.enable_notifications = config.get("enable_notifications", True)
+
+            # Reload database if database path or mode was changed
+            if ('use_local_db' in new_settings and new_settings['use_local_db'] != old_use_local) or \
+               ('local_db_path' in new_settings and new_settings['local_db_path'] != old_local_path):
+                db_manager.fetch_and_load(force_refresh=True, installed_data=config.data)
 
             return jsonify({"success": True, "settings": config.to_dict()})
 

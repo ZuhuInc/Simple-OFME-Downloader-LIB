@@ -156,4 +156,43 @@ def create_games_blueprint(db_manager, config):
 
         return jsonify({"success": True, "message": "No Steam shortcut link was found for this title"})
 
+    @bp.route('/add', methods=['POST'])
+    def add_game():
+        data = request.get_json(silent=True) or {}
+        title = (data.get('title') or data.get('name') or '').strip()
+        if not title:
+            return jsonify({"success": False, "error": "Game title is required."}), 400
+
+        try:
+            entry = db_manager.add_or_update_game(data, installed_data=config.data)
+            return jsonify({
+                "success": True,
+                "message": f"Successfully added '{title}' to Data.json!",
+                "game": entry.to_dict()
+            })
+        except Exception as e:
+            print(f"[GamesController] Error adding game: {e}")
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @bp.route('/scrape-info', methods=['POST'])
+    def scrape_game_info():
+        from ..scraper_service import OnlineFixScraper
+        data = request.get_json(silent=True) or {}
+        url = (data.get('url') or data.get('origin_url') or '').strip()
+        host = data.get('preferred_host') or 'GoFile'
+
+        if not url:
+            return jsonify({"success": False, "error": "URL is required for scraping."}), 400
+
+        try:
+            scraper = OnlineFixScraper(
+                username=config.get("ofme_username", ""),
+                password=config.get("ofme_password", "")
+            )
+            scraped = scraper.scrape_game_page(url, preferred_host=host)
+            return jsonify(scraped)
+        except Exception as e:
+            print(f"[GamesController] Scrape info error: {e}")
+            return jsonify({"success": False, "error": str(e)}), 500
+
     return bp

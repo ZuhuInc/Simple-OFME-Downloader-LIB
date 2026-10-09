@@ -40,7 +40,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Initialize Core Services
 config = Config()
-db_manager = DatabaseManager(cache_dir=config.cache_folder, default_url=config.get("db_url"))
+db_manager = DatabaseManager(cache_dir=config.cache_folder, default_url=config.get("db_url"), config=config)
 downloader = Downloader(
     download_path=config.get("download_path"),
     max_concurrency=int(config.get("concurrent_downloads", 2))

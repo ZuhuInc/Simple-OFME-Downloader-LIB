@@ -67,17 +67,27 @@ function broadcastLog(text, customLevel = null) {
   }
 }
 
+function isSourceMode() {
+  return !app.isPackaged || process.env.NODE_ENV === 'development' || Boolean(process.defaultApp);
+}
+
 function startBackend() {
   const backendScript = path.join(__dirname, '..', 'backend', 'bridge_server.py');
   const pythonExe = findPythonPath();
-  const spawnMsg = `[Main] Spawning Python Backend (${pythonExe}): ${backendScript}`;
+  const sourceMode = isSourceMode();
+  const spawnMsg = `[Main] Spawning Python Backend (${pythonExe}, SourceMode=${sourceMode}): ${backendScript}`;
   console.log(spawnMsg);
   broadcastLog(spawnMsg, 'info');
 
   try {
     pythonProcess = spawn(pythonExe, [backendScript], {
       cwd: path.join(__dirname, '..', '..'),
-      env: { ...process.env, PYTHONUNBUFFERED: '1', FANTA_BACKEND_PORT: '5004' }
+      env: {
+        ...process.env,
+        PYTHONUNBUFFERED: '1',
+        FANTA_BACKEND_PORT: '5004',
+        FANTA_SOURCE_MODE: sourceMode ? '1' : '0'
+      }
     });
 
     pythonProcess.stdout.on('data', (data) => {
@@ -215,6 +225,7 @@ ipcMain.handle('open-external', async (event, url) => {
 
 ipcMain.handle('get-app-version', () => app.getVersion());
 ipcMain.handle('get-initial-logs', () => logBuffer);
+ipcMain.handle('is-source-mode', () => isSourceMode());
 
 app.whenReady().then(() => {
   createWindow();

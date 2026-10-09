@@ -118,14 +118,26 @@ class GameEntry:
 
 
 class DatabaseManager:
-    def __init__(self, cache_dir: str, default_url: str):
+    def __init__(self, cache_dir: str, default_url: str, config: Optional[Any] = None):
         self.cache_dir = cache_dir
         self.default_url = default_url
+        self.config = config
+        self.bundled_json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "Data.json"))
         self.local_json_path = os.path.join(cache_dir, "Data.json")
         self.local_txt_path = os.path.join(cache_dir, "Download-DB.txt")
         self.games: List[GameEntry] = []
         self.hosts: List[str] = []
         self.last_updated: float = 0.0
+
+    def get_active_db_path(self) -> str:
+        """Returns the active file path for Data.json based on configuration."""
+        if self.config:
+            custom_path = self.config.get("local_db_path")
+            if custom_path:
+                return custom_path
+        if os.path.exists(self.bundled_json_path):
+            return self.bundled_json_path
+        return self.local_json_path
 
     def fetch_and_load(
         self,
@@ -133,54 +145,75 @@ class DatabaseManager:
         force_refresh: bool = False,
         installed_data: Optional[Dict[str, Any]] = None
     ) -> List[GameEntry]:
-        target_url = url or self.default_url
+        target_url = url or (self.config.get("db_url") if self.config else self.default_url)
         raw_content = ""
 
-        # 1. Check local cached Data.json
-        if not force_refresh and os.path.exists(self.local_json_path):
-            file_age = time.time() - os.path.getmtime(self.local_json_path)
-            if file_age < 7200:
+        # 0. Check if Local DB mode is enabled or explicitly requested
+        use_local = False
+        if url == "local":
+            use_local = True
+        elif self.config:
+            use_local = bool(self.config.get("use_local_db", False))
+
+        if use_local:
+            local_path = self.get_active_db_path()
+            if os.path.exists(local_path):
+                print(f"[Database] Loading from Local Database: {local_path}")
+                try:
+                    with open(local_path, "r", encoding="utf-8", errors="ignore") as f:
+                        raw_content = f.read()
+                except Exception as e:
+                    print(f"[Database] Local DB read error ({local_path}): {e}")
+        else:
+            # Remote / GitHub Mode
+            # 1. Fetch remote if forced or if cache does not exist / is stale
+            should_fetch = force_refresh or not os.path.exists(self.local_json_path)
+            if not should_fetch and os.path.exists(self.local_json_path):
+                file_age = time.time() - os.path.getmtime(self.local_json_path)
+                if file_age >= 7200:
+                    should_fetch = True
+
+            if should_fetch and target_url and target_url != "local":
+                try:
+                    print(f"[Database] Fetching remote database from GitHub: {target_url}...")
+                    resp = requests.get(target_url, timeout=10)
+                    resp.raise_for_status()
+                    raw_content = resp.text
+                    os.makedirs(self.cache_dir, exist_ok=True)
+                    save_path = self.local_json_path if raw_content.strip().startswith(("{", "[")) else self.local_txt_path
+                    with open(save_path, "w", encoding="utf-8", errors="ignore") as f:
+                        f.write(raw_content)
+                    print(f"[Database] Cached {len(raw_content)} bytes from remote GitHub database")
+                except Exception as e:
+                    print(f"[Database] Remote fetch failed ({e}). Falling back to local cache / bundled Data.json.")
+
+            # 2. Read from cached file if not yet loaded
+            if not raw_content and os.path.exists(self.local_json_path):
                 try:
                     with open(self.local_json_path, "r", encoding="utf-8", errors="ignore") as f:
                         raw_content = f.read()
                 except Exception as e:
                     print(f"[Database] Cache JSON read error: {e}")
 
-        # 2. Fetch remote if not loaded
-        if not raw_content and target_url:
-            try:
-                print(f"[Database] Fetching database from {target_url}...")
-                resp = requests.get(target_url, timeout=8)
-                resp.raise_for_status()
-                raw_content = resp.text
-                os.makedirs(self.cache_dir, exist_ok=True)
-                save_path = self.local_json_path if raw_content.strip().startswith(("{", "[")) else self.local_txt_path
-                with open(save_path, "w", encoding="utf-8", errors="ignore") as f:
-                    f.write(raw_content)
-            except Exception as e:
-                print(f"[Database] Remote fetch failed ({e}). Falling back to bundled Data.json.")
-
-        # 3. Check bundled Data.json in backend package
-        if not raw_content:
-            bundled_json = os.path.join(os.path.dirname(__file__), "data", "Data.json")
-            if os.path.exists(bundled_json):
-                print(f"[Database] Loading bundled JSON database from {bundled_json}")
+            # 3. Fallback to bundled Data.json
+            if not raw_content and os.path.exists(self.bundled_json_path):
+                print(f"[Database] Loading bundled JSON database from {self.bundled_json_path}")
                 try:
-                    with open(bundled_json, "r", encoding="utf-8", errors="ignore") as f:
+                    with open(self.bundled_json_path, "r", encoding="utf-8", errors="ignore") as f:
                         raw_content = f.read()
                 except Exception as be:
                     print(f"[Database] Bundled JSON read error: {be}")
 
-        # 4. Fallback to bundled Download-DB.txt
-        if not raw_content:
-            bundled_txt = os.path.join(os.path.dirname(__file__), "data", "Download-DB.txt")
-            if os.path.exists(bundled_txt):
-                print(f"[Database] Loading fallback text database from {bundled_txt}")
-                try:
-                    with open(bundled_txt, "r", encoding="utf-8", errors="ignore") as f:
-                        raw_content = f.read()
-                except Exception as be:
-                    print(f"[Database] Bundled TXT read error: {be}")
+            # 4. Fallback to bundled Download-DB.txt
+            if not raw_content:
+                bundled_txt = os.path.join(os.path.dirname(__file__), "data", "Download-DB.txt")
+                if os.path.exists(bundled_txt):
+                    print(f"[Database] Loading fallback text database from {bundled_txt}")
+                    try:
+                        with open(bundled_txt, "r", encoding="utf-8", errors="ignore") as f:
+                            raw_content = f.read()
+                    except Exception as be:
+                        print(f"[Database] Bundled TXT read error: {be}")
 
         if raw_content:
             self.games = self.parse_database(raw_content, installed_data)
@@ -188,6 +221,80 @@ class DatabaseManager:
             self.last_updated = time.time()
 
         return self.games
+
+    def add_or_update_game(
+        self,
+        game_dict: Dict[str, Any],
+        installed_data: Optional[Dict[str, Any]] = None
+    ) -> GameEntry:
+        """Adds a new game or updates an existing game in the local Data.json file."""
+        import json
+        title = str(game_dict.get("title") or game_dict.get("name") or "").strip()
+        if not title:
+            raise ValueError("Game title is required.")
+
+        # Clean parts list
+        raw_parts = game_dict.get("parts")
+        clean_parts: List[str] = []
+        if isinstance(raw_parts, list):
+            clean_parts = [str(p).strip() for p in raw_parts if p and str(p).strip().startswith("http")]
+        elif isinstance(raw_parts, str):
+            # Parse line by line or comma-separated
+            for line in re.split(r'[\r\n,]+', raw_parts):
+                part = line.strip()
+                if part.startswith("http"):
+                    clean_parts.append(part)
+
+        if not clean_parts and game_dict.get("main_game_url"):
+            main_url = str(game_dict.get("main_game_url")).strip()
+            if main_url.startswith("http"):
+                clean_parts.append(main_url)
+
+        entry_payload = {
+            "version": str(game_dict.get("version", "1.0")).strip() or "1.0",
+            "host": str(game_dict.get("host", "GoFile")).strip() or "GoFile",
+            "approx_size": str(game_dict.get("approx_size", "Unknown")).strip() or "Unknown",
+            "description": str(game_dict.get("description", "No description available.")).strip(),
+            "thumbnail": str(game_dict.get("thumbnail", "")).strip(),
+            "origin_url": str(game_dict.get("origin_url", "")).strip(),
+            "parts": clean_parts if clean_parts else [str(game_dict.get("download_url", "")).strip()] if game_dict.get("download_url") else [],
+            "fix_url": str(game_dict.get("fix_url", "")).strip(),
+            "category": str(game_dict.get("category", "General")).strip() or "General"
+        }
+
+        target_file = self.get_active_db_path()
+        current_data = {}
+
+        if os.path.exists(target_file):
+            try:
+                with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+                    loaded = json.load(f)
+                    if isinstance(loaded, dict):
+                        current_data = loaded
+            except Exception as e:
+                print(f"[Database] Warning reading {target_file}: {e}")
+
+        # Update or add game under exact title
+        current_data[title] = entry_payload
+
+        # Write formatted JSON back to file
+        os.makedirs(os.path.dirname(os.path.abspath(target_file)), exist_ok=True)
+        with open(target_file, "w", encoding="utf-8") as f:
+            json.dump(current_data, f, ensure_ascii=False, indent=4)
+
+        print(f"[Database] Saved '{title}' to {target_file}")
+
+        # Reload in-memory games list
+        self.games = self.parse_database(current_data, installed_data)
+        self.hosts = sorted(list({g.host for g in self.games if g.host}))
+        self.last_updated = time.time()
+
+        for g in self.games:
+            if g.title.lower() == title.lower():
+                return g
+
+        # Fallback return
+        return self.games[-1]
 
     @staticmethod
     def _normalize_key(s: str) -> str:

@@ -197,14 +197,22 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
         installed[game_title] = game_entry
         config.save_installed_games(installed)
 
-        # Sync db_manager in-memory list
-        for g in db_manager.games:
-            if g.title.lower() == game_title.lower():
-                g.version = game_entry.get('version', g.version)
-                g.host = game_entry.get('host', g.host)
-                g.parts = game_entry.get('parts', g.parts)
-                g.fix_url = game_entry.get('fix_url', g.fix_url)
-                g.approx_size = game_entry.get('approx_size', g.approx_size)
+        # Save to local Data.json file and sync in-memory list
+        try:
+            db_manager.add_or_update_game({
+                "title": game_title,
+                "version": game_entry.get('version'),
+                "host": game_entry.get('host'),
+                "parts": game_entry.get('parts'),
+                "fix_url": game_entry.get('fix_url'),
+                "approx_size": game_entry.get('approx_size'),
+                "description": game_entry.get('description'),
+                "thumbnail": game_entry.get('thumbnail'),
+                "origin_url": game_entry.get('origin_url'),
+                "category": game_entry.get('category')
+            }, installed_data=installed)
+        except Exception as de:
+            print(f"[VersionChecker] Warning saving to local Data.json: {de}")
 
         print(f"[VersionChecker] Successfully updated '{game_title}' in Data.json (v{game_entry.get('version')})")
         return jsonify({

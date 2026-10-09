@@ -108,6 +108,8 @@ class ApiClient {
         return this.request(`/api/games${query ? '?' + query : ''}`);
     }
     refreshGames() { return this.request('/api/games/refresh', { method: 'POST' }); }
+    addGame(payload) { return this.request('/api/games/add', { method: 'POST', body: payload }); }
+    scrapeGameInfo(payload) { return this.request('/api/games/scrape-info', { method: 'POST', body: payload }); }
     markGameStatus(payload) { return this.request('/api/games/mark-status', { method: 'POST', body: payload }); }
     removeGame(payload) { return this.request('/api/games/remove', { method: 'POST', body: payload }); }
     removeSteamLink(payload) { return this.request('/api/games/remove-steam', { method: 'POST', body: payload }); }

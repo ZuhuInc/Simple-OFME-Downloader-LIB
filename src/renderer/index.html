@@ -20,6 +20,7 @@
             <img class="app-icon" src="assets/OFME-DWND-ICO.ico" alt="Logo">
             <span class="app-title">FANTA OFME</span>
             <span class="app-version-tag">v2.0.0</span>
+            <span id="sourceModeBadge" class="status-pill status-installed" style="display: none; font-size: 10px; padding: 2px 8px; margin-left: 6px; background: rgba(212, 168, 83, 0.18); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.4);">SOURCE MODE</span>
         </div>
         <div class="title-bar-controls">
             <button id="minBtn" class="control-btn" title="Minimize"><i class="fa-solid fa-minus"></i></button>
@@ -254,8 +255,8 @@
                                 <span class="form-label">WinRAR Executable Path</span>
                                 <span class="form-desc">Location of WinRAR.exe or UnRAR.exe on your system</span>
                             </div>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="text" id="set_winrar_path" class="form-input" placeholder="C:\Program Files\WinRAR\WinRAR.exe">
+                            <div class="form-path-group">
+                                <input type="text" id="set_winrar_path" class="form-input form-input-path" placeholder="C:\Program Files\WinRAR\WinRAR.exe">
                                 <button id="browseWinrarPathBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-folder-open"></i></button>
                             </div>
                         </div>
@@ -265,8 +266,8 @@
                                 <span class="form-label">Default Downloads Directory</span>
                                 <span class="form-desc">Where raw game archives will be saved during download</span>
                             </div>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="text" id="set_download_path" class="form-input" placeholder="C:\Downloads\OFME">
+                            <div class="form-path-group">
+                                <input type="text" id="set_download_path" class="form-input form-input-path" placeholder="C:\Downloads\OFME">
                                 <button id="browseDownloadPathBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-folder-open"></i></button>
                             </div>
                         </div>
@@ -276,8 +277,8 @@
                                 <span class="form-label">Default Extract Directory</span>
                                 <span class="form-desc">Where archives will be automatically extracted</span>
                             </div>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="text" id="set_extract_path" class="form-input" placeholder="C:\Games">
+                            <div class="form-path-group">
+                                <input type="text" id="set_extract_path" class="form-input form-input-path" placeholder="C:\Games">
                                 <button id="browseExtractPathBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-folder-open"></i></button>
                             </div>
                         </div>
@@ -310,6 +311,49 @@
 
                         <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
                             <button id="saveSettingsBtn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Preferences</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🛠️ Database Source & Developer Options -->
+                <div class="glass-card" id="sourceDbSettingsCard">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <div>
+                            <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-database" style="color: var(--accent);"></i> Database Source & Developer Options
+                            </h3>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Configure local Data.json database location and catalog editing.</p>
+                        </div>
+                        <span id="sourceEnvStatus" class="status-pill status-installed" style="font-size: 11px;">Source Mode Active</span>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Use Local Database (Data.json)</span>
+                                <span class="form-desc">Read and write games directly to a local Data.json file instead of remote repository</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_use_local_db">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Local Data.json File Path</span>
+                                <span class="form-desc">Path to the Data.json game catalog file on disk</span>
+                            </div>
+                            <div class="form-path-group">
+                                <input type="text" id="set_local_db_path" class="form-input form-input-path" placeholder="src/backend/data/Data.json">
+                                <button id="browseLocalDbBtn" class="btn btn-secondary btn-sm" title="Browse Data.json file"><i class="fa-solid fa-folder-open"></i></button>
+                                <button id="openLocalDbFolderBtn" class="btn btn-secondary btn-sm" title="Open containing folder"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                            <button id="reloadDbFromDiskBtn" class="btn btn-secondary"><i class="fa-solid fa-rotate"></i> Reload Catalog From Disk</button>
+                            <button id="openAddGameFromSettingsBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add New Game</button>
                         </div>
                     </div>
                 </div>
@@ -521,6 +565,168 @@
         </div>
     </div>
 
+    <!-- 🎮 ADD GAME TO DATABASE MODAL (SOURCE MODE) -->
+    <div id="addGameModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 720px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-top-actions">
+                <button id="closeAddGameBtn" class="modal-top-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-right: 30px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(212, 168, 83, 0.15); border: 1px solid rgba(212, 168, 83, 0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent);">
+                    <i class="fa-solid fa-square-plus"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Add Game to Database</h3>
+                    <p style="font-size: 11px; color: var(--text-muted); margin: 0;">Add a new release directly into local <code style="color: var(--accent);">Data.json</code>.</p>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Area -->
+            <div style="overflow-y: auto; padding-right: 6px; flex: 1;" class="custom-scroll">
+                
+                <!-- 🪄 Auto-Fetch Box -->
+                <div class="glass-card" style="background: rgba(212, 168, 83, 0.05); border: 1px dashed rgba(212, 168, 83, 0.35); padding: 12px 14px; margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 12px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Fetch From Online-Fix.me or SteamRIP
+                        </span>
+                        <span style="font-size: 10px; color: var(--text-muted);">Paste release link to autofill</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="agAutoFetchUrlInput" class="form-input" placeholder="https://online-fix.me/games/... or https://steamrip.com/..." style="flex: 1; font-size: 12px;">
+                        <button type="button" id="agAutoFetchBtn" class="btn btn-primary btn-sm" style="white-space: nowrap; padding: 0 14px;">
+                            <i class="fa-solid fa-bolt"></i> Auto-Fetch
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Inputs -->
+                <form id="addGameForm" onsubmit="event.preventDefault();">
+                    
+                    <div class="assisted-form-grid">
+                        <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                            <label class="form-label">Game Title <span style="color: var(--danger);">*</span></label>
+                            <input type="text" id="agTitleInput" class="form-input" required placeholder="e.g. Schedule I">
+                        </div>
+                        <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                            <label class="form-label">Release Version</label>
+                            <input type="text" id="agVersionInput" class="form-input" placeholder="e.g. 1.0.0 or 22022025" value="1.0">
+                        </div>
+                    </div>
+
+                    <div class="assisted-form-grid">
+                        <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                            <label class="form-label">Hosting Mirror</label>
+                            <select id="agHostSelect" class="form-input" style="cursor: pointer;">
+                                <option value="GoFile">GoFile</option>
+                                <option value="PixelDrain">PixelDrain</option>
+                                <option value="VikingFile">VikingFile</option>
+                                <option value="1Fichier">1Fichier</option>
+                                <option value="BuzzHeavier">BuzzHeavier</option>
+                                <option value="FileDitch">FileDitch</option>
+                                <option value="Google Drive">Google Drive</option>
+                                <option value="Mega">Mega</option>
+                                <option value="Direct">Direct</option>
+                            </select>
+                        </div>
+                        <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                            <label class="form-label">Approx Size</label>
+                            <input type="text" id="agSizeInput" class="form-input" placeholder="e.g. 12GB">
+                        </div>
+                    </div>
+
+                    <div class="assisted-form-grid">
+                        <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                            <label class="form-label">Category</label>
+                            <select id="agCategorySelect" class="form-input" style="cursor: pointer;">
+                                <option value="General">General</option>
+                                <option value="Action">Action</option>
+                                <option value="Adventure">Adventure</option>
+                                <option value="Co-op">Co-op</option>
+                                <option value="Survival">Survival</option>
+                                <option value="RPG">RPG</option>
+                                <option value="Simulator">Simulator</option>
+                                <option value="Horror">Horror</option>
+                                <option value="Strategy">Strategy</option>
+                                <option value="Sports">Sports</option>
+                                <option value="Racing">Racing</option>
+                                <option value="Puzzle">Puzzle</option>
+                                <option value="VR">VR</option>
+                            </select>
+                        </div>
+                        <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                            <label class="form-label">Origin Release URL</label>
+                            <input type="text" id="agOriginUrlInput" class="form-input" placeholder="https://online-fix.me/games/...">
+                        </div>
+                    </div>
+
+                    <!-- Thumbnail with Live Preview -->
+                    <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 5px; margin-bottom: 12px;">
+                        <label class="form-label">Cover / Thumbnail Image URL</label>
+                        <div style="display: flex; gap: 10px; width: 100%; align-items: center;">
+                            <input type="text" id="agThumbnailInput" class="form-input" placeholder="https://raw.githubusercontent.com/.../Game.jpg" style="flex: 1;">
+                            <div id="agThumbPreviewBox" style="width: 42px; height: 56px; border-radius: 6px; overflow: hidden; background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <img id="agThumbPreviewImg" src="assets/OFME-DWND-ICO.ico" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='assets/OFME-DWND-ICO.ico'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Download Parts -->
+                    <div class="assisted-parts-section" style="margin-bottom: 12px;">
+                        <div class="assisted-parts-header">
+                            <span><i class="fa-solid fa-cubes-stacked" style="color: var(--accent); margin-right: 6px;"></i> Download Archive Parts <span style="color: var(--danger);">*</span></span>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" id="agPasteMultiPartsBtn" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px;" title="Paste multiple URLs">
+                                    <i class="fa-solid fa-paste"></i> Bulk Paste
+                                </button>
+                                <button type="button" id="agAddPartBtn" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 10px;">
+                                    <i class="fa-solid fa-plus"></i> Add Part
+                                </button>
+                            </div>
+                        </div>
+                        <div id="agPartsList" class="assisted-parts-list">
+                            <!-- Dynamic part rows -->
+                        </div>
+                    </div>
+
+                    <!-- Fix / Repair URL -->
+                    <div class="assisted-parts-section" style="border-color: rgba(96, 165, 250, 0.25); background: rgba(15, 18, 26, 0.6); margin-bottom: 12px;">
+                        <div class="assisted-parts-header">
+                            <span style="color: #93c5fd;"><i class="fa-solid fa-wrench" style="color: #60a5fa; margin-right: 6px;"></i> Fix / Repair Archive URL (Optional)</span>
+                        </div>
+                        <div class="part-row">
+                            <span class="part-badge" style="color: #60a5fa; background: rgba(96, 165, 250, 0.1); min-width: 55px;">Fix</span>
+                            <input type="text" id="agFixUrlInput" class="form-input part-input" placeholder="https://gofile.io/d/... (optional online multiplayer fix)">
+                            <button type="button" class="part-btn-del" title="Clear Fix URL" onclick="document.getElementById('agFixUrlInput').value=''"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 5px; margin-bottom: 6px;">
+                        <label class="form-label">Game Description</label>
+                        <textarea id="agDescriptionInput" class="form-input" rows="3" placeholder="Short summary of gameplay, features, and genre..." style="resize: vertical; min-height: 60px;"></textarea>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 14px; margin-top: 8px;">
+                <span id="agTargetFileIndicator" style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 380px;">
+                    Target: Data.json
+                </span>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" id="cancelAddGameBtn">Cancel</button>
+                    <button type="button" id="submitAddGameBtn" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Save & Add to Data.json
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Toast Notifications Container -->
     <div id="toastContainer" class="toast-container"></div>
 
@@ -532,6 +738,7 @@
     <script src="js/controllers/versionCheckerController.js"></script>
     <script src="js/controllers/steamController.js"></script>
     <script src="js/controllers/settingsController.js"></script>
+    <script src="js/controllers/addGameController.js"></script>
     <script src="js/controllers/uiController.js"></script>
     <script src="app.js"></script>
 </body>

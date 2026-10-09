@@ -12,6 +12,8 @@ class SettingsController {
         this.rarPasswordInput = document.getElementById('set_rar_password');
         this.speedUnitSelect = document.getElementById('set_speed_unit');
         this.concurrencyInput = document.getElementById('set_concurrency');
+        this.useLocalDbCheck = document.getElementById('set_use_local_db');
+        this.localDbPathInput = document.getElementById('set_local_db_path');
         this.saveBtn = document.getElementById('saveSettingsBtn');
         this.consoleFeed = document.getElementById('consoleLogFeed');
     }
@@ -68,6 +70,50 @@ class SettingsController {
                     filters: [{ name: 'Executables', extensions: ['exe'] }]
                 });
                 if (file && this.winrarInput) this.winrarInput.value = file;
+            });
+        }
+
+        // Local DB Browse & Open buttons
+        const browseLocalDbBtn = document.getElementById('browseLocalDbBtn');
+        if (browseLocalDbBtn) {
+            browseLocalDbBtn.addEventListener('click', async () => {
+                const file = await window.api?.selectFile({
+                    filters: [{ name: 'Data.json Databases', extensions: ['json'] }]
+                });
+                if (file && this.localDbPathInput) {
+                    this.localDbPathInput.value = file;
+                    if (this.useLocalDbCheck) this.useLocalDbCheck.checked = true;
+                }
+            });
+        }
+
+        const openLocalDbFolderBtn = document.getElementById('openLocalDbFolderBtn');
+        if (openLocalDbFolderBtn) {
+            openLocalDbFolderBtn.addEventListener('click', async () => {
+                const targetPath = this.localDbPathInput?.value || '';
+                if (targetPath && window.api?.openPath) {
+                    await window.api.openPath(targetPath);
+                } else {
+                    window.uiController.showToast('No database path configured', 'warning');
+                }
+            });
+        }
+
+        const reloadDbBtn = document.getElementById('reloadDbFromDiskBtn');
+        if (reloadDbBtn) {
+            reloadDbBtn.addEventListener('click', async () => {
+                try {
+                    const isLocal = Boolean(this.useLocalDbCheck?.checked);
+                    window.uiController.showToast(isLocal ? 'Reloading database from disk...' : 'Fetching database from GitHub...', 'info');
+                    const res = await window.apiClient.refreshGames();
+                    if (window.libraryController) {
+                        await window.libraryController.loadGames();
+                    }
+                    window.uiController.showToast(`Loaded ${res.total || 0} games from ${isLocal ? 'local Data.json' : 'GitHub'}`, 'success');
+                    this.appendLog(`Loaded ${res.total || 0} games from ${isLocal ? 'local disk' : 'GitHub repository'}`, 'success');
+                } catch (err) {
+                    window.uiController.showToast(`Failed to reload database: ${err.message}`, 'danger');
+                }
             });
         }
     }
@@ -154,6 +200,8 @@ class SettingsController {
         if (this.rarPasswordInput) this.rarPasswordInput.value = this.settings.rar_password || 'online-fix.me';
         if (this.concurrencyInput) this.concurrencyInput.value = this.settings.concurrent_downloads || 2;
         if (this.speedUnitSelect) this.speedUnitSelect.value = this.settings.speed_unit || 'MB/s';
+        if (this.useLocalDbCheck) this.useLocalDbCheck.checked = Boolean(this.settings.use_local_db);
+        if (this.localDbPathInput) this.localDbPathInput.value = this.settings.local_db_path || '';
     }
 
     async saveCurrentSettings() {
@@ -163,7 +211,9 @@ class SettingsController {
             extract_path: this.extractPathInput?.value || '',
             rar_password: this.rarPasswordInput?.value || 'online-fix.me',
             concurrent_downloads: parseInt(this.concurrencyInput?.value || 2, 10),
-            speed_unit: this.speedUnitSelect?.value || 'MB/s'
+            speed_unit: this.speedUnitSelect?.value || 'MB/s',
+            use_local_db: Boolean(this.useLocalDbCheck?.checked),
+            local_db_path: this.localDbPathInput?.value.trim() || ''
         };
 
         if (window.downloadController) {
@@ -176,6 +226,16 @@ class SettingsController {
                 this.settings = res.settings;
                 window.uiController.showToast('Settings saved successfully', 'success');
                 this.appendLog('Settings saved successfully', 'success');
+
+                // Reload Game Library in the UI so that switching between local and remote updates the view immediately
+                if (window.libraryController) {
+                    await window.libraryController.loadGames();
+                }
+
+                // Update addGameController active path and environment
+                if (window.addGameController) {
+                    await window.addGameController.checkEnvironment();
+                }
             }
         } catch (err) {
             window.uiController.showToast(`Failed to save settings: ${err.message}`, 'danger');

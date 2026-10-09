@@ -139,6 +139,44 @@ Fix:
         self.assertEqual(result["available_hosts"]["FileDitch"]["parts"][0], "https://fileditchfiles.st/balpha10/111/part1.rar")
         self.assertEqual(result["available_hosts"]["FileDitch"]["parts"][3], "https://fileditchfiles.st/balpha10/444/part4.rar")
 
+    def test_add_and_update_game_local_db(self):
+        cfg = Config(data_folder=self.temp_dir)
+        local_db = os.path.join(self.temp_dir, "CustomData.json")
+        cfg.set("local_db_path", local_db)
+        cfg.set("use_local_db", True)
+
+        db = DatabaseManager(cache_dir=self.temp_dir, default_url="", config=cfg)
+        self.assertEqual(len(db.fetch_and_load()), 0)
+
+        # Add game
+        entry = db.add_or_update_game({
+            "title": "Super Cool Game",
+            "version": "1.0.5",
+            "host": "GoFile",
+            "approx_size": "10GB",
+            "description": "Multiplayer adventure",
+            "thumbnail": "https://example.com/thumb.jpg",
+            "origin_url": "https://online-fix.me/games/super-cool",
+            "parts": ["https://gofile.io/d/part1", "https://gofile.io/d/part2"],
+            "fix_url": "https://gofile.io/d/fix",
+            "category": "Co-op"
+        })
+
+        self.assertEqual(entry.title, "Super Cool Game")
+        self.assertEqual(entry.version, "1.0.5")
+        self.assertEqual(len(entry.parts), 2)
+        self.assertEqual(len(db.games), 1)
+        self.assertTrue(os.path.exists(local_db))
+
+        # Switch to remote mode (use_local_db = False)
+        cfg.set("use_local_db", False)
+        # In remote mode, fetch should query GitHub Data.json or fallback
+        games_remote = db.fetch_and_load(force_refresh=True)
+        self.assertGreater(len(games_remote), 10)
+        # Custom local game shouldn't be in remote unless added to remote repository
+        custom_found = any(g.title == "Super Cool Game" for g in games_remote)
+        self.assertFalse(custom_found)
+
 
 if __name__ == "__main__":
     unittest.main()

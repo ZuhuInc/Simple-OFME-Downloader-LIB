@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, Optional
 
@@ -23,7 +24,9 @@ class ConfigDefaults:
     ofme_username: str = ""
     ofme_password: str = ""
     browser_path: str = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
-    db_url: str = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Download-DB.txt"
+    db_url: str = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/BetaRework/src/backend/data/Data.json"
+    use_local_db: bool = False
+    local_db_path: str = ""
 
 
 class Config:
@@ -41,6 +44,14 @@ class Config:
         self.data_json_path = os.path.join(self.data_folder, "Data.json")
         self.login_json_path = os.path.join(self.data_folder, "Login.json")
         self._data: Dict[str, Any] = asdict(ConfigDefaults())
+
+        # Set default local database path if bundled in source
+        bundled_json = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "Data.json"))
+        if os.path.exists(bundled_json):
+            self._data["local_db_path"] = bundled_json
+            if self.is_source_mode():
+                self._data["use_local_db"] = True
+
         self._installed_data: Dict[str, Any] = {}
         self.load()
 
@@ -55,6 +66,9 @@ class Config:
                 with open(self.path, "r", encoding="utf-8", errors="ignore") as f:
                     saved = json.load(f)
                 self._data.update(saved)
+                # Auto-migrate legacy Download-DB.txt db_url
+                if not self._data.get("db_url") or "Download-DB.txt" in str(self._data.get("db_url")):
+                    self._data["db_url"] = ConfigDefaults.db_url
             except Exception as e:
                 print(f"[Config] Settings load error: {e}")
 
@@ -107,6 +121,29 @@ class Config:
                 json.dump(self._installed_data, f, ensure_ascii=False, indent=4)
         except Exception as e:
             print(f"[Config] Data.json save error: {e}")
+
+    @staticmethod
+    def is_source_mode() -> bool:
+        env_mode = os.environ.get('FANTA_SOURCE_MODE')
+        if env_mode == '1':
+            return True
+        if env_mode == '0':
+            return False
+        return not getattr(sys, 'frozen', False)
+
+    def get_local_db_path(self) -> str:
+        custom_path = self.get("local_db_path")
+        if custom_path and os.path.exists(custom_path):
+            return custom_path
+        bundled = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "Data.json"))
+        return bundled if os.path.exists(bundled) else self.data_json_path
+
+    def get_installed_games(self) -> Dict[str, Any]:
+        return self._installed_data
+
+    def save_installed_games(self, games_dict: Dict[str, Any]) -> None:
+        self._installed_data = games_dict
+        self.save()
 
     def get(self, key: str, default: Any = None) -> Any:
         return self._data.get(key, default)

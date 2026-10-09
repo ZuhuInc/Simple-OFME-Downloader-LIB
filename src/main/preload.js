@@ -14,7 +14,8 @@ const exposed = {
     ipcRenderer.on('backend-log', handler);
     return () => ipcRenderer.removeListener('backend-log', handler);
   },
-  getInitialLogs: () => ipcRenderer.invoke('get-initial-logs')
+  getInitialLogs: () => ipcRenderer.invoke('get-initial-logs'),
+  isSourceMode: () => ipcRenderer.invoke('is-source-mode')
 };
 
 contextBridge.exposeInMainWorld('api', exposed);

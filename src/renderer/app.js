@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.versionCheckerController) window.versionCheckerController.init();
     if (window.steamController) window.steamController.init();
     if (window.settingsController) window.settingsController.init();
+    if (window.addGameController) window.addGameController.init();
 
     console.log('[Fanta OFME] All controllers initialized.');
 });

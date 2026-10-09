@@ -2184,5 +2184,18 @@
         ],
         "fix_url": "",
         "category": "General"
+    },
+    "Surgeon Simulator 2": {
+        "version": "10092021",
+        "host": "GoFile",
+        "approx_size": "N/A",
+        "description": "No description available.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/774791/library_600x900_2x.jpg?t=1726595384",
+        "origin_url": "https://online-fix.me/games/simulator/18264-surgeon-simulator-2-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/FWbhhq5G"
+        ],
+        "fix_url": "https://gofile.io/d/3mfS0hEs",
+        "category": "General"
     }
 }

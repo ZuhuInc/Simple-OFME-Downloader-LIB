@@ -293,7 +293,8 @@ html, body {
 /* ─── MAIN CONTENT ─── */
 .content-area {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
     position: relative;
     padding: 24px 30px;
 }
@@ -418,7 +419,7 @@ html, body {
 /* ─── GAME GRID ─── */
 .game-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 20px;
     padding-bottom: 40px;
 }
@@ -1310,6 +1311,18 @@ input[type="checkbox"]#vcInstalledOnlyCheck:checked::after {
     align-items: center;
     justify-content: space-between;
     gap: 20px;
+}
+
+.form-path-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-input-path {
+    width: 330px;
+    font-family: var(--font-mono);
+    font-size: 11px;
 }
 
 .form-label-area {
