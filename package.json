@@ -1,6 +1,6 @@
 {
   "name": "fanta-ofme-dwnld",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Fanta OFME Downloader - Online-Fix Game Manager & Downloader",
   "main": "./src/main/main.js",
   "author": "ZuhuInc",
@@ -60,10 +60,10 @@
       "installerIcon": "src/renderer/assets/OFME-DWND-ICO.ico",
       "uninstallerIcon": "src/renderer/assets/OFME-DWND-ICO.ico",
       "deleteAppDataOnUninstall": false,
-      "artifactName": "${productName} Setup ${version}.${ext}"
+      "artifactName": "Fanta-OFME-Downloader-Setup-${version}.${ext}"
     },
     "portable": {
-      "artifactName": "${productName} Portable ${version}.${ext}"
+      "artifactName": "Fanta-OFME-Downloader-Portable-${version}.${ext}"
     },
     "publish": [
       {

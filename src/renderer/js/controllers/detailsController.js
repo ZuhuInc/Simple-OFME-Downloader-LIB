@@ -182,12 +182,12 @@ class DetailsController {
         }
 
         if (this.locationEl) {
-            const defaultBase = window.settingsController?.settings?.extract_path || window.settingsController?.settings?.default_download_path || 'D:\\GAMES2';
+            const defaultBase = window.settingsController?.settings?.extract_path || window.settingsController?.settings?.default_download_path || '';
             if (game.location) {
                 this.locationEl.textContent = game.location;
                 this.locationEl.style.color = '#fff';
             } else {
-                this.locationEl.textContent = `${defaultBase} (Default)`;
+                this.locationEl.textContent = defaultBase ? `${defaultBase} (Default)` : 'Not set (Default)';
                 this.locationEl.style.color = 'var(--text-secondary)';
             }
         }
@@ -253,7 +253,7 @@ class DetailsController {
     }
 
     getParentOrSelf(pathStr) {
-        if (!pathStr) return 'D:\\GAMES2';
+        if (!pathStr) return window.settingsController?.settings?.extract_path || '';
         const normalized = pathStr.replace(/[\\/]+$/, '');
         const parts = normalized.split(/[\\/]/);
         if (parts.length > 2) {
@@ -268,7 +268,7 @@ class DetailsController {
 
         const defaultBase = window.settingsController?.settings?.extract_path || 
                             window.settingsController?.settings?.default_download_path || 
-                            'D:\\GAMES2';
+                            '';
 
         const autoExtract = window.settingsController?.settings?.auto_extract !== false;
         const autoDelete = window.settingsController?.settings?.auto_delete_archive !== false;
@@ -403,7 +403,8 @@ class DetailsController {
         if (!this.currentGame) return;
 
         const type = this.pendingDownloadType || 'main';
-        const targetPath = this.setupInstallPathInput ? this.setupInstallPathInput.value.trim() : 'D:\\GAMES2';
+        const defaultBase = window.settingsController?.settings?.extract_path || window.settingsController?.settings?.default_download_path || '';
+        const targetPath = (this.setupInstallPathInput ? this.setupInstallPathInput.value.trim() : '') || defaultBase;
         const autoExtract = this.setupAutoExtractCheck ? Boolean(this.setupAutoExtractCheck.checked) : true;
         const autoDelete = this.setupDeleteArchiveCheck ? Boolean(this.setupDeleteArchiveCheck.checked) : true;
 
@@ -560,15 +561,13 @@ class DetailsController {
     async openInstallFolder() {
         if (!this.currentGame) return;
         const title = this.currentGame.title || '';
-        const baseLoc = this.currentGame.location || 'D:\\GAMES2';
+        const defaultBase = window.settingsController?.settings?.extract_path || '';
+        const baseLoc = this.currentGame.location || defaultBase;
         
-        // Prioritize exact game subfolder (e.g. D:\GAMES2\PEAK)
         const candidates = [
-            `${baseLoc}\\${title}`,
-            `D:\\GAMES2\\${title}`,
-            `C:\\Users\\ZUHU\\Documents\\ZuhuProjects\\ZuhuOFME\\extracted\\${title}`,
-            baseLoc !== 'D:\\GAMES2' ? baseLoc : null,
-            'D:\\GAMES2'
+            baseLoc ? `${baseLoc}\\${title}` : null,
+            baseLoc || null,
+            defaultBase ? `${defaultBase}\\${title}` : null
         ].filter(Boolean);
 
         for (const candidate of candidates) {

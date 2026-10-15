@@ -174,18 +174,11 @@ class DatabaseManager:
                 except Exception as e:
                     print(f"[Database] Local DB read error ({local_path}): {e}")
         else:
-            # Remote / GitHub Mode
-            # 1. Fetch remote if forced or if cache does not exist / is stale
-            should_fetch = force_refresh or not os.path.exists(self.local_json_path)
-            if not should_fetch and os.path.exists(self.local_json_path):
-                file_age = time.time() - os.path.getmtime(self.local_json_path)
-                if file_age >= 7200:
-                    should_fetch = True
-
-            if should_fetch and target_url and target_url != "local":
+            # Remote / GitHub Mode (default unless Use Local Database is checked)
+            if target_url and target_url != "local":
                 try:
                     print(f"[Database] Fetching remote database from GitHub: {target_url}...")
-                    resp = requests.get(target_url, timeout=10)
+                    resp = requests.get(target_url, timeout=7)
                     resp.raise_for_status()
                     raw_content = resp.text
                     os.makedirs(self.cache_dir, exist_ok=True)

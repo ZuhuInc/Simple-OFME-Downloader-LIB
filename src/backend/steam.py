@@ -278,7 +278,7 @@ class SteamManager:
         """Resolves the active Steam account ID."""
         accounts = self.get_user_accounts()
         if not accounts:
-            return configured_id or "1004235037"
+            return configured_id or ""
 
         if configured_id:
             for acc in accounts:

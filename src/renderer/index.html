@@ -19,7 +19,7 @@
         <div class="title-bar-left">
             <img class="app-icon" src="assets/OFME-DWND-ICO.ico" alt="Logo">
             <span class="app-title">FANTA OFME</span>
-            <span class="app-version-tag">v2.0.0</span>
+            <span class="app-version-tag">v2.0.1</span>
             <span id="sourceModeBadge" class="status-pill status-installed" style="display: none; font-size: 10px; padding: 2px 8px; margin-left: 6px; background: rgba(212, 168, 83, 0.18); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.4);">SOURCE MODE</span>
         </div>
         <div class="title-bar-controls">
@@ -165,7 +165,7 @@
                             <tr>
                                 <th>Game Title</th>
                                 <th>Installed Version</th>
-                                <th>Download-DB (BetaRework)</th>
+                                <th>Download-DB (GitHub)</th>
                                 <th>Live Online Version</th>
                                 <th>Status</th>
                                 <th>Action</th>
@@ -251,14 +251,14 @@
                             </div>
                             <div>
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                    <h3 id="steamPersonaName" style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Zuhu</h3>
+                                    <h3 id="steamPersonaName" style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Steam Profile</h3>
                                     <span id="steamAccountBadge" class="status-pill status-uptodate" style="font-size: 9px; padding: 2px 8px;">Active Profile</span>
                                 </div>
                                 <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
-                                    <span>Account ID: <strong id="steamAccountId" style="color: var(--accent);">1004235037</strong></span>
-                                    <span>Login: <strong id="steamAccountLogin" style="color: #fff;">bodhi20off</strong></span>
-                                    <span>Shortcuts: <strong id="steamShortcutsCount" style="color: #60a5fa;">95</strong></span>
-                                    <span>Path: <span id="steamPathLabel" style="color: var(--text-secondary); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle;">C:\Program Files (x86)\Steam</span></span>
+                                    <span>Account ID: <strong id="steamAccountId" style="color: var(--accent);">--</strong></span>
+                                    <span>Login: <strong id="steamAccountLogin" style="color: #fff;">--</strong></span>
+                                    <span>Shortcuts: <strong id="steamShortcutsCount" style="color: #60a5fa;">0</strong></span>
+                                    <span>Path: <span id="steamPathLabel" style="color: var(--text-secondary); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle;">Auto-detecting...</span></span>
                                 </div>
                             </div>
                         </div>
@@ -469,7 +469,7 @@
                             </h3>
                             <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Seamless background updates powered by GitHub Releases.</p>
                         </div>
-                        <span id="updateAppVersionBadge" class="status-pill status-installed" style="font-size: 11px;">v2.0.0</span>
+                        <span id="updateAppVersionBadge" class="status-pill status-installed" style="font-size: 11px;">v2.0.1</span>
                     </div>
 
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 12px;">
@@ -559,7 +559,7 @@
                         </div>
                         <div class="meta-item" style="grid-column: span 2;">
                             <span class="meta-label">Install Location</span>
-                            <span id="detailsLocation" class="meta-value" style="font-family: var(--font-mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary);">D:\GAMES2 (Default)</span>
+                            <span id="detailsLocation" class="meta-value" style="font-family: var(--font-mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary);">Default Games Folder</span>
                         </div>
                     </div>
 
@@ -618,13 +618,13 @@
                     <span id="setupLocationStatus" style="font-size: 11px; color: var(--accent);">Default Folder</span>
                 </label>
                 <div style="display: flex; gap: 8px; width: 100%;">
-                    <input type="text" id="setupInstallPathInput" class="form-input" style="flex: 1; font-family: var(--font-mono); font-size: 12px;" placeholder="D:\GAMES2">
+                    <input type="text" id="setupInstallPathInput" class="form-input" style="flex: 1; font-family: var(--font-mono); font-size: 12px;" placeholder="e.g. C:\Games">
                     <button type="button" id="browseInstallPathBtn" class="btn btn-secondary" style="padding: 0 14px; font-size: 12px; white-space: nowrap;">
                         <i class="fa-solid fa-folder-open"></i> Browse...
                     </button>
                 </div>
                 <p id="setupLocationHelp" style="font-size: 11px; color: var(--text-muted); margin: 0; line-height: 1.4;">
-                    <i class="fa-solid fa-circle-info"></i> The game will extract into its own folder inside this directory (e.g. <code>D:\GAMES2\&lt;GameFolder&gt;</code>).
+                    <i class="fa-solid fa-circle-info"></i> The game will extract into its own folder inside this directory (e.g. <code>C:\Games\&lt;GameFolder&gt;</code>).
                 </p>
             </div>
 
@@ -679,7 +679,7 @@
             <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 20px;">
                 <label class="form-label">Game Executable (.exe) Path:</label>
                 <div style="display: flex; gap: 8px; width: 100%;">
-                    <input type="text" id="steamGameExeInput" class="form-input" style="flex: 1; font-family: var(--font-mono); font-size: 12px;" placeholder="D:\GAMES2\MyGame\Game.exe">
+                    <input type="text" id="steamGameExeInput" class="form-input" style="flex: 1; font-family: var(--font-mono); font-size: 12px;" placeholder="C:\Games\MyGame\Game.exe">
                     <button type="button" id="browseSteamExeBtn" class="btn btn-secondary" style="padding: 0 14px; font-size: 12px; white-space: nowrap;"><i class="fa-solid fa-folder-open"></i> Browse...</button>
                 </div>
             </div>

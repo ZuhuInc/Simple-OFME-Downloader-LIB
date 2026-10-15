@@ -76,7 +76,7 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
         default_base = (
             config.get("default_download_path") or
             config.get("extract_path") or
-            r"D:\GAMES2"
+            os.path.join(os.path.expanduser("~"), "Games")
         )
 
         if custom_extract_dir:

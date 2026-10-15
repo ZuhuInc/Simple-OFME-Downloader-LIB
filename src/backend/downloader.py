@@ -57,8 +57,17 @@ class Downloader:
     ):
         self.config = config
         self.extractor = extractor
-        self.download_path = download_path or os.path.join(os.path.expanduser("~"), "Downloads", "OFME")
-        os.makedirs(self.download_path, exist_ok=True)
+        default_dl = os.path.join(os.path.expanduser("~"), "Downloads", "OFME")
+        self.download_path = download_path or default_dl
+        try:
+            os.makedirs(self.download_path, exist_ok=True)
+        except Exception as e:
+            print(f"[Downloader] Path error creating '{self.download_path}': {e}. Falling back to default: '{default_dl}'", flush=True)
+            self.download_path = default_dl
+            try:
+                os.makedirs(self.download_path, exist_ok=True)
+            except Exception as e2:
+                print(f"[Downloader] Warning creating fallback directory: {e2}", flush=True)
         self.max_concurrency = max_concurrency
         self.jobs: Dict[str, DownloadJob] = {}
         self._queue: List[str] = []
@@ -355,8 +364,8 @@ class Downloader:
                         default_base = (
                             self.config.get("default_download_path") or
                             self.config.get("extract_path") or
-                            r"D:\GAMES2"
-                        ) if self.config else r"D:\GAMES2"
+                            os.path.join(os.path.expanduser("~"), "Games")
+                        ) if self.config else os.path.join(os.path.expanduser("~"), "Games")
 
                         if custom_extract_dir:
                             extract_dir = custom_extract_dir

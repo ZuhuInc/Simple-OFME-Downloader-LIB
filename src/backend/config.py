@@ -5,15 +5,37 @@ from dataclasses import dataclass, asdict
 from typing import Any, Dict, Optional
 
 
+def get_default_data_folder() -> str:
+    zuhu_dir = os.path.join(os.path.expanduser("~"), "Documents", "ZuhuProjects", "ZuhuOFME")
+    if os.path.exists(zuhu_dir):
+        return zuhu_dir
+    return os.path.join(os.path.expanduser("~"), ".fanta_ofme")
+
+
+def get_default_download_dir() -> str:
+    zuhu_dl = os.path.join(os.path.expanduser("~"), "Documents", "ZuhuProjects", "ZuhuOFME", "downloads")
+    if os.path.exists(zuhu_dl):
+        return zuhu_dl
+    return os.path.join(os.path.expanduser("~"), "Downloads", "OFME")
+
+
+def get_default_games_dir() -> str:
+    if os.path.exists(r"D:\GAMES2"):
+        return r"D:\GAMES2"
+    if os.path.exists(r"D:\\"):
+        return r"D:\Games"
+    return os.path.join(os.path.expanduser("~"), "Games")
+
+
 @dataclass
 class ConfigDefaults:
     winrar_path: str = r"C:\Program Files\WinRAR\WinRAR.exe"
-    download_path: str = r"C:\Users\ZUHU\Documents\ZuhuProjects\ZuhuOFME\downloads"
-    extract_path: str = r"D:\GAMES2"
-    default_download_path: str = r"D:\GAMES2"
+    download_path: str = ""
+    extract_path: str = ""
+    default_download_path: str = ""
     steam_path: str = r"C:\Program Files (x86)\Steam"
-    steam_user_id: str = "1004235037"
-    steam_id: str = "1004235037"
+    steam_user_id: str = ""
+    steam_id: str = ""
     rar_password: str = "online-fix.me"
     concurrent_downloads: int = 2
     speed_unit: str = "MB/s"
@@ -23,8 +45,8 @@ class ConfigDefaults:
     webhook_url: str = ""
     ofme_username: str = ""
     ofme_password: str = ""
-    browser_path: str = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
-    db_url: str = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/BetaRework/src/backend/data/Data.json"
+    browser_path: str = ""
+    db_url: str = "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/refs/heads/main/src/backend/data/Data.json"
     use_local_db: bool = False
     sevenzip_path: str = r"C:\Program Files\7-Zip\7z.exe"
     auto_extract: bool = True
@@ -52,9 +74,8 @@ def get_bundled_data_path(filename: str = "Data.json") -> str:
 
 class Config:
     def __init__(self, data_folder: Optional[str] = None):
-        zuhu_default = r"C:\Users\ZUHU\Documents\ZuhuProjects\ZuhuOFME"
         if not data_folder:
-            data_folder = zuhu_default if os.path.exists(zuhu_default) else os.path.join(os.path.expanduser("~"), ".fanta_ofme")
+            data_folder = get_default_data_folder()
         
         self.data_folder = data_folder
         self.cache_folder = os.path.join(self.data_folder, "cache")
@@ -67,13 +88,17 @@ class Config:
         self.data_old_path = os.path.join(self.data_folder, "old.Data.json")
         self.login_json_path = os.path.join(self.data_folder, "Login.json")
         self._data: Dict[str, Any] = asdict(ConfigDefaults())
+        if not self._data.get("download_path"):
+            self._data["download_path"] = get_default_download_dir()
+        if not self._data.get("extract_path"):
+            self._data["extract_path"] = get_default_games_dir()
+        if not self._data.get("default_download_path"):
+            self._data["default_download_path"] = self._data["extract_path"]
 
         # Set default local database path if bundled
         bundled_json = get_bundled_data_path("Data.json")
         if os.path.exists(bundled_json):
             self._data["local_db_path"] = bundled_json
-            if self.is_source_mode():
-                self._data["use_local_db"] = True
 
         self._installed_data: Dict[str, Any] = {}
         self.load()
@@ -89,9 +114,22 @@ class Config:
                 with open(self.path, "r", encoding="utf-8", errors="ignore") as f:
                     saved = json.load(f)
                 self._data.update(saved)
-                # Auto-migrate legacy Download-DB.txt db_url
-                if not self._data.get("db_url") or "Download-DB.txt" in str(self._data.get("db_url")):
+                # Auto-migrate legacy Download-DB.txt or BetaRework db_url
+                if (not self._data.get("db_url")
+                    or "Download-DB.txt" in str(self._data.get("db_url"))
+                    or "BetaRework" in str(self._data.get("db_url"))):
                     self._data["db_url"] = ConfigDefaults.db_url
+
+                # Auto-migrate invalid hardcoded ZUHU download path if not on ZUHU machine
+                dl_path = str(self._data.get("download_path", ""))
+                if "ZUHU" in dl_path and not os.path.exists(dl_path):
+                    self._data["download_path"] = os.path.join(os.path.expanduser("~"), "Downloads", "OFME")
+
+                # Auto-migrate legacy hardcoded Steam ID if any
+                if self._data.get("steam_id") == "1004235037":
+                    self._data["steam_id"] = ""
+                if self._data.get("steam_user_id") == "1004235037":
+                    self._data["steam_user_id"] = ""
             except Exception as e:
                 print(f"[Config] Settings load error: {e}")
 
