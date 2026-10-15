@@ -456,9 +456,13 @@ ipcMain.handle('show-item-in-folder', async (event, itemPath) => {
 });
 
 ipcMain.handle('open-external', async (event, url) => {
-  if (!url || typeof url !== 'string' || (!url.startsWith('http://') && !url.startsWith('https://'))) return false;
+  if (!url || typeof url !== 'string') return false;
+  const cleanUrl = url.trim();
+  const lower = cleanUrl.toLowerCase();
+  const isAllowed = lower.startsWith('http://') || lower.startsWith('https://') || lower.startsWith('steam://');
+  if (!isAllowed) return false;
   try {
-    await shell.openExternal(url);
+    await shell.openExternal(cleanUrl);
     return true;
   } catch (err) {
     console.error('[Main] openExternal error:', err);

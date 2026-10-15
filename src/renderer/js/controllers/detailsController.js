@@ -471,12 +471,22 @@ class DetailsController {
         if (!this.currentGame) return;
         if (this.currentGame.steam_url) {
             window.uiController.showToast(`Launching ${this.currentGame.title} on Steam...`, 'info');
-            if (window.api && window.api.openExternal) {
-                window.api.openExternal(this.currentGame.steam_url);
-            } else if (window.apiClient && window.apiClient.openExternalUrl) {
-                window.apiClient.openExternalUrl(this.currentGame.steam_url);
-            } else {
-                window.open(this.currentGame.steam_url);
+            try {
+                if (window.api && window.api.openExternal) {
+                    const ok = await window.api.openExternal(this.currentGame.steam_url);
+                    if (ok) return;
+                }
+            } catch (e) {
+                console.warn('[DetailsController] openExternal failed:', e);
+            }
+
+            try {
+                if (window.apiClient && window.apiClient.openExternalUrl) {
+                    await window.apiClient.openExternalUrl(this.currentGame.steam_url);
+                }
+            } catch (e) {
+                console.error('[DetailsController] API launch fallback error:', e);
+                window.uiController.showToast(`Could not launch ${this.currentGame.title} on Steam`, 'danger');
             }
         } else {
             window.steamController.openAddShortcutDialog(this.currentGame);

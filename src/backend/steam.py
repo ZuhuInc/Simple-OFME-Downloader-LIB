@@ -310,7 +310,7 @@ class SteamManager:
     @staticmethod
     def calculate_shortcut_id(appid: int) -> int:
         """Calculates 64-bit Steam shortcut ID for steam://rungameid/<id>."""
-        return (int(appid) << 32) | 0x02000000
+        return ((int(appid) & 0xFFFFFFFF) << 32) | 0x02000000
 
     @staticmethod
     def _clean_str(s: str) -> str:

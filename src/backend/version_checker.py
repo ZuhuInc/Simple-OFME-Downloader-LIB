@@ -83,26 +83,28 @@ class VersionChecker:
         """Strips Cyrillic notes, download metadata, date stamps, and leading prefixes (v, Build)."""
         if not raw:
             return ""
-        # Strip Cyrillic notes
-        cleaned = re.sub(r"[\u0400-\u04FF].*", "", str(raw)).strip()
-        # Strip trailing notes, DLCs, Extras, pipes, and web UI keywords
+        # 1. Strip leading labels (Russian or English) including Build, v, ver, version
+        cleaned = re.sub(r"^(?:Версия\s*игры|Версия|Version|Build|v|ver)\s*[:\s-]*", "", str(raw), flags=re.IGNORECASE).strip()
+        # 2. Strip trailing Cyrillic notes (e.g. по сети, онлайн)
+        cleaned = re.sub(r"[\u0400-\u04FF].*", "", cleaned).strip()
+        # 3. Strip trailing notes, DLCs, Extras, pipes, and web UI keywords
         cleaned = re.split(
             r"\s*(?:\||\+|\bDLC\b|\bExtras\b|[–—\-]?\s*\bFull Version\b|\bPre-Installed\b|\bVersion Details\b|\bPosted Version\b|\bView on\b)",
             cleaned,
             flags=re.IGNORECASE
         )[0].strip()
-        # Strip dates
+        # 4. Strip dates
         cleaned = re.sub(r"\bfrom\s+\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned, flags=re.IGNORECASE).strip()
         cleaned = re.sub(r"\(\d{1,2}/\d{1,2}/\d{2,4}\)", "", cleaned).strip()
         cleaned = re.sub(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned).strip()
-        # Strip parenthetical notes like (Latest), (Episodes 1-5), etc.
+        # 5. Strip parenthetical notes like (Latest), (Episodes 1-5), etc.
         cleaned = re.sub(r"\((?!(?:Build|v\d|\d)\b)[^)]*\)", "", cleaned).strip()
-        # If semantic version precedes (Build ...), strip the build parenthesis
+        # 6. If semantic version precedes (Build ...), strip the build parenthesis
         if re.search(r"\d+\.[\d\w]", cleaned) and "(" in cleaned:
             cleaned = re.sub(r"\s*\([^)]*build[^)]*\)", "", cleaned, flags=re.IGNORECASE).strip()
 
-        # Strip leading labels (Russian or English) including Build, v, ver, version
-        cleaned = re.sub(r"^(?:Версия\s*игры|Версия|Version|Build|v|ver)\s*[:\s-]*", "", cleaned, flags=re.IGNORECASE).strip()
+        # 7. Strip leftover action keywords or leading labels
+        cleaned = re.sub(r"^(?:Build|v|ver)\s*", "", cleaned, flags=re.IGNORECASE).strip()
         cleaned = re.sub(r"\[?(?:Download|Free|Direct|Torrent|Online\-Fix|Fix|Repair|Steam|Hosters|Drive)[^\]]*\]?", "", cleaned, flags=re.IGNORECASE).strip()
         return cleaned.rstrip(" :;,-_[]()–—").strip()
 
