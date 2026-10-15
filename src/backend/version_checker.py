@@ -80,17 +80,31 @@ class VersionChecker:
 
     @staticmethod
     def clean_version_string(raw: str) -> str:
-        """Strips all Russian characters (Cyrillic), modifier notes, and download keywords."""
+        """Strips Cyrillic notes, download metadata, date stamps, and leading prefixes (v, Build)."""
         if not raw:
             return ""
-        # Strip all Cyrillic Unicode characters and everything after them
-        cleaned = re.sub(r"[\u0400-\u04FF].*", "", raw).strip()
-        # Strip common action keywords
-        cleaned = re.sub(r"(?:Download|Free|Direct|Torrent|Online\-Fix|Fix|Repair|Steam|Hosters|Drive).*", "", cleaned, flags=re.IGNORECASE).strip()
-        # Strip leading labels
-        cleaned = re.sub(r"^(?:Build|v|ver|version)\s*", "", cleaned, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.rstrip(" :;,-_").strip()
-        return cleaned
+        # Strip Cyrillic notes
+        cleaned = re.sub(r"[\u0400-\u04FF].*", "", str(raw)).strip()
+        # Strip trailing notes, DLCs, Extras, pipes, and web UI keywords
+        cleaned = re.split(
+            r"\s*(?:\||\+|\bDLC\b|\bExtras\b|[–—\-]?\s*\bFull Version\b|\bPre-Installed\b|\bVersion Details\b|\bPosted Version\b|\bView on\b)",
+            cleaned,
+            flags=re.IGNORECASE
+        )[0].strip()
+        # Strip dates
+        cleaned = re.sub(r"\bfrom\s+\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned, flags=re.IGNORECASE).strip()
+        cleaned = re.sub(r"\(\d{1,2}/\d{1,2}/\d{2,4}\)", "", cleaned).strip()
+        cleaned = re.sub(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned).strip()
+        # Strip parenthetical notes like (Latest), (Episodes 1-5), etc.
+        cleaned = re.sub(r"\((?!(?:Build|v\d|\d)\b)[^)]*\)", "", cleaned).strip()
+        # If semantic version precedes (Build ...), strip the build parenthesis
+        if re.search(r"\d+\.[\d\w]", cleaned) and "(" in cleaned:
+            cleaned = re.sub(r"\s*\([^)]*build[^)]*\)", "", cleaned, flags=re.IGNORECASE).strip()
+
+        # Strip leading labels (Russian or English) including Build, v, ver, version
+        cleaned = re.sub(r"^(?:Версия\s*игры|Версия|Version|Build|v|ver)\s*[:\s-]*", "", cleaned, flags=re.IGNORECASE).strip()
+        cleaned = re.sub(r"\[?(?:Download|Free|Direct|Torrent|Online\-Fix|Fix|Repair|Steam|Hosters|Drive)[^\]]*\]?", "", cleaned, flags=re.IGNORECASE).strip()
+        return cleaned.rstrip(" :;,-_[]()–—").strip()
 
     @staticmethod
     def normalize_version(ver: Any) -> str:
@@ -152,34 +166,7 @@ class VersionChecker:
                             break
 
                 if raw_info:
-                    # Strip metadata after pipe |, plus signs, DLC, etc.
-                    cleaned = re.split(r"\s*(?:\||\+|\bDLC\b|\bExtras\b|\bFull Version\b|\bPre-Installed\b)", raw_info, flags=re.IGNORECASE)[0].strip()
-                    # Strip dates (e.g. from 04/08/2020 or 02/07/2022)
-                    cleaned = re.sub(r"\bfrom\s+\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned, flags=re.IGNORECASE).strip()
-                    cleaned = re.sub(r"\(\d{1,2}/\d{1,2}/\d{2,4}\)", "", cleaned).strip()
-                    cleaned = re.sub(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned).strip()
-                    # Strip non-version parentheticals like (Gold Edition), (Episodes 1-5), (Latest)
-                    cleaned = re.sub(r"\((?!(?:Build|v\d|\d)\b)[^)]*\)", "", cleaned).strip()
-
-                    # 1. Semantic Version check first: e.g. "v2.0.3 (Build 24914692)" -> extract "2.0.3"
-                    semver_match = re.search(r"\b(?:v\s*)?(\d+\.[\d\.\w\-]+(?:\s+\d+)?)", cleaned, re.IGNORECASE)
-                    if semver_match:
-                        cleaned_semver = self.clean_version_string(semver_match.group(1))
-                        if cleaned_semver:
-                            return cleaned_semver
-
-                    # 2. Build ID check: e.g. "Build 23563172" or "(Build 23563172)" -> extract "23563172"
-                    build_match = re.search(r"\bBuild\s*(\d+)", cleaned, re.IGNORECASE)
-                    if build_match:
-                        return build_match.group(1)
-
-                    # 3. Standalone numeric ID (Steam depot build ID, e.g. 5+ digits) -> extract "23563172"
-                    num_match = re.search(r"\b(\d{5,})\b", cleaned)
-                    if num_match:
-                        return num_match.group(1)
-
-                    # 4. General fallback from cleaned
-                    c = self.clean_version_string(cleaned)
+                    c = self.clean_version_string(raw_info)
                     if c:
                         return c
 

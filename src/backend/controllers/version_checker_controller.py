@@ -181,68 +181,67 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
                 db_game = g
                 break
 
-        installed = config.data
-        game_entry = installed.get(game_title, {})
-
-        if 'version' in data and data['version']: game_entry['version'] = str(data['version']).strip()
-        if 'host' in data and data['host']: game_entry['host'] = data['host']
+        # Clean parts list
+        parts_clean = []
         if 'parts' in data and data['parts']:
             parts_clean = [p.strip() for p in data['parts'] if p and str(p).strip().startswith('http')]
-            game_entry['parts'] = parts_clean
-        if 'fix_url' in data: game_entry['fix_url'] = data['fix_url'].strip() if data['fix_url'] else ""
-        
-        if 'approx_size' in data and data['approx_size'] and str(data['approx_size']).lower() not in ('none', 'null', 'unknown', 'n/a'):
-            game_entry['approx_size'] = data['approx_size']
-        elif db_game and db_game.approx_size:
-            game_entry['approx_size'] = db_game.approx_size
 
-        if 'description' in data and data['description'] and str(data['description']).lower() not in ('none', 'null'):
-            game_entry['description'] = data['description']
-        elif db_game and db_game.description:
-            game_entry['description'] = db_game.description
+        approx_size = data.get('approx_size')
+        if not approx_size or str(approx_size).lower() in ('none', 'null', 'unknown', 'n/a'):
+            approx_size = db_game.approx_size if db_game else "Unknown"
 
-        if 'origin_url' in data and data['origin_url'] and str(data['origin_url']).lower() not in ('none', 'null'):
-            game_entry['origin_url'] = data['origin_url']
-        elif db_game and db_game.origin_url:
-            game_entry['origin_url'] = db_game.origin_url
+        description = data.get('description')
+        if not description or str(description).lower() in ('none', 'null'):
+            description = db_game.description if db_game else "No description available."
 
-        if 'thumbnail' in data and data['thumbnail'] and str(data['thumbnail']).lower() not in ('none', 'null'):
-            game_entry['thumbnail'] = data['thumbnail']
-        elif db_game and db_game.thumbnail:
-            game_entry['thumbnail'] = db_game.thumbnail
+        origin_url = data.get('origin_url')
+        if not origin_url or str(origin_url).lower() in ('none', 'null'):
+            origin_url = db_game.origin_url if db_game else ""
 
-        if 'category' in data and data['category']: game_entry['category'] = data['category']
-        elif db_game and db_game.category: game_entry['category'] = db_game.category
-        elif 'category' not in game_entry: game_entry['category'] = 'General'
+        thumbnail = data.get('thumbnail')
+        if not thumbnail or str(thumbnail).lower() in ('none', 'null'):
+            thumbnail = db_game.thumbnail if db_game else ""
 
-        # Remove legacy main_game_url if present
-        game_entry.pop('main_game_url', None)
+        category = data.get('category')
+        if not category:
+            category = db_game.category if (db_game and db_game.category) else "General"
 
-        installed[game_title] = game_entry
-        config.save_installed_games(installed)
+        raw_ver = data.get('version') or (db_game.version if db_game else "1.0")
+        clean_ver = version_checker.clean_version_string(str(raw_ver)) or "1.0"
 
-        # Save to local Data.json file and sync in-memory list
+        catalog_entry = {
+            "title": game_title,
+            "version": clean_ver,
+            "host": data.get('host', 'GoFile'),
+            "parts": parts_clean,
+            "fix_url": data.get('fix_url', '').strip() if data.get('fix_url') else "",
+            "approx_size": approx_size,
+            "description": description,
+            "thumbnail": thumbnail,
+            "origin_url": origin_url,
+            "category": category
+        }
+
+        # If this game had a spurious placeholder in installed games without location or downloaded flag, remove it
+        installed = config.data
+        keys_to_clean = [k for k in list(installed.keys()) if k.lower() == game_title.lower()]
+        for k in keys_to_clean:
+            entry = installed.get(k)
+            if isinstance(entry, dict) and not entry.get('location') and not entry.get('downloaded'):
+                installed.pop(k, None)
+                config.save_installed_games(installed)
+
+        # Save ONLY to catalog Data.json file and sync in-memory list (never overwrite user's installed game version)
         try:
-            db_manager.add_or_update_game({
-                "title": game_title,
-                "version": game_entry.get('version'),
-                "host": game_entry.get('host'),
-                "parts": game_entry.get('parts'),
-                "fix_url": game_entry.get('fix_url'),
-                "approx_size": game_entry.get('approx_size'),
-                "description": game_entry.get('description'),
-                "thumbnail": game_entry.get('thumbnail'),
-                "origin_url": game_entry.get('origin_url'),
-                "category": game_entry.get('category')
-            }, installed_data=installed)
+            db_manager.add_or_update_game(catalog_entry, installed_data=installed)
         except Exception as de:
             print(f"[VersionChecker] Warning saving to local Data.json: {de}")
 
-        print(f"[VersionChecker] Successfully updated '{game_title}' in Data.json (v{game_entry.get('version')})")
+        print(f"[VersionChecker] Successfully updated catalog for '{game_title}' in Data.json (v{clean_ver})")
         return jsonify({
             "success": True,
             "message": f"Successfully updated '{game_title}' in Data.json!",
-            "game": game_entry
+            "game": catalog_entry
         })
 
     return bp
