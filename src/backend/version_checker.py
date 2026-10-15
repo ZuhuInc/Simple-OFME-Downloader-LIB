@@ -135,19 +135,83 @@ class VersionChecker:
 
             # 2. SteamRIP Parser
             elif "steamrip.com" in origin_url:
+                # Step A: Parse from GAME INFO block (present on all SteamRIP releases)
+                raw_info = None
+                for li in soup.find_all("li"):
+                    strong = li.find("strong")
+                    if strong and "version" in strong.get_text().lower():
+                        text = li.get_text(" ").strip()
+                        m = re.search(r"Version\s*:\s*(.+)", text, re.IGNORECASE)
+                        if m:
+                            raw_info = m.group(1).strip()
+                            break
+                    elif re.search(r"^\+?\s*Version\s*:\s*(.+)", li.get_text(" ").strip(), re.IGNORECASE):
+                        m = re.search(r"Version\s*:\s*(.+)", li.get_text(" ").strip(), re.IGNORECASE)
+                        if m:
+                            raw_info = m.group(1).strip()
+                            break
+
+                if raw_info:
+                    # Strip metadata after pipe |, plus signs, DLC, etc.
+                    cleaned = re.split(r"\s*(?:\||\+|\bDLC\b|\bExtras\b|\bFull Version\b|\bPre-Installed\b)", raw_info, flags=re.IGNORECASE)[0].strip()
+                    # Strip dates (e.g. from 04/08/2020 or 02/07/2022)
+                    cleaned = re.sub(r"\bfrom\s+\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned, flags=re.IGNORECASE).strip()
+                    cleaned = re.sub(r"\(\d{1,2}/\d{1,2}/\d{2,4}\)", "", cleaned).strip()
+                    cleaned = re.sub(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned).strip()
+                    # Strip non-version parentheticals like (Gold Edition), (Episodes 1-5), (Latest)
+                    cleaned = re.sub(r"\((?!(?:Build|v\d|\d)\b)[^)]*\)", "", cleaned).strip()
+
+                    # 1. Semantic Version check first: e.g. "v2.0.3 (Build 24914692)" -> extract "2.0.3"
+                    semver_match = re.search(r"\b(?:v\s*)?(\d+\.[\d\.\w\-]+(?:\s+\d+)?)", cleaned, re.IGNORECASE)
+                    if semver_match:
+                        cleaned_semver = self.clean_version_string(semver_match.group(1))
+                        if cleaned_semver:
+                            return cleaned_semver
+
+                    # 2. Build ID check: e.g. "Build 23563172" or "(Build 23563172)" -> extract "23563172"
+                    build_match = re.search(r"\bBuild\s*(\d+)", cleaned, re.IGNORECASE)
+                    if build_match:
+                        return build_match.group(1)
+
+                    # 3. Standalone numeric ID (Steam depot build ID, e.g. 5+ digits) -> extract "23563172"
+                    num_match = re.search(r"\b(\d{5,})\b", cleaned)
+                    if num_match:
+                        return num_match.group(1)
+
+                    # 4. General fallback from cleaned
+                    c = self.clean_version_string(cleaned)
+                    if c:
+                        return c
+
+                # Step B: Check svchk wrapper data-svchk-build attribute
+                svchk = soup.find(class_="svchk__wrapper")
+                if svchk:
+                    build_id = svchk.get("data-svchk-build")
+                    if build_id and build_id.strip().isdigit():
+                        return build_id.strip()
+
+                # Step C: Fallback to H1 tag (safe word boundaries to never match words like 'EVO')
                 h1 = soup.find("h1")
                 if h1:
-                    h1_text = h1.get_text(separator=" ")
-                    m = re.search(r"\(([^\)]+)\)", h1_text)
+                    h1_text = h1.get_text(separator=" ").strip()
+                    # Check parenthetical version in title like (v1.2.3) or (Build 12345)
+                    m = re.search(r"\(([^)]+)\)", h1_text)
                     if m:
-                        cleaned = self.clean_version_string(m.group(1))
-                        if cleaned:
-                            return cleaned
-                    m2 = re.search(r"(?:v|Build\s*)([\d\.\w\-]+)", h1_text, re.IGNORECASE)
+                        candidate = m.group(1).strip()
+                        candidate = re.sub(r"^(?:Remake\s*\+?\s*|Full\s*Version\s*\+?\s*)", "", candidate, flags=re.IGNORECASE).strip()
+                        if re.search(r"\d", candidate):
+                            cleaned = self.clean_version_string(candidate)
+                            if cleaned:
+                                return cleaned
+
+                    # Explicit word-boundary regex requiring digits
+                    m2 = re.search(r"\b(?:v\s*(\d[\d\.\w\-]*)|Build\s*(\d+))", h1_text, re.IGNORECASE)
                     if m2:
-                        cleaned = self.clean_version_string(m2.group(1))
-                        if cleaned:
-                            return cleaned
+                        val = m2.group(1) or m2.group(2)
+                        if val:
+                            cleaned = self.clean_version_string(val)
+                            if cleaned:
+                                return cleaned
 
             # 3. Generic title/h1 parser
             title_elem = soup.find("title")
@@ -245,6 +309,15 @@ class VersionChecker:
                 "outdated_list": outdated_games
             })
 
+    @staticmethod
+    def format_version_display(ver: Any) -> str:
+        """Formats version string cleanly with a single 'v' prefix (e.g. v1.0.5 or v23563172)."""
+        if not ver or str(ver).strip() in ("", "---", "Not Installed"):
+            return "---"
+        s = str(ver).strip()
+        s = re.sub(r"^(?:Build|v|ver|version)\s*", "", s, flags=re.IGNORECASE).strip()
+        return f"v{s}"
+
     def send_discord_bulk_notification(self, outdated_games: List[Dict[str, Any]]):
         """Dispatches a Discord webhook embed with all outdated games found."""
         if not self.webhook_url or not self.enable_notifications:
@@ -253,9 +326,11 @@ class VersionChecker:
         try:
             fields = []
             for g in outdated_games[:25]:  # Discord embed field limit
+                db_disp = self.format_version_display(g.get('db_version'))
+                live_disp = self.format_version_display(g.get('latest_version'))
                 fields.append({
                     "name": f"🎮 {g['title']}",
-                    "value": f"**Download-DB:** `v{g['db_version']}` ➔ **Live Online:** `v{g['latest_version']}`\n[Open Release Page]({g['origin_url']})",
+                    "value": f"**Download-DB:** `{db_disp}` ➔ **Live Online:** `{live_disp}`\n[Open Release Page]({g['origin_url']})",
                     "inline": False
                 })
 

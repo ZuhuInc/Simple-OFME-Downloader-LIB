@@ -214,6 +214,14 @@ class VersionCheckerController {
         }
     }
 
+    formatVersionBadge(ver) {
+        if (!ver || ver === '---' || ver === 'Not Installed') {
+            return '<span class="text-muted">---</span>';
+        }
+        const clean = String(ver).trim().replace(/^(?:Build|v|ver|version)\s*/i, '');
+        return 'v' + clean;
+    }
+
     appendResultRow(data) {
         if (!this.resultsTable) {
             this.resultsTable = document.getElementById('vcResultsTableBody');
@@ -233,9 +241,9 @@ class VersionCheckerController {
             statusBadge += ` <span class="badge badge-success" style="margin-left: 6px;"><i class="fa-solid fa-folder-check"></i> Installed</span>`;
         }
 
-        const localVerDisplay = data.local_version !== 'Not Installed' ? `v${data.local_version}` : '<span class="text-muted">---</span>';
-        const dbVerDisplay = data.db_version ? `v${data.db_version}` : '<span class="text-muted">---</span>';
-        const liveVerDisplay = (data.scraped_version && data.scraped_version !== '---') ? `v${data.scraped_version}` : '<span class="text-muted">---</span>';
+        const localVerDisplay = data.local_version !== 'Not Installed' ? this.formatVersionBadge(data.local_version) : '<span class="text-muted">---</span>';
+        const dbVerDisplay = data.db_version ? this.formatVersionBadge(data.db_version) : '<span class="text-muted">---</span>';
+        const liveVerDisplay = (data.scraped_version && data.scraped_version !== '---') ? this.formatVersionBadge(data.scraped_version) : '<span class="text-muted">---</span>';
 
         const safeTitle = (data.game || 'Game').replace(/'/g, "\\'");
         const safeUrl = (data.origin_url || '').replace(/'/g, "\\'");
