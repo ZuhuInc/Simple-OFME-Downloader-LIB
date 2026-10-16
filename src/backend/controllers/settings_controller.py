@@ -13,7 +13,7 @@ def create_settings_blueprint(config, extractor, steam_manager, db_manager, down
     def get_status():
         return jsonify({
             "status": "online",
-            "version": "2.0.1",
+            "version": "2.0.2",
             "winrar_installed": extractor.is_winrar_available(),
             "steam_detected": bool(steam_manager.steam_path),
             "total_games": len(db_manager.games),

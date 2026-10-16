@@ -330,7 +330,7 @@ class VersionChecker:
                     "description": "The following releases have newer patches published on Online-Fix / SteamRIP:",
                     "color": 16753920,  # Fanta Gold/Orange
                     "fields": fields,
-                    "footer": {"text": "FANTA OFME Downloader v2.0.1"}
+                    "footer": {"text": "FANTA OFME Downloader v2.0.2"}
                 }]
             }
 
