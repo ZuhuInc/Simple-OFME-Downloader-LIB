@@ -85,18 +85,20 @@ class VersionChecker:
             return ""
         # 1. Strip leading labels (Russian or English) including Build, v, ver, version
         cleaned = re.sub(r"^(?:Версия\s*игры|Версия|Version|Build|v|ver)\s*[:\s-]*", "", str(raw), flags=re.IGNORECASE).strip()
+        # 1b. Strip leading 8-digit date stamps (YYYYMMDD) preceding Build or v (e.g. "20220613 Build 8856549" -> "8856549")
+        cleaned = re.sub(r"^(?:19|20)\d{6}\s+(?:Build|v|ver\w*)\s*", "", cleaned, flags=re.IGNORECASE).strip()
         # 2. Strip trailing Cyrillic notes (e.g. по сети, онлайн)
         cleaned = re.sub(r"[\u0400-\u04FF].*", "", cleaned).strip()
-        # 3. Strip trailing notes, DLCs, Extras, pipes, and web UI keywords
-        cleaned = re.split(
-            r"\s*(?:\||\+|\bDLC\b|\bExtras\b|[–—\-]?\s*\bFull Version\b|\bPre-Installed\b|\bVersion Details\b|\bPosted Version\b|\bView on\b)",
-            cleaned,
-            flags=re.IGNORECASE
-        )[0].strip()
-        # 4. Strip dates
+        # 3. Strip dates FIRST before splitting on slashes
         cleaned = re.sub(r"\bfrom\s+\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned, flags=re.IGNORECASE).strip()
         cleaned = re.sub(r"\(\d{1,2}/\d{1,2}/\d{2,4}\)", "", cleaned).strip()
         cleaned = re.sub(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned).strip()
+        # 4. Strip trailing notes, DLCs, Extras, pipes, regulation versions, and web UI keywords
+        cleaned = re.split(
+            r"\s*(?:\||\+|\b(?:DLC|Extras|Reg|Regulation)\b|[–—\-]?\s*\bFull Version\b|\bPre-Installed\b|\bVersion Details\b|\bPosted Version\b|\bView on\b|/\s*(?:Reg|Regulation)\b|\s+/\s+)",
+            cleaned,
+            flags=re.IGNORECASE
+        )[0].strip()
         # 5. Strip parenthetical notes like (Latest), (Episodes 1-5), etc.
         cleaned = re.sub(r"\((?!(?:Build|v\d|\d)\b)[^)]*\)", "", cleaned).strip()
         # 6. If semantic version precedes (Build ...), strip the build parenthesis
@@ -106,7 +108,7 @@ class VersionChecker:
         # 7. Strip leftover action keywords or leading labels
         cleaned = re.sub(r"^(?:Build|v|ver)\s*", "", cleaned, flags=re.IGNORECASE).strip()
         cleaned = re.sub(r"\[?(?:Download|Free|Direct|Torrent|Online\-Fix|Fix|Repair|Steam|Hosters|Drive)[^\]]*\]?", "", cleaned, flags=re.IGNORECASE).strip()
-        return cleaned.rstrip(" :;,-_[]()–—").strip()
+        return cleaned.rstrip(" :;,-_[]()–—/").strip()
 
     @staticmethod
     def normalize_version(ver: Any) -> str:
@@ -117,6 +119,26 @@ class VersionChecker:
         s = re.sub(r"^(?:v|ver|version|build)\s*", "", s, flags=re.IGNORECASE)
         s = re.sub(r"[\s\-_]+", "", s)
         return s.lower()
+
+    @staticmethod
+    def are_versions_equal(v1: Any, v2: Any) -> bool:
+        """Determines if two version strings represent the same release."""
+        n1 = VersionChecker.normalize_version(v1)
+        n2 = VersionChecker.normalize_version(v2)
+        if not n1 or not n2:
+            return False
+        if n1 == n2:
+            return True
+        # Handle zero-padded minor version formats (e.g. 1.03 vs 1.0.3 or 1.02 vs 1.0.2)
+        n1_expanded = re.sub(r"\.0(\d)\b", r".0.\1", n1)
+        n2_expanded = re.sub(r"\.0(\d)\b", r".0.\1", n2)
+        if n1_expanded == n2_expanded:
+            return True
+        n1_collapsed = re.sub(r"\.0\.(\d)\b", r".0\1", n1)
+        n2_collapsed = re.sub(r"\.0\.(\d)\b", r".0\1", n2)
+        if n1_collapsed == n2_collapsed:
+            return True
+        return False
 
     def scrape_online_version(self, origin_url: str) -> Optional[str]:
         """Scrapes the live version string from Online-Fix.me or SteamRIP page."""
@@ -250,7 +272,7 @@ class VersionChecker:
                 norm_scraped = self.normalize_version(scraped_ver)
                 
                 # Flag as update ONLY if live site differs from Download-DB!
-                if norm_scraped and norm_db and norm_scraped != norm_db:
+                if norm_scraped and norm_db and not self.are_versions_equal(db_version, scraped_ver):
                     has_update = True
                     updates_found += 1
                     outdated_games.append({
@@ -330,7 +352,7 @@ class VersionChecker:
                     "description": "The following releases have newer patches published on Online-Fix / SteamRIP:",
                     "color": 16753920,  # Fanta Gold/Orange
                     "fields": fields,
-                    "footer": {"text": "FANTA OFME Downloader v2.0.2"}
+                    "footer": {"text": "FANTA OFME Downloader v2.0.3"}
                 }]
             }
 

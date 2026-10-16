@@ -36,13 +36,17 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
         elif source in ['sr', 'steamrip', 'steam-rip']:
             games = [g for g in games if 'steamrip.com' in (g.get('origin_url') or '').lower()]
 
+        # Step 3: Configure bypass list
+        use_bypass = bool(data.get('use_bypass', True))
+        active_bypass_list = config.get("version_check_bypass_list", []) if use_bypass else []
+
         version_checker.update_credentials(
             username=config.get("ofme_username", ""),
             password=config.get("ofme_password", ""),
             webhook_url=config.get("webhook_url", ""),
             enable_webhook=config.get("enable_webhook", False),
             browser_path=config.get("browser_path", ""),
-            bypass_list=config.get("version_check_bypass_list", [])
+            bypass_list=active_bypass_list
         )
 
         def on_vc_progress(info):
@@ -62,6 +66,64 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
     def stop_version_scan():
         version_checker.stop_scan()
         return jsonify({"success": True})
+
+    @bp.route('/bypass', methods=['GET'])
+    def get_bypass_list():
+        return jsonify({
+            "success": True,
+            "bypass_list": config.get("version_check_bypass_list", [])
+        })
+
+    @bp.route('/bypass/toggle', methods=['POST'])
+    def toggle_game_bypass():
+        data = request.get_json(silent=True) or {}
+        title = (data.get('game_title') or data.get('title') or '').strip()
+        if not title:
+            return jsonify({"success": False, "error": "Game title is required"}), 400
+
+        current_list = list(config.get("version_check_bypass_list", []))
+        explicit_state = data.get('bypassed')  # Optional bool: True to bypass, False to unbypass
+
+        existing_match = None
+        for item in current_list:
+            if item.lower() == title.lower():
+                existing_match = item
+                break
+
+        if explicit_state is not None:
+            if explicit_state and not existing_match:
+                current_list.append(title)
+                is_bypassed = True
+            elif not explicit_state and existing_match:
+                current_list.remove(existing_match)
+                is_bypassed = False
+            else:
+                is_bypassed = bool(existing_match)
+        else:
+            if existing_match:
+                current_list.remove(existing_match)
+                is_bypassed = False
+            else:
+                current_list.append(title)
+                is_bypassed = True
+
+        config.set("version_check_bypass_list", current_list)
+        config.save()
+        version_checker.bypass_list = current_list
+
+        return jsonify({
+            "success": True,
+            "game_title": title,
+            "bypassed": is_bypassed,
+            "bypass_list": current_list
+        })
+
+    @bp.route('/bypass/clear', methods=['POST'])
+    def clear_bypass_list():
+        config.set("version_check_bypass_list", [])
+        config.save()
+        version_checker.bypass_list = []
+        return jsonify({"success": True, "bypass_list": []})
 
     @bp.route('/save-creds', methods=['POST'])
     def save_vc_credentials():
@@ -176,10 +238,16 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
 
         # Find existing game in database to maintain thumbnail / description
         db_game = None
+        origin_url_req = str(data.get('origin_url', '')).strip().rstrip('/').lower()
         for g in getattr(db_manager, 'games', []):
             if g.title.lower() == game_title.lower():
                 db_game = g
                 break
+            if origin_url_req and g.origin_url and g.origin_url.strip().rstrip('/').lower() == origin_url_req:
+                db_game = g
+                break
+
+        canonical_title = db_game.title if db_game else game_title
 
         # Clean parts list
         parts_clean = []
@@ -210,7 +278,7 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
         clean_ver = version_checker.clean_version_string(str(raw_ver)) or "1.0"
 
         catalog_entry = {
-            "title": game_title,
+            "title": canonical_title,
             "version": clean_ver,
             "host": data.get('host', 'GoFile'),
             "parts": parts_clean,

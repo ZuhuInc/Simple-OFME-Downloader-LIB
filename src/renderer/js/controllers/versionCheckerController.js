@@ -29,6 +29,7 @@ class VersionCheckerController {
         this.scanSteamripBtn = document.getElementById('scanSteamripBtn');
         this.scanAllSourcesBtn = document.getElementById('scanAllSourcesBtn');
         this.installedOnlyCheck = document.getElementById('vcInstalledOnlyCheck');
+        this.enableBypassCheck = document.getElementById('vcEnableBypassCheck');
         this.stopBtn = document.getElementById('stopScanBtn');
         this.progressBar = document.getElementById('vcProgressBar');
         this.scanStatusText = document.getElementById('vcScanStatusText');
@@ -39,6 +40,13 @@ class VersionCheckerController {
             this.installedOnlyCheck = document.getElementById('vcInstalledOnlyCheck');
         }
         return this.installedOnlyCheck ? this.installedOnlyCheck.checked : true;
+    }
+
+    isBypassEnabled() {
+        if (!this.enableBypassCheck) {
+            this.enableBypassCheck = document.getElementById('vcEnableBypassCheck');
+        }
+        return this.enableBypassCheck ? this.enableBypassCheck.checked : true;
     }
 
     async loadSavedCredentials(retries = 3) {
@@ -68,19 +76,19 @@ class VersionCheckerController {
     bindEvents() {
         if (this.scanOfmeBtn) {
             this.scanOfmeBtn.addEventListener('click', () => {
-                this.startScan({ source: 'ofme', installed_only: this.isInstalledOnly() });
+                this.startScan({ source: 'ofme', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled() });
             });
         }
 
         if (this.scanSteamripBtn) {
             this.scanSteamripBtn.addEventListener('click', () => {
-                this.startScan({ source: 'sr', installed_only: this.isInstalledOnly() });
+                this.startScan({ source: 'sr', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled() });
             });
         }
 
         if (this.scanAllSourcesBtn) {
             this.scanAllSourcesBtn.addEventListener('click', () => {
-                this.startScan({ source: 'all', installed_only: this.isInstalledOnly() });
+                this.startScan({ source: 'all', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled() });
             });
         }
 
@@ -219,7 +227,7 @@ class VersionCheckerController {
             return '<span class="text-muted">---</span>';
         }
         const clean = String(ver).trim().replace(/^(?:Build|v|ver|version)\s*/i, '');
-        return 'v' + clean;
+        return /^\d/.test(clean) ? 'v' + clean : clean;
     }
 
     appendResultRow(data) {
@@ -262,11 +270,41 @@ class VersionCheckerController {
                     <button class="btn btn-sm btn-primary btn-icon" onclick="window.versionCheckerController.openAssistedUpdater('${safeUrl}', '${safeTitle}')" title="Assisted Auto-Fill from Online-Fix">
                         <i class="fa-solid fa-robot"></i>
                     </button>
+                    <button class="btn btn-sm btn-secondary btn-icon" onclick="window.versionCheckerController.toggleBypassForGame('${safeTitle}', this)" title="Bypass this game from future audits">
+                        <i class="fa-solid fa-bell-slash"></i>
+                    </button>
                 </div>
             </td>
         `;
 
         this.resultsTable.prepend(tr);
+    }
+
+    async toggleBypassForGame(gameTitle, btnEl = null) {
+        if (!gameTitle) return;
+        try {
+            const res = await window.apiClient.toggleBypass(gameTitle);
+            if (res && res.success) {
+                if (res.bypassed) {
+                    window.uiController.showToast(`Bypassed "${gameTitle}" from future audits`, 'warning');
+                    if (btnEl) {
+                        btnEl.style.color = 'var(--accent)';
+                        btnEl.style.borderColor = 'var(--accent)';
+                        btnEl.title = 'Bypassed in audits (Click to remove bypass)';
+                    }
+                } else {
+                    window.uiController.showToast(`Included "${gameTitle}" in future audits`, 'success');
+                    if (btnEl) {
+                        btnEl.style.color = '';
+                        btnEl.style.borderColor = '';
+                        btnEl.title = 'Bypass this game from future audits';
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('[VC Controller] Toggle bypass error:', err);
+            window.uiController.showToast('Failed to toggle bypass for game', 'danger');
+        }
     }
 
     async openAssistedUpdater(originUrl, gameTitle) {
@@ -319,7 +357,8 @@ class VersionCheckerController {
             (reqUrl && g.origin_url && g.origin_url.trim().toLowerCase() === reqUrl)
         );
 
-        if (titleInput) titleInput.value = data.title || fallbackTitle || '';
+        if (titleInput) titleInput.value = fallbackTitle || existingGame?.title || data.title || '';
+        this.currentExistingGame = existingGame;
         if (verInput) verInput.value = data.version || existingGame?.version || '1.0';
         
         const oldSize = existingGame?.approx_size || existingGame?.size || '';

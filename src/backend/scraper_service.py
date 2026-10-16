@@ -511,18 +511,20 @@ class OnlineFixScraper:
             return ""
         # 1. Strip leading labels (Russian or English) including Build, v, ver, version
         cleaned = re.sub(r"^(?:Версия\s*игры|Версия|Version|Build|v|ver)\s*[:\s-]*", "", str(raw), flags=re.IGNORECASE).strip()
+        # 1b. Strip leading 8-digit date stamps (YYYYMMDD) preceding Build or v (e.g. "20220613 Build 8856549" -> "8856549")
+        cleaned = re.sub(r"^(?:19|20)\d{6}\s+(?:Build|v|ver\w*)\s*", "", cleaned, flags=re.IGNORECASE).strip()
         # 2. Strip trailing Cyrillic notes (e.g. по сети, онлайн)
         cleaned = re.sub(r"[\u0400-\u04FF].*", "", cleaned).strip()
-        # 3. Strip trailing notes, DLCs, Extras, pipes, and web UI keywords
-        cleaned = re.split(
-            r"\s*(?:\||\+|\bDLC\b|\bExtras\b|[–—\-]?\s*\bFull Version\b|\bPre-Installed\b|\bVersion Details\b|\bPosted Version\b|\bView on\b)",
-            cleaned,
-            flags=re.IGNORECASE
-        )[0].strip()
-        # 4. Strip dates
+        # 3. Strip dates FIRST before splitting on slashes
         cleaned = re.sub(r"\bfrom\s+\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned, flags=re.IGNORECASE).strip()
         cleaned = re.sub(r"\(\d{1,2}/\d{1,2}/\d{2,4}\)", "", cleaned).strip()
         cleaned = re.sub(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned).strip()
+        # 4. Strip trailing notes, DLCs, Extras, pipes, regulation versions, and web UI keywords
+        cleaned = re.split(
+            r"\s*(?:\||\+|\b(?:DLC|Extras|Reg|Regulation)\b|[–—\-]?\s*\bFull Version\b|\bPre-Installed\b|\bVersion Details\b|\bPosted Version\b|\bView on\b|/\s*(?:Reg|Regulation)\b|\s+/\s+)",
+            cleaned,
+            flags=re.IGNORECASE
+        )[0].strip()
         # 5. Strip parenthetical notes like (Latest), (Episodes 1-5), etc.
         cleaned = re.sub(r"\((?!(?:Build|v\d|\d)\b)[^)]*\)", "", cleaned).strip()
         # 6. If semantic version precedes (Build ...), strip the build parenthesis
@@ -532,4 +534,4 @@ class OnlineFixScraper:
         # 7. Strip leftover action keywords or leading labels
         cleaned = re.sub(r"^(?:Build|v|ver)\s*", "", cleaned, flags=re.IGNORECASE).strip()
         cleaned = re.sub(r"\[?(?:Download|Free|Direct|Torrent|Online\-Fix|Fix|Repair|Steam|Hosters|Drive)[^\]]*\]?", "", cleaned, flags=re.IGNORECASE).strip()
-        return cleaned.rstrip(" :;,-_[]()–—").strip()
+        return cleaned.rstrip(" :;,-_[]()–—/").strip()

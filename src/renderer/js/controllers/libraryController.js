@@ -86,9 +86,11 @@ class LibraryController {
         if (this.gameCountEl) this.gameCountEl.textContent = 'Syncing catalog database...';
     }
 
-    async loadGames() {
+    async loadGames(retries = 5, delayMs = 800) {
         if (!this.gridEl) return;
-        this.renderSkeletons();
+        if (this.games.length === 0) {
+            this.renderSkeletons();
+        }
 
         try {
             const data = await window.apiClient.getGames();
@@ -96,6 +98,12 @@ class LibraryController {
             this.populateHostFilter(data.hosts || []);
             this.applyFilters();
         } catch (err) {
+            if (retries > 0) {
+                console.log(`[Library] Backend bridge still starting up, retrying in ${delayMs}ms (${retries} attempts left)...`);
+                setTimeout(() => this.loadGames(retries - 1, delayMs), delayMs);
+                return;
+            }
+
             this.gridEl.innerHTML = `
                 <div class="grid-empty-card glass-card">
                     <div class="empty-icon-circle" style="border-color: rgba(224, 82, 82, 0.3); color: var(--danger); background: rgba(224, 82, 82, 0.1);">

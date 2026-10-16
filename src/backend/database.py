@@ -66,6 +66,9 @@ class GameEntry:
             norm_inst = re.sub(r"^v", "", str(self.installed_version).strip().lower())
             norm_cat = re.sub(r"^v", "", str(self.version).strip().lower())
             if norm_inst != norm_cat and norm_inst != "":
+                # Check zero-padded minor format equivalence (e.g. 1.03 vs 1.0.3)
+                if re.sub(r"\.0(\d)\b", r".0.\1", norm_inst) == re.sub(r"\.0(\d)\b", r".0.\1", norm_cat):
+                    return 1
                 return 2
             return 1
         return 1
@@ -264,10 +267,40 @@ class DatabaseManager:
             except Exception as e:
                 print(f"[Database] Warning reading {target_file}: {e}")
 
-        # Preserve existing metadata (thumbnail, description, size, etc.) if new values are empty / None / null
-        existing_entry = current_data.get(title, {})
-        if not isinstance(existing_entry, dict):
-            existing_entry = {}
+        # Match existing entry by exact title, case-insensitive title, or origin_url
+        target_key = title
+        existing_entry = {}
+
+        if title in current_data and isinstance(current_data[title], dict):
+            target_key = title
+            existing_entry = current_data[title]
+        else:
+            for k, v in current_data.items():
+                if k.lower() == title.lower() and isinstance(v, dict):
+                    target_key = k
+                    existing_entry = v
+                    break
+
+        raw_origin = str(game_dict.get("origin_url", "")).strip()
+        if not existing_entry and raw_origin:
+            clean_origin = raw_origin.rstrip("/").lower()
+            for k, v in current_data.items():
+                if isinstance(v, dict):
+                    v_orig = str(v.get("origin_url", "")).strip().rstrip("/").lower()
+                    if v_orig and v_orig == clean_origin:
+                        target_key = k
+                        existing_entry = v
+                        break
+
+        # Remove any spurious duplicate entries that share the same origin_url
+        if raw_origin:
+            clean_origin = raw_origin.rstrip("/").lower()
+            spurious_keys = [
+                k for k, v in current_data.items()
+                if k != target_key and isinstance(v, dict) and str(v.get("origin_url", "")).strip().rstrip("/").lower() == clean_origin
+            ]
+            for sk in spurious_keys:
+                del current_data[sk]
 
         raw_thumb = str(game_dict.get("thumbnail", "")).strip()
         final_thumb = raw_thumb if raw_thumb and raw_thumb.lower() not in ("none", "null") else existing_entry.get("thumbnail", "")
@@ -278,7 +311,6 @@ class DatabaseManager:
         raw_size = str(game_dict.get("approx_size", "")).strip()
         final_size = raw_size if raw_size and raw_size.lower() not in ("none", "null", "unknown", "n/a") else existing_entry.get("approx_size", "Unknown")
 
-        raw_origin = str(game_dict.get("origin_url", "")).strip()
         final_origin = raw_origin if raw_origin and raw_origin.lower() not in ("none", "null") else existing_entry.get("origin_url", "")
 
         raw_cat = str(game_dict.get("category", "")).strip()
@@ -296,15 +328,15 @@ class DatabaseManager:
             "category": final_cat or "General"
         }
 
-        # Update or add game under exact title
-        current_data[title] = entry_payload
+        # Update or add game under target_key
+        current_data[target_key] = entry_payload
 
         # Write formatted JSON back to file
         os.makedirs(os.path.dirname(os.path.abspath(target_file)), exist_ok=True)
         with open(target_file, "w", encoding="utf-8") as f:
             json.dump(current_data, f, ensure_ascii=False, indent=4)
 
-        print(f"[Database] Saved '{title}' to {target_file}")
+        print(f"[Database] Saved '{target_key}' to {target_file}")
 
         # Reload in-memory games list
         self.games = self.parse_database(current_data, installed_data)

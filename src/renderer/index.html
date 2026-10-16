@@ -19,7 +19,7 @@
         <div class="title-bar-left">
             <img class="app-icon" src="assets/OFME-DWND-ICO.ico" alt="Logo">
             <span class="app-title">FANTA OFME</span>
-            <span class="app-version-tag">v2.0.2</span>
+            <span class="app-version-tag">v2.0.3</span>
             <span id="sourceModeBadge" class="status-pill status-installed" style="display: none; font-size: 10px; padding: 2px 8px; margin-left: 6px; background: rgba(212, 168, 83, 0.18); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.4);">SOURCE MODE</span>
         </div>
         <div class="title-bar-controls">
@@ -140,6 +140,10 @@
                         <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; background: rgba(255,255,255,0.04); padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);">
                             <input type="checkbox" id="vcInstalledOnlyCheck" checked style="accent-color: var(--accent); cursor: pointer;">
                             <span>Installed Only</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; background: rgba(255,255,255,0.04); padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);" title="When checked, games on your bypass list will be skipped during audits">
+                            <input type="checkbox" id="vcEnableBypassCheck" checked style="accent-color: var(--accent); cursor: pointer;">
+                            <span style="display: flex; align-items: center; gap: 5px;"><i class="fa-solid fa-bell-slash" style="font-size: 11px;"></i> Apply Bypass List</span>
                         </label>
                         <button id="scanOfmeBtn" class="btn btn-primary" title="Audit Online-Fix releases only"><i class="fa-solid fa-gamepad"></i> Audit OFME</button>
                         <button id="scanSteamripBtn" class="btn btn-secondary" style="border-color: rgba(96, 165, 250, 0.4); color: #93c5fd;" title="Audit SteamRIP releases only"><i class="fa-solid fa-cloud-arrow-down"></i> Audit SteamRIP (SR)</button>
@@ -469,7 +473,7 @@
                             </h3>
                             <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Seamless background updates powered by GitHub Releases.</p>
                         </div>
-                        <span id="updateAppVersionBadge" class="status-pill status-installed" style="font-size: 11px;">v2.0.2</span>
+                        <span id="updateAppVersionBadge" class="status-pill status-installed" style="font-size: 11px;">v2.0.3</span>
                     </div>
 
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 12px;">
@@ -522,6 +526,7 @@
     <div id="gameDetailsModal" class="modal-overlay">
         <div class="modal-dialog">
             <div class="modal-top-actions">
+                <button id="detailsBypassBtn" class="modal-top-btn" title="Toggle Version Checker Bypass (Ignore in audits)"><i id="detailsBypassIcon" class="fa-solid fa-bell"></i></button>
                 <button id="openGameFolderBtn" class="modal-top-btn" title="Open Install Location"><i class="fa-solid fa-folder-open"></i></button>
                 <button id="closeDetailsBtn" class="modal-top-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
@@ -534,6 +539,7 @@
                         <div class="details-title-row">
                             <h2 id="detailsTitle" class="details-title">Game Title</h2>
                             <span id="detailsStatus" class="status-pill status-missing">Not Installed</span>
+                            <span id="detailsBypassBadge" class="status-pill" style="display: none; background: rgba(212, 168, 83, 0.15); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.35); font-size: 10px; margin-left: 6px;"><i class="fa-solid fa-bell-slash"></i> BYPASSED</span>
                         </div>
                         <p id="detailsDescription" class="details-desc">Game description will appear here.</p>
                     </div>

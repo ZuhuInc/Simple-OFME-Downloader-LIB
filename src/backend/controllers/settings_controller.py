@@ -4,7 +4,15 @@ Handles app configuration, browser discovery, system status, and system path set
 """
 
 from flask import Blueprint, jsonify, request
-from backend.resolver import get_installed_browsers
+import os
+
+try:
+    from backend.resolver import get_installed_browsers
+except ImportError:
+    try:
+        from src.backend.resolver import get_installed_browsers
+    except ImportError:
+        from ..resolver import get_installed_browsers
 
 def create_settings_blueprint(config, extractor, steam_manager, db_manager, downloader, version_checker):
     bp = Blueprint('settings', __name__, url_prefix='/api')
@@ -13,7 +21,7 @@ def create_settings_blueprint(config, extractor, steam_manager, db_manager, down
     def get_status():
         return jsonify({
             "status": "online",
-            "version": "2.0.2",
+            "version": "2.0.3",
             "winrar_installed": extractor.is_winrar_available(),
             "steam_detected": bool(steam_manager.steam_path),
             "total_games": len(db_manager.games),

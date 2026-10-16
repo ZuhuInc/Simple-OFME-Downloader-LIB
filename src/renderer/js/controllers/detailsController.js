@@ -27,6 +27,12 @@ class DetailsController {
         this.launchBtn = document.getElementById('detailsLaunchBtn');
         this.removeGameBtn = document.getElementById('detailsRemoveGameBtn');
 
+        // Bypass Elements
+        this.bypassBtn = document.getElementById('detailsBypassBtn');
+        this.bypassIcon = document.getElementById('detailsBypassIcon');
+        this.bypassBadge = document.getElementById('detailsBypassBadge');
+        this.bypassList = new Set();
+
         // Download Setup Modal Elements
         this.setupModal = document.getElementById('downloadSetupModal');
         this.setupTitle = document.getElementById('setupModalTitle');
@@ -63,6 +69,10 @@ class DetailsController {
         const openFolderBtn = document.getElementById('openGameFolderBtn');
         if (openFolderBtn) {
             openFolderBtn.addEventListener('click', () => this.openInstallFolder());
+        }
+
+        if (this.bypassBtn) {
+            this.bypassBtn.addEventListener('click', () => this.toggleBypass());
         }
 
         if (this.originLinkEl) {
@@ -244,7 +254,69 @@ class DetailsController {
             openFolderBtn.style.display = isInstalled ? 'flex' : 'none';
         }
 
+        // Initialize and update bypass status for this game
+        const titleKey = (game.title || '').trim().toLowerCase();
+        const isBypassed = this.bypassList.has(titleKey);
+        this.updateBypassUI(isBypassed);
+
+        this.loadBypassList().then(() => {
+            if (this.currentGame && (this.currentGame.title || '').trim().toLowerCase() === titleKey) {
+                this.updateBypassUI(this.bypassList.has(titleKey));
+            }
+        });
+
         this.modal.classList.add('active');
+    }
+
+    async loadBypassList() {
+        try {
+            const res = await window.apiClient.getBypassList();
+            if (res && res.bypass_list) {
+                this.bypassList = new Set(res.bypass_list.map(t => String(t).trim().toLowerCase()));
+            }
+        } catch (e) {
+            console.error('[Details] Load bypass list error:', e);
+        }
+    }
+
+    updateBypassUI(isBypassed) {
+        if (this.bypassBadge) this.bypassBadge.style.display = isBypassed ? 'inline-flex' : 'none';
+        if (this.bypassBtn) {
+            if (isBypassed) {
+                this.bypassBtn.classList.add('bypassed');
+                this.bypassBtn.title = 'Bypassed in Version Checker (Click to include in audits)';
+            } else {
+                this.bypassBtn.classList.remove('bypassed');
+                this.bypassBtn.title = 'Bypass Version Checker (Click to ignore in audits)';
+            }
+        }
+        if (this.bypassIcon) {
+            this.bypassIcon.className = isBypassed ? 'fa-solid fa-bell-slash' : 'fa-solid fa-bell';
+            this.bypassIcon.style.color = isBypassed ? 'var(--accent)' : '';
+        }
+    }
+
+    async toggleBypass(explicitState = null) {
+        if (!this.currentGame || !this.currentGame.title) return;
+        const title = this.currentGame.title;
+        const titleKey = title.trim().toLowerCase();
+        try {
+            const res = await window.apiClient.toggleBypass(title, explicitState);
+            if (res && res.success) {
+                const nowBypassed = res.bypassed;
+                if (nowBypassed) {
+                    this.bypassList.add(titleKey);
+                    window.uiController.showToast(`Bypassed "${title}" from version audits`, 'warning');
+                } else {
+                    this.bypassList.delete(titleKey);
+                    window.uiController.showToast(`Included "${title}" in version audits`, 'success');
+                }
+                this.updateBypassUI(nowBypassed);
+            }
+        } catch (err) {
+            console.error('[Details] Toggle bypass error:', err);
+            window.uiController.showToast('Failed to update bypass setting', 'danger');
+        }
     }
 
     close() {
