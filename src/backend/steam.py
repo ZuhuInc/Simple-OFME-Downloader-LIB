@@ -278,7 +278,7 @@ class SteamManager:
         """Resolves the active Steam account ID."""
         accounts = self.get_user_accounts()
         if not accounts:
-            return configured_id or "1004235037"
+            return configured_id or ""
 
         if configured_id:
             for acc in accounts:
@@ -310,7 +310,7 @@ class SteamManager:
     @staticmethod
     def calculate_shortcut_id(appid: int) -> int:
         """Calculates 64-bit Steam shortcut ID for steam://rungameid/<id>."""
-        return (int(appid) << 32) | 0x02000000
+        return ((int(appid) & 0xFFFFFFFF) << 32) | 0x02000000
 
     @staticmethod
     def _clean_str(s: str) -> str:

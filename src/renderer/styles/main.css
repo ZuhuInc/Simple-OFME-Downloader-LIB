@@ -1061,6 +1061,13 @@ select option,
     box-shadow: 0 0 10px rgba(224, 82, 82, 0.3);
 }
 
+.modal-top-btn.bypassed {
+    color: var(--accent);
+    background: rgba(212, 168, 83, 0.2);
+    border-color: rgba(212, 168, 83, 0.5);
+    box-shadow: 0 0 10px rgba(212, 168, 83, 0.25);
+}
+
 .modal-close-btn {
     position: absolute;
     top: 18px;

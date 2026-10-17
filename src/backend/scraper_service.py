@@ -209,21 +209,41 @@ class OnlineFixScraper:
 
             # 2. Parse Version
             version = ""
-            # Search for version in bullet items (+ Version: ...)
-            for li in soup.find_all(["li", "p", "div"]):
-                txt = li.get_text(strip=True)
-                if "version:" in txt.lower() or "версия:" in txt.lower():
-                    m = re.search(r"(?:Version|Версия)\s*:\s*([^\n\r<\|]+)", txt, re.IGNORECASE)
+            raw_info = None
+            for li in soup.find_all("li"):
+                strong = li.find("strong")
+                if strong and "version" in strong.get_text().lower():
+                    text = li.get_text(" ").strip()
+                    m = re.search(r"Version\s*:\s*(.+)", text, re.IGNORECASE)
                     if m:
-                        version = self._clean_version(m.group(1))
-                        if version:
-                            break
+                        raw_info = m.group(1).strip()
+                        break
+                elif re.search(r"^\+?\s*Version\s*:\s*(.+)", li.get_text(" ").strip(), re.IGNORECASE):
+                    m = re.search(r"Version\s*:\s*(.+)", li.get_text(" ").strip(), re.IGNORECASE)
+                    if m:
+                        raw_info = m.group(1).strip()
+                        break
 
+            if raw_info:
+                version = self._clean_version(raw_info)
+
+            # Secondary fallback: svchk wrapper data-svchk-build attribute
+            if not version:
+                svchk = soup.find(class_="svchk__wrapper")
+                if svchk:
+                    b_id = svchk.get("data-svchk-build")
+                    if b_id and b_id.strip().isdigit():
+                        version = b_id.strip()
+
+            # Tertiary fallback to h1 parentheses, e.g. (v2.0.3)
             if not version and h1:
-                # Fallback to h1 parentheses, e.g. (v2.0.3)
-                m = re.search(r"\(([^\)]+)\)", h1.get_text())
+                h1_text = h1.get_text(" ").strip()
+                m = re.search(r"\(([^)]+)\)", h1_text)
                 if m:
-                    version = self._clean_version(m.group(1))
+                    candidate = m.group(1).strip()
+                    candidate = re.sub(r"^(?:Remake\s*\+?\s*|Full\s*Version\s*\+?\s*)", "", candidate, flags=re.IGNORECASE).strip()
+                    if re.search(r"\d", candidate):
+                        version = self._clean_version(candidate)
 
             # 3. Parse Size
             approx_size = ""
@@ -489,14 +509,29 @@ class OnlineFixScraper:
     def _clean_version(raw: str) -> str:
         if not raw:
             return ""
-        # Strip leading labels (Russian or English)
-        cleaned = re.sub(r"^(?:Версия\s*игры|Версия|Version|Build|v|ver)\s*[:\s-]*", "", raw, flags=re.IGNORECASE).strip()
-        # Strip trailing notes, DLCs, Extras, pipes, etc.
-        cleaned = re.split(r"\s*(?:\||\+|\bDLC\b|\bExtras\b|\bFull Version\b|\bPre-Installed\b)", cleaned, flags=re.IGNORECASE)[0].strip()
-        # If it has (Build ...), strip the build in parenthesis
-        if "(" in cleaned:
-            cleaned = cleaned.split("(")[0].strip()
-        # Strip Cyrillic notes (e.g. "по сети")
+        # 1. Strip leading labels (Russian or English) including Build, v, ver, version
+        cleaned = re.sub(r"^(?:Версия\s*игры|Версия|Version|Build|v|ver)\s*[:\s-]*", "", str(raw), flags=re.IGNORECASE).strip()
+        # 1b. Strip leading 8-digit date stamps (YYYYMMDD) preceding Build or v (e.g. "20220613 Build 8856549" -> "8856549")
+        cleaned = re.sub(r"^(?:19|20)\d{6}\s+(?:Build|v|ver\w*)\s*", "", cleaned, flags=re.IGNORECASE).strip()
+        # 2. Strip trailing Cyrillic notes (e.g. по сети, онлайн)
         cleaned = re.sub(r"[\u0400-\u04FF].*", "", cleaned).strip()
+        # 3. Strip dates FIRST before splitting on slashes
+        cleaned = re.sub(r"\bfrom\s+\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned, flags=re.IGNORECASE).strip()
+        cleaned = re.sub(r"\(\d{1,2}/\d{1,2}/\d{2,4}\)", "", cleaned).strip()
+        cleaned = re.sub(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "", cleaned).strip()
+        # 4. Strip trailing notes, DLCs, Extras, pipes, regulation versions, and web UI keywords
+        cleaned = re.split(
+            r"\s*(?:\||\+|\b(?:DLC|Extras|Reg|Regulation)\b|[–—\-]?\s*\bFull Version\b|\bPre-Installed\b|\bVersion Details\b|\bPosted Version\b|\bView on\b|/\s*(?:Reg|Regulation)\b|\s+/\s+)",
+            cleaned,
+            flags=re.IGNORECASE
+        )[0].strip()
+        # 5. Strip parenthetical notes like (Latest), (Episodes 1-5), etc.
+        cleaned = re.sub(r"\((?!(?:Build|v\d|\d)\b)[^)]*\)", "", cleaned).strip()
+        # 6. If semantic version precedes (Build ...), strip the build parenthesis
+        if re.search(r"\d+\.[\d\w]", cleaned) and "(" in cleaned:
+            cleaned = re.sub(r"\s*\([^)]*build[^)]*\)", "", cleaned, flags=re.IGNORECASE).strip()
+
+        # 7. Strip leftover action keywords or leading labels
+        cleaned = re.sub(r"^(?:Build|v|ver)\s*", "", cleaned, flags=re.IGNORECASE).strip()
         cleaned = re.sub(r"\[?(?:Download|Free|Direct|Torrent|Online\-Fix|Fix|Repair|Steam|Hosters|Drive)[^\]]*\]?", "", cleaned, flags=re.IGNORECASE).strip()
-        return cleaned.rstrip(" :;,-_[]()").strip()
+        return cleaned.rstrip(" :;,-_[]()–—/").strip()

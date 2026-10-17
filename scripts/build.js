@@ -46,7 +46,7 @@ function buildBackend() {
   const result = spawnSync(pythonExe, [buildScript], {
     cwd: ROOT_DIR,
     stdio: 'inherit',
-    shell: true,
+    shell: false,
     env: { ...process.env, PYTHONUNBUFFERED: '1' }
   });
 
@@ -95,7 +95,7 @@ function buildStandalone() {
     'dir',
     `--config.directories.output=${outputDir}`,
     '--config.win.target=portable,dir',
-    '--config.portable.artifactName=${productName} Portable ${version}.${ext}'
+    '--config.portable.artifactName=Fanta-OFME-Downloader-Portable-${version}.${ext}'
   ];
 
   runElectronBuilder(builderArgs);
@@ -116,7 +116,7 @@ function buildInstaller() {
     'nsis',
     `--config.directories.output=${outputDir}`,
     '--config.win.target=nsis',
-    '--config.nsis.artifactName=${productName} Setup ${version}.${ext}'
+    '--config.nsis.artifactName=Fanta-OFME-Downloader-Setup-${version}.${ext}'
   ];
 
   runElectronBuilder(builderArgs);

@@ -27,6 +27,12 @@ class DetailsController {
         this.launchBtn = document.getElementById('detailsLaunchBtn');
         this.removeGameBtn = document.getElementById('detailsRemoveGameBtn');
 
+        // Bypass Elements
+        this.bypassBtn = document.getElementById('detailsBypassBtn');
+        this.bypassIcon = document.getElementById('detailsBypassIcon');
+        this.bypassBadge = document.getElementById('detailsBypassBadge');
+        this.bypassList = new Set();
+
         // Download Setup Modal Elements
         this.setupModal = document.getElementById('downloadSetupModal');
         this.setupTitle = document.getElementById('setupModalTitle');
@@ -63,6 +69,10 @@ class DetailsController {
         const openFolderBtn = document.getElementById('openGameFolderBtn');
         if (openFolderBtn) {
             openFolderBtn.addEventListener('click', () => this.openInstallFolder());
+        }
+
+        if (this.bypassBtn) {
+            this.bypassBtn.addEventListener('click', () => this.toggleBypass());
         }
 
         if (this.originLinkEl) {
@@ -182,12 +192,12 @@ class DetailsController {
         }
 
         if (this.locationEl) {
-            const defaultBase = window.settingsController?.settings?.extract_path || window.settingsController?.settings?.default_download_path || 'D:\\GAMES2';
+            const defaultBase = window.settingsController?.settings?.extract_path || window.settingsController?.settings?.default_download_path || '';
             if (game.location) {
                 this.locationEl.textContent = game.location;
                 this.locationEl.style.color = '#fff';
             } else {
-                this.locationEl.textContent = `${defaultBase} (Default)`;
+                this.locationEl.textContent = defaultBase ? `${defaultBase} (Default)` : 'Not set (Default)';
                 this.locationEl.style.color = 'var(--text-secondary)';
             }
         }
@@ -244,7 +254,69 @@ class DetailsController {
             openFolderBtn.style.display = isInstalled ? 'flex' : 'none';
         }
 
+        // Initialize and update bypass status for this game
+        const titleKey = (game.title || '').trim().toLowerCase();
+        const isBypassed = this.bypassList.has(titleKey);
+        this.updateBypassUI(isBypassed);
+
+        this.loadBypassList().then(() => {
+            if (this.currentGame && (this.currentGame.title || '').trim().toLowerCase() === titleKey) {
+                this.updateBypassUI(this.bypassList.has(titleKey));
+            }
+        });
+
         this.modal.classList.add('active');
+    }
+
+    async loadBypassList() {
+        try {
+            const res = await window.apiClient.getBypassList();
+            if (res && res.bypass_list) {
+                this.bypassList = new Set(res.bypass_list.map(t => String(t).trim().toLowerCase()));
+            }
+        } catch (e) {
+            console.error('[Details] Load bypass list error:', e);
+        }
+    }
+
+    updateBypassUI(isBypassed) {
+        if (this.bypassBadge) this.bypassBadge.style.display = isBypassed ? 'inline-flex' : 'none';
+        if (this.bypassBtn) {
+            if (isBypassed) {
+                this.bypassBtn.classList.add('bypassed');
+                this.bypassBtn.title = 'Bypassed in Version Checker (Click to include in audits)';
+            } else {
+                this.bypassBtn.classList.remove('bypassed');
+                this.bypassBtn.title = 'Bypass Version Checker (Click to ignore in audits)';
+            }
+        }
+        if (this.bypassIcon) {
+            this.bypassIcon.className = isBypassed ? 'fa-solid fa-bell-slash' : 'fa-solid fa-bell';
+            this.bypassIcon.style.color = isBypassed ? 'var(--accent)' : '';
+        }
+    }
+
+    async toggleBypass(explicitState = null) {
+        if (!this.currentGame || !this.currentGame.title) return;
+        const title = this.currentGame.title;
+        const titleKey = title.trim().toLowerCase();
+        try {
+            const res = await window.apiClient.toggleBypass(title, explicitState);
+            if (res && res.success) {
+                const nowBypassed = res.bypassed;
+                if (nowBypassed) {
+                    this.bypassList.add(titleKey);
+                    window.uiController.showToast(`Bypassed "${title}" from version audits`, 'warning');
+                } else {
+                    this.bypassList.delete(titleKey);
+                    window.uiController.showToast(`Included "${title}" in version audits`, 'success');
+                }
+                this.updateBypassUI(nowBypassed);
+            }
+        } catch (err) {
+            console.error('[Details] Toggle bypass error:', err);
+            window.uiController.showToast('Failed to update bypass setting', 'danger');
+        }
     }
 
     close() {
@@ -253,7 +325,7 @@ class DetailsController {
     }
 
     getParentOrSelf(pathStr) {
-        if (!pathStr) return 'D:\\GAMES2';
+        if (!pathStr) return window.settingsController?.settings?.extract_path || '';
         const normalized = pathStr.replace(/[\\/]+$/, '');
         const parts = normalized.split(/[\\/]/);
         if (parts.length > 2) {
@@ -268,7 +340,7 @@ class DetailsController {
 
         const defaultBase = window.settingsController?.settings?.extract_path || 
                             window.settingsController?.settings?.default_download_path || 
-                            'D:\\GAMES2';
+                            '';
 
         const autoExtract = window.settingsController?.settings?.auto_extract !== false;
         const autoDelete = window.settingsController?.settings?.auto_delete_archive !== false;
@@ -403,7 +475,8 @@ class DetailsController {
         if (!this.currentGame) return;
 
         const type = this.pendingDownloadType || 'main';
-        const targetPath = this.setupInstallPathInput ? this.setupInstallPathInput.value.trim() : 'D:\\GAMES2';
+        const defaultBase = window.settingsController?.settings?.extract_path || window.settingsController?.settings?.default_download_path || '';
+        const targetPath = (this.setupInstallPathInput ? this.setupInstallPathInput.value.trim() : '') || defaultBase;
         const autoExtract = this.setupAutoExtractCheck ? Boolean(this.setupAutoExtractCheck.checked) : true;
         const autoDelete = this.setupDeleteArchiveCheck ? Boolean(this.setupDeleteArchiveCheck.checked) : true;
 
@@ -470,12 +543,22 @@ class DetailsController {
         if (!this.currentGame) return;
         if (this.currentGame.steam_url) {
             window.uiController.showToast(`Launching ${this.currentGame.title} on Steam...`, 'info');
-            if (window.api && window.api.openExternal) {
-                window.api.openExternal(this.currentGame.steam_url);
-            } else if (window.apiClient && window.apiClient.openExternalUrl) {
-                window.apiClient.openExternalUrl(this.currentGame.steam_url);
-            } else {
-                window.open(this.currentGame.steam_url);
+            try {
+                if (window.api && window.api.openExternal) {
+                    const ok = await window.api.openExternal(this.currentGame.steam_url);
+                    if (ok) return;
+                }
+            } catch (e) {
+                console.warn('[DetailsController] openExternal failed:', e);
+            }
+
+            try {
+                if (window.apiClient && window.apiClient.openExternalUrl) {
+                    await window.apiClient.openExternalUrl(this.currentGame.steam_url);
+                }
+            } catch (e) {
+                console.error('[DetailsController] API launch fallback error:', e);
+                window.uiController.showToast(`Could not launch ${this.currentGame.title} on Steam`, 'danger');
             }
         } else {
             window.steamController.openAddShortcutDialog(this.currentGame);
@@ -560,15 +643,13 @@ class DetailsController {
     async openInstallFolder() {
         if (!this.currentGame) return;
         const title = this.currentGame.title || '';
-        const baseLoc = this.currentGame.location || 'D:\\GAMES2';
+        const defaultBase = window.settingsController?.settings?.extract_path || '';
+        const baseLoc = this.currentGame.location || defaultBase;
         
-        // Prioritize exact game subfolder (e.g. D:\GAMES2\PEAK)
         const candidates = [
-            `${baseLoc}\\${title}`,
-            `D:\\GAMES2\\${title}`,
-            `C:\\Users\\ZUHU\\Documents\\ZuhuProjects\\ZuhuOFME\\extracted\\${title}`,
-            baseLoc !== 'D:\\GAMES2' ? baseLoc : null,
-            'D:\\GAMES2'
+            baseLoc ? `${baseLoc}\\${title}` : null,
+            baseLoc || null,
+            defaultBase ? `${defaultBase}\\${title}` : null
         ].filter(Boolean);
 
         for (const candidate of candidates) {

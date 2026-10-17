@@ -411,13 +411,28 @@ class SteamController {
         this.tableBody.innerHTML = html;
     }
 
-    launchShortcut(steamUrl) {
-        if (!steamUrl) return;
+    async launchShortcut(steamUrl) {
+        if (!steamUrl) {
+            window.uiController.showToast('No Steam shortcut URL available', 'warning');
+            return;
+        }
         window.uiController.showToast('Launching shortcut on Steam...', 'info');
-        if (window.api && window.api.openExternal) {
-            window.api.openExternal(steamUrl);
-        } else {
-            window.open(steamUrl);
+        try {
+            if (window.api && window.api.openExternal) {
+                const ok = await window.api.openExternal(steamUrl);
+                if (ok) return;
+            }
+        } catch (e) {
+            console.warn('[SteamController] openExternal failed:', e);
+        }
+
+        try {
+            if (window.apiClient && window.apiClient.openExternalUrl) {
+                await window.apiClient.openExternalUrl(steamUrl);
+            }
+        } catch (e) {
+            console.error('[SteamController] API launch fallback error:', e);
+            window.uiController.showToast('Could not launch Steam shortcut', 'danger');
         }
     }
 

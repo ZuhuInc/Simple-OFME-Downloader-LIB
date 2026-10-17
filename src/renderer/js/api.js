@@ -141,6 +141,13 @@ class ApiClient {
     saveVCCredentials(creds) { return this.request('/api/version-check/save-creds', { method: 'POST', body: creds }); }
     scrapeGameData(payload) { return this.request('/api/version-check/scrape-game', { method: 'POST', body: payload }); }
     applyGameData(payload) { return this.request('/api/version-check/apply-game-data', { method: 'POST', body: payload }); }
+    getBypassList() { return this.request('/api/version-check/bypass'); }
+    toggleBypass(gameTitle, bypassed = null) {
+        const payload = { game_title: gameTitle };
+        if (bypassed !== null) payload.bypassed = bypassed;
+        return this.request('/api/version-check/bypass/toggle', { method: 'POST', body: payload });
+    }
+    clearBypassList() { return this.request('/api/version-check/bypass/clear', { method: 'POST' }); }
 }
 
 window.apiClient = new ApiClient();

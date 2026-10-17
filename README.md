@@ -1,6 +1,6 @@
-# FANTA OFME Downloader (v2.0.0)
+# FANTA OFME Downloader (v2.0.3)
 
-![Version](https://img.shields.io/badge/version-2.0.0-d4a853.svg)
+![Version](https://img.shields.io/badge/version-2.0.3-d4a853.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078d7.svg)
 ![Electron](https://img.shields.io/badge/Electron-26.6.10-47848F.svg)
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg)
@@ -61,8 +61,8 @@ A desktop game library manager and automated downloader for Online-Fix releases.
 >
 > 1. Go to the [**Releases Page**](https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases).
 > 2. Choose your preferred build from **Assets**:
->    - **Setup Installer (`Fanta OFME Downloader Setup 2.0.0.exe`)**: Recommended for automated background update support.
->    - **Standalone Portable (`Fanta OFME Downloader Portable 2.0.0.exe`)**: Self-contained single-executable build without installation.
+>    - **Setup Installer (`Fanta OFME Downloader Setup 2.0.3.exe`)**: Recommended for automated background update support.
+>    - **Standalone Portable (`Fanta OFME Downloader Portable 2.0.3.exe`)**: Self-contained single-executable build without installation.
 > 3. **Important:** Ensure [**WinRAR**](https://www.win-rar.com/) is installed for automated archive unpacking.
 > 4. Launch the app and start downloading!
 >
@@ -180,8 +180,8 @@ npm run build:backend
 ```
 
 #### Build Output Directories:
-- `build/File/`: Contains `Fanta OFME Downloader Portable 2.0.0.exe` and `win-unpacked/`.
-- `build/Installer/`: Contains `Fanta OFME Downloader Setup 2.0.0.exe`, `latest.yml`, and blockmap.
+- `build/File/`: Contains `Fanta OFME Downloader Portable 2.0.3.exe` and `win-unpacked/`.
+- `build/Installer/`: Contains `Fanta OFME Downloader Setup 2.0.3.exe`, `latest.yml`, and blockmap.
 
 ---
 
