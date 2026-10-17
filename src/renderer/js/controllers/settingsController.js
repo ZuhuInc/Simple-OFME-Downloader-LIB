@@ -4,7 +4,7 @@
  */
 
 function formatVersion(v) {
-    if (!v) return 'v2.0.3';
+    if (!v) return 'v2.0.4';
     return 'v' + String(v).trim().replace(/^[vV]+/i, '');
 }
 
@@ -23,6 +23,13 @@ class SettingsController {
         this.localDbPathInput = document.getElementById('set_local_db_path');
         this.saveBtn = document.getElementById('saveSettingsBtn');
         this.consoleFeed = document.getElementById('consoleLogFeed');
+
+        // Audit & Scrape Cache controls
+        this.multiThreadedScanCheck = document.getElementById('set_multi_threaded_scan');
+        this.scanWorkersInput = document.getElementById('set_scan_workers');
+        this.enableScrapeCacheCheck = document.getElementById('set_enable_scrape_cache');
+        this.scrapeCacheTtlInput = document.getElementById('set_scrape_cache_ttl');
+        this.clearCacheBtn = document.getElementById('clearScrapeCacheBtn');
 
         // Update UI elements
         this.checkUpdatesBtn = document.getElementById('checkForUpdatesBtn');
@@ -49,6 +56,23 @@ class SettingsController {
     bindEvents() {
         if (this.saveBtn) {
             this.saveBtn.addEventListener('click', () => this.saveCurrentSettings());
+        }
+
+        if (this.clearCacheBtn) {
+            this.clearCacheBtn.addEventListener('click', async () => {
+                try {
+                    const res = await window.apiClient.clearScrapeCache();
+                    const count = (res && res.cleared_entries !== undefined) ? res.cleared_entries : 0;
+                    if (window.uiController) {
+                        window.uiController.showToast(`Scrape cache cleared! (${count} entries removed)`, 'success');
+                    }
+                    this.appendLog(`Scrape cache cleared (${count} entries removed)`, 'info');
+                } catch (e) {
+                    if (window.uiController) {
+                        window.uiController.showToast(`Failed to clear cache: ${e.message}`, 'danger');
+                    }
+                }
+            });
         }
 
         const copyLogsBtn = document.getElementById('copyConsoleLogsBtn');
@@ -247,6 +271,10 @@ class SettingsController {
         if (this.autoDeleteArchiveCheck) this.autoDeleteArchiveCheck.checked = this.settings.auto_delete_archive !== false;
         if (this.useLocalDbCheck) this.useLocalDbCheck.checked = Boolean(this.settings.use_local_db);
         if (this.localDbPathInput) this.localDbPathInput.value = this.settings.local_db_path || '';
+        if (this.multiThreadedScanCheck) this.multiThreadedScanCheck.checked = Boolean(this.settings.multi_threaded_scan);
+        if (this.scanWorkersInput) this.scanWorkersInput.value = this.settings.scan_workers || 6;
+        if (this.enableScrapeCacheCheck) this.enableScrapeCacheCheck.checked = Boolean(this.settings.enable_scrape_cache);
+        if (this.scrapeCacheTtlInput) this.scrapeCacheTtlInput.value = this.settings.scrape_cache_ttl_minutes || 15;
     }
 
     async saveCurrentSettings() {
@@ -260,7 +288,11 @@ class SettingsController {
             auto_extract: Boolean(this.autoExtractCheck?.checked),
             auto_delete_archive: Boolean(this.autoDeleteArchiveCheck?.checked),
             use_local_db: Boolean(this.useLocalDbCheck?.checked),
-            local_db_path: this.localDbPathInput?.value.trim() || ''
+            local_db_path: this.localDbPathInput?.value.trim() || '',
+            multi_threaded_scan: Boolean(this.multiThreadedScanCheck?.checked),
+            scan_workers: parseInt(this.scanWorkersInput?.value || 6, 10),
+            enable_scrape_cache: Boolean(this.enableScrapeCacheCheck?.checked),
+            scrape_cache_ttl_minutes: parseInt(this.scrapeCacheTtlInput?.value || 15, 10)
         };
 
         if (window.downloadController) {

@@ -7,20 +7,61 @@
 class VersionCheckerController {
     constructor() {
         this.isScanning = false;
+        this.isBatchUpdating = false;
         this.resultsTable = null;
         this.scanOfmeBtn = null;
         this.scanSteamripBtn = null;
         this.scanAllSourcesBtn = null;
         this.installedOnlyCheck = null;
+        this.enableBypassCheck = null;
+        this.fastScanToggle = null;
+        this.enableCacheCheck = null;
+        this.manageBypassesBtn = null;
+        this.bypassCountBadge = null;
+        this.updateAllBtn = null;
+        this.outdatedCountBadge = null;
         this.stopBtn = null;
         this.progressBar = null;
         this.scanStatusText = null;
+
+        this.bypassModal = null;
+        this.bypassList = [];
+        this.batchUpdateModal = null;
+        this.detectedOutdated = [];
     }
 
     init() {
         this.queryElements();
+        this.loadAuditPreferences();
         this.bindEvents();
         this.loadSavedCredentials();
+        this.refreshBypassList();
+    }
+
+    loadAuditPreferences() {
+        if (!this.fastScanToggle) this.fastScanToggle = document.getElementById('vcFastScanToggle');
+        if (!this.installedOnlyCheck) this.installedOnlyCheck = document.getElementById('vcInstalledOnlyCheck');
+        if (!this.enableBypassCheck) this.enableBypassCheck = document.getElementById('vcEnableBypassCheck');
+        if (!this.enableCacheCheck) this.enableCacheCheck = document.getElementById('vcEnableCacheCheck');
+
+        // All 4 scan settings off (false) by default if there is no saved setting:
+        const savedFastScan = localStorage.getItem('vc_fast_scan');
+        const savedInstalledOnly = localStorage.getItem('vc_installed_only');
+        const savedApplyBypass = localStorage.getItem('vc_apply_bypass');
+        const savedEnableCache = localStorage.getItem('vc_enable_cache');
+
+        if (this.fastScanToggle) {
+            this.fastScanToggle.checked = savedFastScan !== null ? (savedFastScan === 'true') : false;
+        }
+        if (this.installedOnlyCheck) {
+            this.installedOnlyCheck.checked = savedInstalledOnly !== null ? (savedInstalledOnly === 'true') : false;
+        }
+        if (this.enableBypassCheck) {
+            this.enableBypassCheck.checked = savedApplyBypass !== null ? (savedApplyBypass === 'true') : false;
+        }
+        if (this.enableCacheCheck) {
+            this.enableCacheCheck.checked = savedEnableCache !== null ? (savedEnableCache === 'true') : false;
+        }
     }
 
     queryElements() {
@@ -30,23 +71,59 @@ class VersionCheckerController {
         this.scanAllSourcesBtn = document.getElementById('scanAllSourcesBtn');
         this.installedOnlyCheck = document.getElementById('vcInstalledOnlyCheck');
         this.enableBypassCheck = document.getElementById('vcEnableBypassCheck');
+        this.fastScanToggle = document.getElementById('vcFastScanToggle');
+        this.enableCacheCheck = document.getElementById('vcEnableCacheCheck');
+        this.manageBypassesBtn = document.getElementById('vcManageBypassesBtn');
+        this.bypassCountBadge = document.getElementById('vcBypassCount');
+        this.updateAllBtn = document.getElementById('vcUpdateAllBtn');
+        this.outdatedCountBadge = document.getElementById('vcOutdatedCount');
         this.stopBtn = document.getElementById('stopScanBtn');
         this.progressBar = document.getElementById('vcProgressBar');
         this.scanStatusText = document.getElementById('vcScanStatusText');
+
+        this.bypassModal = document.getElementById('bypassManagerModal');
+        this.batchUpdateModal = document.getElementById('batchUpdateConfirmModal');
     }
 
     isInstalledOnly() {
         if (!this.installedOnlyCheck) {
             this.installedOnlyCheck = document.getElementById('vcInstalledOnlyCheck');
         }
-        return this.installedOnlyCheck ? this.installedOnlyCheck.checked : true;
+        return this.installedOnlyCheck ? this.installedOnlyCheck.checked : false;
     }
 
     isBypassEnabled() {
         if (!this.enableBypassCheck) {
             this.enableBypassCheck = document.getElementById('vcEnableBypassCheck');
         }
-        return this.enableBypassCheck ? this.enableBypassCheck.checked : true;
+        return this.enableBypassCheck ? this.enableBypassCheck.checked : false;
+    }
+
+    isFastScanEnabled() {
+        if (!this.fastScanToggle) {
+            this.fastScanToggle = document.getElementById('vcFastScanToggle');
+        }
+        return this.fastScanToggle ? this.fastScanToggle.checked : false;
+    }
+
+    isCacheEnabled() {
+        if (!this.enableCacheCheck) {
+            this.enableCacheCheck = document.getElementById('vcEnableCacheCheck');
+        }
+        return this.enableCacheCheck ? this.enableCacheCheck.checked : false;
+    }
+
+    async refreshBypassList() {
+        try {
+            const res = await window.apiClient.getBypassList();
+            if (res && res.bypass_list) {
+                this.bypassList = res.bypass_list;
+                if (!this.bypassCountBadge) this.bypassCountBadge = document.getElementById('vcBypassCount');
+                if (this.bypassCountBadge) this.bypassCountBadge.textContent = this.bypassList.length;
+            }
+        } catch (e) {
+            console.warn('[VC Controller] Failed to fetch bypass list:', e);
+        }
     }
 
     async loadSavedCredentials(retries = 3) {
@@ -76,24 +153,83 @@ class VersionCheckerController {
     bindEvents() {
         if (this.scanOfmeBtn) {
             this.scanOfmeBtn.addEventListener('click', () => {
-                this.startScan({ source: 'ofme', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled() });
+                this.startScan({ source: 'ofme', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled(), enable_cache: this.isCacheEnabled() });
             });
         }
 
         if (this.scanSteamripBtn) {
             this.scanSteamripBtn.addEventListener('click', () => {
-                this.startScan({ source: 'sr', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled() });
+                this.startScan({ source: 'sr', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled(), enable_cache: this.isCacheEnabled() });
             });
         }
 
         if (this.scanAllSourcesBtn) {
             this.scanAllSourcesBtn.addEventListener('click', () => {
-                this.startScan({ source: 'all', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled() });
+                this.startScan({ source: 'all', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled(), enable_cache: this.isCacheEnabled() });
             });
         }
 
         if (this.stopBtn) {
             this.stopBtn.addEventListener('click', () => this.stopScan());
+        }
+
+        // Persist audit preference changes
+        if (this.fastScanToggle) {
+            this.fastScanToggle.addEventListener('change', () => {
+                localStorage.setItem('vc_fast_scan', this.fastScanToggle.checked);
+            });
+        }
+        if (this.installedOnlyCheck) {
+            this.installedOnlyCheck.addEventListener('change', () => {
+                localStorage.setItem('vc_installed_only', this.installedOnlyCheck.checked);
+            });
+        }
+        if (this.enableBypassCheck) {
+            this.enableBypassCheck.addEventListener('change', () => {
+                localStorage.setItem('vc_apply_bypass', this.enableBypassCheck.checked);
+            });
+        }
+        if (this.enableCacheCheck) {
+            this.enableCacheCheck.addEventListener('change', () => {
+                localStorage.setItem('vc_enable_cache', this.enableCacheCheck.checked);
+            });
+        }
+
+        // Bypass Manager Modal
+        if (this.manageBypassesBtn) {
+            this.manageBypassesBtn.addEventListener('click', () => this.openBypassModal());
+        }
+
+        const closeBypassBtn = document.getElementById('closeBypassModalBtn');
+        if (closeBypassBtn) closeBypassBtn.addEventListener('click', () => this.closeBypassModal());
+
+        const closeBypassFooterBtn = document.getElementById('closeBypassModalFooterBtn');
+        if (closeBypassFooterBtn) closeBypassFooterBtn.addEventListener('click', () => this.closeBypassModal());
+
+        const bypassSearchInput = document.getElementById('bypassSearchInput');
+        if (bypassSearchInput) {
+            bypassSearchInput.addEventListener('input', (e) => this.filterBypassList(e.target.value));
+        }
+
+        const clearAllBypassesBtn = document.getElementById('clearAllBypassesBtn');
+        if (clearAllBypassesBtn) {
+            clearAllBypassesBtn.addEventListener('click', () => this.clearAllBypasses());
+        }
+
+        // Batch Update All Outdated Modal
+        if (this.updateAllBtn) {
+            this.updateAllBtn.addEventListener('click', () => this.openBatchUpdateModal());
+        }
+
+        const closeBatchBtn = document.getElementById('closeBatchUpdateModalBtn');
+        if (closeBatchBtn) closeBatchBtn.addEventListener('click', () => this.closeBatchUpdateModal());
+
+        const cancelBatchBtn = document.getElementById('cancelBatchUpdateBtn');
+        if (cancelBatchBtn) cancelBatchBtn.addEventListener('click', () => this.closeBatchUpdateModal());
+
+        const confirmBatchBtn = document.getElementById('confirmBatchUpdateBtn');
+        if (confirmBatchBtn) {
+            confirmBatchBtn.addEventListener('click', () => this.runBatchUpdate());
         }
 
         const saveCredsBtn = document.getElementById('saveVcCredsBtn');
@@ -125,12 +261,24 @@ class VersionCheckerController {
             window.apiClient.on('version_check_progress', (data) => {
                 this.handleScanProgress(data);
             });
+            window.apiClient.on('batch_update_progress', (data) => {
+                this.handleBatchUpdateProgress(data);
+            });
         }
     }
 
     async startScan(options = {}) {
         if (this.isScanning) return;
         this.isScanning = true;
+        this.detectedOutdated = [];
+        if (!this.updateAllBtn) this.queryElements();
+        if (this.updateAllBtn) this.updateAllBtn.style.display = 'none';
+        if (this.outdatedCountBadge) this.outdatedCountBadge.textContent = '0';
+
+        options.multi_threaded = this.isFastScanEnabled();
+        if (options.enable_cache === undefined) {
+            options.enable_cache = this.isCacheEnabled();
+        }
         this.updateButtons();
 
         // Clear existing table and show scanning indicator
@@ -145,15 +293,17 @@ class VersionCheckerController {
             `;
         }
 
+        const modeLabel = options.multi_threaded ? '⚡ Fast Parallel' : 'Sequential';
         const srcName = options.source === 'ofme' ? 'Online-Fix (OFME)' : (options.source === 'sr' ? 'SteamRIP (SR)' : 'All Sources');
         const scopeName = options.installed_only ? 'Installed Only' : 'All Games';
-        if (this.scanStatusText) this.scanStatusText.textContent = `Auditing ${srcName} [${scopeName}]...`;
+        const cacheLabel = options.enable_cache ? 'Cache ON' : 'Cache OFF';
+        if (this.scanStatusText) this.scanStatusText.textContent = `Auditing ${srcName} [${scopeName}, ${cacheLabel}] (${modeLabel})...`;
         if (this.progressBar) this.progressBar.style.width = '0%';
 
         try {
             const res = await window.apiClient.scanVersions(options);
             if (res && res.success) {
-                window.uiController.showToast(`Audit started for ${res.total} games (${srcName})`, 'info');
+                window.uiController.showToast(`Audit started for ${res.total} games (${srcName} - ${modeLabel}, ${cacheLabel})`, 'info');
             }
         } catch (err) {
             this.isScanning = false;
@@ -189,6 +339,19 @@ class VersionCheckerController {
 
             // Only append row if game actually requires an update!
             if (data.update_available) {
+                const gameTitle = data.game || data.title;
+                const exists = this.detectedOutdated.some(g => (g.title || g.game) === gameTitle);
+                if (!exists) {
+                    this.detectedOutdated.push({
+                        title: gameTitle,
+                        db_version: data.db_version,
+                        latest_version: data.scraped_version || data.remote_version,
+                        origin_url: data.origin_url,
+                        game_id: data.game_id
+                    });
+                    if (this.updateAllBtn) this.updateAllBtn.style.display = 'inline-flex';
+                    if (this.outdatedCountBadge) this.outdatedCountBadge.textContent = this.detectedOutdated.length;
+                }
                 this.appendResultRow(data);
             }
         } else if (data.status === 'completed') {
@@ -196,11 +359,22 @@ class VersionCheckerController {
             this.updateButtons();
             if (this.progressBar) this.progressBar.style.width = '100%';
             
-            const count = data.updates_found || 0;
+            if (data.outdated_list && Array.isArray(data.outdated_list)) {
+                this.detectedOutdated = data.outdated_list;
+            }
+
+            const count = this.detectedOutdated.length;
             if (this.scanStatusText) {
                 this.scanStatusText.textContent = count > 0 
                     ? `Audit Complete. Found ${count} update${count > 1 ? 's' : ''}.`
                     : `Audit Complete. All checked games are up to date!`;
+            }
+
+            if (count > 0) {
+                if (this.updateAllBtn) this.updateAllBtn.style.display = 'inline-flex';
+                if (this.outdatedCountBadge) this.outdatedCountBadge.textContent = count;
+            } else {
+                if (this.updateAllBtn) this.updateAllBtn.style.display = 'none';
             }
 
             if (!this.resultsTable) this.queryElements();
@@ -300,10 +474,240 @@ class VersionCheckerController {
                         btnEl.title = 'Bypass this game from future audits';
                     }
                 }
+                await this.refreshBypassList();
             }
         } catch (err) {
             console.error('[VC Controller] Toggle bypass error:', err);
             window.uiController.showToast('Failed to toggle bypass for game', 'danger');
+        }
+    }
+
+    async openBypassModal() {
+        if (!this.bypassModal) this.bypassModal = document.getElementById('bypassManagerModal');
+        if (!this.bypassModal) return;
+
+        await this.refreshBypassList();
+        const searchInput = document.getElementById('bypassSearchInput');
+        if (searchInput) searchInput.value = '';
+        this.renderBypassList();
+        this.bypassModal.classList.add('active');
+    }
+
+    closeBypassModal() {
+        if (!this.bypassModal) this.bypassModal = document.getElementById('bypassManagerModal');
+        if (this.bypassModal) this.bypassModal.classList.remove('active');
+    }
+
+    renderBypassList(filterText = '') {
+        const container = document.getElementById('bypassListContainer');
+        if (!container) return;
+
+        const term = (filterText || '').trim().toLowerCase();
+        const filtered = term ? this.bypassList.filter(t => t.toLowerCase().includes(term)) : this.bypassList;
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: var(--text-muted); padding: 36px 14px; background: rgba(0,0,0,0.2); border-radius: var(--radius-sm); border: 1px dashed var(--border-glass);">
+                    <i class="fa-solid fa-bell-slash" style="font-size: 26px; color: var(--text-muted); margin-bottom: 8px; display: block;"></i>
+                    ${term ? 'No bypassed games match your search query.' : 'No games currently bypassed from live audits.'}
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = '';
+        filtered.forEach(title => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); transition: var(--transition);';
+            row.onmouseenter = () => row.style.background = 'rgba(255,255,255,0.06)';
+            row.onmouseleave = () => row.style.background = 'rgba(255,255,255,0.03)';
+
+            const safeTitle = title.replace(/'/g, "\\'");
+            row.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                    <i class="fa-solid fa-gamepad" style="color: var(--accent); font-size: 13px;"></i>
+                    <span style="font-weight: 500; color: #fff; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${title}</span>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" style="color: var(--danger); padding: 4px 8px;" onclick="window.versionCheckerController.removeBypassItem('${safeTitle}')" title="Remove from bypass list">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    filterBypassList(filterText) {
+        this.renderBypassList(filterText);
+    }
+
+    async removeBypassItem(gameTitle) {
+        if (!gameTitle) return;
+        try {
+            const res = await window.apiClient.toggleBypass(gameTitle, false);
+            if (res && res.success) {
+                window.uiController.showToast(`Removed "${gameTitle}" from bypass list`, 'success');
+                this.bypassList = res.bypass_list || [];
+                if (!this.bypassCountBadge) this.bypassCountBadge = document.getElementById('vcBypassCount');
+                if (this.bypassCountBadge) this.bypassCountBadge.textContent = this.bypassList.length;
+                const searchInput = document.getElementById('bypassSearchInput');
+                this.renderBypassList(searchInput ? searchInput.value : '');
+            }
+        } catch (e) {
+            window.uiController.showToast(`Failed to remove bypass: ${e.message}`, 'danger');
+        }
+    }
+
+    async clearAllBypasses() {
+        if (this.bypassList.length === 0) return;
+        if (!confirm('Are you sure you want to clear all bypassed games? They will be audited in future checks.')) {
+            return;
+        }
+        try {
+            const res = await window.apiClient.clearBypassList();
+            if (res && res.success) {
+                this.bypassList = [];
+                if (!this.bypassCountBadge) this.bypassCountBadge = document.getElementById('vcBypassCount');
+                if (this.bypassCountBadge) this.bypassCountBadge.textContent = '0';
+                this.renderBypassList();
+                window.uiController.showToast('Bypass list cleared successfully', 'success');
+            }
+        } catch (e) {
+            window.uiController.showToast(`Failed to clear bypass list: ${e.message}`, 'danger');
+        }
+    }
+
+    openBatchUpdateModal() {
+        if (!this.detectedOutdated || this.detectedOutdated.length === 0) {
+            window.uiController.showToast('No outdated games available to update.', 'info');
+            return;
+        }
+
+        if (!this.batchUpdateModal) this.batchUpdateModal = document.getElementById('batchUpdateConfirmModal');
+        if (!this.batchUpdateModal) return;
+
+        const tbody = document.getElementById('batchUpdatePreviewTableBody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            this.detectedOutdated.forEach(g => {
+                const tr = document.createElement('tr');
+                const title = g.title || g.game || 'Unknown';
+                const curVer = this.formatVersionBadge(g.db_version);
+                const newVer = this.formatVersionBadge(g.latest_version || g.scraped_version || g.remote_version);
+                tr.innerHTML = `
+                    <td><strong>${title}</strong></td>
+                    <td><span style="color: var(--text-muted);">${curVer}</span></td>
+                    <td><span style="color: #60a5fa; font-weight: 600;">${newVer}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        const totalNotice = document.getElementById('batchUpdateTotalNotice');
+        if (totalNotice) {
+            totalNotice.textContent = `${this.detectedOutdated.length} game${this.detectedOutdated.length > 1 ? 's' : ''} ready to update`;
+        }
+
+        const progressSection = document.getElementById('batchUpdateProgressSection');
+        if (progressSection) progressSection.style.display = 'none';
+
+        const confirmBtn = document.getElementById('confirmBatchUpdateBtn');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Confirm & Update All';
+        }
+
+        this.batchUpdateModal.classList.add('active');
+    }
+
+    closeBatchUpdateModal() {
+        if (this.isBatchUpdating) {
+            window.uiController.showToast('Batch update is running in the background...', 'info');
+        }
+        if (!this.batchUpdateModal) this.batchUpdateModal = document.getElementById('batchUpdateConfirmModal');
+        if (this.batchUpdateModal) this.batchUpdateModal.classList.remove('active');
+    }
+
+    async runBatchUpdate() {
+        if (this.isBatchUpdating || !this.detectedOutdated.length) return;
+        this.isBatchUpdating = true;
+
+        const confirmBtn = document.getElementById('confirmBatchUpdateBtn');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+        }
+
+        const progressSection = document.getElementById('batchUpdateProgressSection');
+        if (progressSection) progressSection.style.display = 'flex';
+
+        const statusText = document.getElementById('batchUpdateStatusText');
+        const progressBar = document.getElementById('batchUpdateProgressBar');
+        const percentText = document.getElementById('batchUpdatePercentText');
+
+        if (statusText) statusText.textContent = `Updating [0/${this.detectedOutdated.length}]...`;
+        if (progressBar) progressBar.style.width = '0%';
+        if (percentText) percentText.textContent = '0%';
+
+        window.uiController.showToast(`Batch update started for ${this.detectedOutdated.length} games...`, 'info');
+
+        try {
+            const res = await window.apiClient.batchUpdateGames({
+                games: this.detectedOutdated,
+                preferred_host: 'GoFile'
+            });
+
+            this.isBatchUpdating = false;
+
+            if (res && res.success) {
+                window.uiController.showToast(`Batch update complete! (${res.updated_count}/${res.total} games updated)`, 'success');
+                if (statusText) statusText.textContent = `Finished! ${res.updated_count}/${res.total} games updated in Data.json.`;
+                if (progressBar) progressBar.style.width = '100%';
+                if (percentText) percentText.textContent = '100%';
+
+                if (window.libraryController) {
+                    await window.libraryController.loadGames();
+                }
+
+                // Clear detected outdated games and hide button
+                this.detectedOutdated = [];
+                if (this.updateAllBtn) this.updateAllBtn.style.display = 'none';
+
+                setTimeout(() => {
+                    this.closeBatchUpdateModal();
+                }, 1400);
+            } else {
+                window.uiController.showToast(`Batch update failed: ${res?.error || 'Unknown error'}`, 'danger');
+                if (confirmBtn) confirmBtn.disabled = false;
+            }
+        } catch (err) {
+            this.isBatchUpdating = false;
+            console.error('[VC Controller] Batch update error:', err);
+            window.uiController.showToast(`Batch update failed: ${err.message}`, 'danger');
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Retry Update';
+            }
+        }
+    }
+
+    handleBatchUpdateProgress(data) {
+        if (!data) return;
+        const statusText = document.getElementById('batchUpdateStatusText');
+        const progressBar = document.getElementById('batchUpdateProgressBar');
+        const percentText = document.getElementById('batchUpdatePercentText');
+
+        if (data.status === 'updating') {
+            const current = data.current || 0;
+            const total = data.total || 1;
+            const pct = Math.min(100, Math.round((current / total) * 100));
+
+            if (statusText) statusText.textContent = `Updating [${current}/${total}]: ${data.game || 'Game'}...`;
+            if (progressBar) progressBar.style.width = `${pct}%`;
+            if (percentText) percentText.textContent = `${pct}%`;
+        } else if (data.status === 'completed') {
+            if (statusText) statusText.textContent = `Complete! ${data.success_count}/${data.total} games updated.`;
+            if (progressBar) progressBar.style.width = '100%';
+            if (percentText) percentText.textContent = '100%';
         }
     }
 

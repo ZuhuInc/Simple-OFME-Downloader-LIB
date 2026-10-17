@@ -52,6 +52,10 @@ class ConfigDefaults:
     auto_extract: bool = True
     auto_delete_archive: bool = True
     gofile_token: str = ""
+    multi_threaded_scan: bool = False
+    scan_workers: int = 6
+    enable_scrape_cache: bool = False
+    scrape_cache_ttl_minutes: int = 15
 
 
 def get_bundled_data_path(filename: str = "Data.json") -> str:

@@ -36,9 +36,14 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
         elif source in ['sr', 'steamrip', 'steam-rip']:
             games = [g for g in games if 'steamrip.com' in (g.get('origin_url') or '').lower()]
 
-        # Step 3: Configure bypass list
-        use_bypass = bool(data.get('use_bypass', True))
+        # Step 3: Configure bypass list, multi-threading, and caching
+        use_bypass = bool(data.get('use_bypass', False))
         active_bypass_list = config.get("version_check_bypass_list", []) if use_bypass else []
+
+        multi_threaded = bool(data.get('multi_threaded', config.get('multi_threaded_scan', False)))
+        scan_workers = int(config.get('scan_workers', 6))
+        enable_cache = bool(data.get('enable_cache', config.get('enable_scrape_cache', False)))
+        cache_ttl_minutes = int(config.get('scrape_cache_ttl_minutes', 15))
 
         version_checker.update_credentials(
             username=config.get("ofme_username", ""),
@@ -46,7 +51,11 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
             webhook_url=config.get("webhook_url", ""),
             enable_webhook=config.get("enable_webhook", False),
             browser_path=config.get("browser_path", ""),
-            bypass_list=active_bypass_list
+            bypass_list=active_bypass_list,
+            multi_threaded=multi_threaded,
+            scan_workers=scan_workers,
+            enable_cache=enable_cache,
+            cache_ttl_minutes=cache_ttl_minutes
         )
 
         def on_vc_progress(info):
@@ -55,11 +64,17 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
             except Exception as e:
                 print(f"[Bridge] VC Socket error: {e}")
 
-        started = version_checker.start_scan_async(games, on_vc_progress)
+        started = version_checker.start_scan_async(
+            games,
+            on_vc_progress,
+            multi_threaded=multi_threaded,
+            scan_workers=scan_workers
+        )
         return jsonify({
             "success": started,
             "is_scanning": version_checker.is_scanning,
-            "total": len(games)
+            "total": len(games),
+            "multi_threaded": multi_threaded
         })
 
     @bp.route('/stop', methods=['POST'])
@@ -310,6 +325,125 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
             "success": True,
             "message": f"Successfully updated '{game_title}' in Data.json!",
             "game": catalog_entry
+        })
+
+    @bp.route('/cache/clear', methods=['POST'])
+    def clear_scrape_cache():
+        cleared = version_checker.clear_cache()
+        return jsonify({
+            "success": True,
+            "cleared_entries": cleared
+        })
+
+    @bp.route('/batch-update', methods=['POST'])
+    def batch_update_outdated_games():
+        data = request.get_json(silent=True) or {}
+        games_to_update = data.get('games', [])
+        if not games_to_update:
+            return jsonify({"success": False, "error": "No outdated games provided to update."}), 400
+
+        preferred_host = data.get('preferred_host', 'GoFile')
+        total = len(games_to_update)
+        success_count = 0
+        updated_list = []
+
+        from ..scraper_service import OnlineFixScraper
+        scraper = OnlineFixScraper(
+            username=config.get("ofme_username", ""),
+            password=config.get("ofme_password", "")
+        )
+
+        for idx, item in enumerate(games_to_update, start=1):
+            title = (item.get('title') or item.get('game') or '').strip()
+            origin_url = (item.get('origin_url') or '').strip()
+            latest_version = item.get('latest_version') or item.get('version')
+
+            # Live Socket progress update: "Updating [3/15]: Game Title..."
+            try:
+                socketio.emit("batch_update_progress", {
+                    "status": "updating",
+                    "current": idx,
+                    "total": total,
+                    "game": title
+                }, namespace='/')
+            except Exception as se:
+                print(f"[BatchUpdate] Socket emit error: {se}")
+
+            # Locate game in database for canonical naming and existing assets
+            db_game = None
+            origin_url_clean = origin_url.rstrip('/').lower() if origin_url else ''
+            for g in getattr(db_manager, 'games', []):
+                if g.title.lower() == title.lower():
+                    db_game = g
+                    break
+                if origin_url_clean and g.origin_url and g.origin_url.strip().rstrip('/').lower() == origin_url_clean:
+                    db_game = g
+                    break
+
+            canonical_title = db_game.title if db_game else title
+
+            # Scrape fresh data from online page
+            scraped_result = {}
+            if origin_url:
+                try:
+                    scraped_result = scraper.scrape_game_page(origin_url, preferred_host=preferred_host)
+                except Exception as e:
+                    print(f"[BatchUpdate] Error scraping {origin_url}: {e}")
+
+            parts = []
+            if isinstance(scraped_result, dict) and scraped_result.get('parts'):
+                parts = [p.strip() for p in scraped_result['parts'] if p and str(p).strip().startswith('http')]
+            if not parts and db_game and db_game.parts:
+                parts = list(db_game.parts)
+
+            fix_url = (scraped_result.get('fix_url') if isinstance(scraped_result, dict) else '') or (db_game.fix_url if db_game else '')
+            host = (scraped_result.get('host') if isinstance(scraped_result, dict) else '') or (db_game.host if db_game else preferred_host)
+            approx_size = (scraped_result.get('approx_size') if isinstance(scraped_result, dict) else None) or (db_game.approx_size if db_game else "Unknown")
+            description = (scraped_result.get('description') if isinstance(scraped_result, dict) else None) or (db_game.description if db_game else "No description available.")
+            thumbnail = (scraped_result.get('thumbnail') if isinstance(scraped_result, dict) else None) or (db_game.thumbnail if db_game else "")
+            category = (db_game.category if (db_game and db_game.category) else "General")
+
+            raw_ver = latest_version or (scraped_result.get('version') if isinstance(scraped_result, dict) else None) or (db_game.version if db_game else "1.0")
+            clean_ver = version_checker.clean_version_string(str(raw_ver)) or "1.0"
+
+            catalog_entry = {
+                "title": canonical_title,
+                "version": clean_ver,
+                "host": host,
+                "parts": parts,
+                "fix_url": fix_url,
+                "approx_size": approx_size,
+                "description": description,
+                "thumbnail": thumbnail,
+                "origin_url": origin_url or (db_game.origin_url if db_game else ""),
+                "category": category
+            }
+
+            # Update catalog in Data.json & in-memory catalog
+            try:
+                db_manager.add_or_update_game(catalog_entry, installed_data=config.data)
+                success_count += 1
+                updated_list.append(canonical_title)
+            except Exception as de:
+                print(f"[BatchUpdate] Failed updating '{canonical_title}' in catalog: {de}")
+
+        # Final completion event
+        try:
+            socketio.emit("batch_update_progress", {
+                "status": "completed",
+                "current": total,
+                "total": total,
+                "success_count": success_count,
+                "updated_list": updated_list
+            }, namespace='/')
+        except Exception:
+            pass
+
+        return jsonify({
+            "success": True,
+            "total": total,
+            "updated_count": success_count,
+            "updated_games": updated_list
         })
 
     return bp

@@ -7,7 +7,9 @@ differ from Download-DB.txt, and triggers Discord Webhook notifications.
 import re
 import time
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
+from requests.adapters import HTTPAdapter
 from bs4 import BeautifulSoup
 from typing import List, Dict, Any, Optional, Callable, Tuple
 
@@ -19,7 +21,11 @@ class VersionChecker:
         enable_notifications: bool = True,
         username: str = "",
         password: str = "",
-        browser_path: str = ""
+        browser_path: str = "",
+        multi_threaded: bool = True,
+        scan_workers: int = 6,
+        enable_cache: bool = True,
+        cache_ttl_minutes: int = 15
     ):
         self.webhook_url = webhook_url
         self.enable_notifications = enable_notifications
@@ -30,7 +36,20 @@ class VersionChecker:
         self.is_scanning = False
         self._stop_requested = False
         self._scan_thread: Optional[threading.Thread] = None
+
+        # Multi-threading & Caching settings
+        self.multi_threaded = multi_threaded
+        self.scan_workers = max(1, int(scan_workers or 6))
+        self.enable_cache = enable_cache
+        self.cache_ttl_minutes = max(1, int(cache_ttl_minutes or 15))
+        self._scrape_cache: Dict[str, Tuple[str, float]] = {}
+        self._cache_lock = threading.Lock()
+        self._progress_lock = threading.Lock()
+
         self.session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=35, pool_maxsize=35, max_retries=1)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -44,7 +63,11 @@ class VersionChecker:
         webhook_url: str = "",
         enable_webhook: bool = False,
         browser_path: str = "",
-        bypass_list: Optional[List[str]] = None
+        bypass_list: Optional[List[str]] = None,
+        multi_threaded: Optional[bool] = None,
+        scan_workers: Optional[int] = None,
+        enable_cache: Optional[bool] = None,
+        cache_ttl_minutes: Optional[int] = None
     ):
         if username: self.username = username
         if password: self.password = password
@@ -52,18 +75,46 @@ class VersionChecker:
         self.enable_notifications = enable_webhook
         if browser_path: self.browser_path = browser_path
         if bypass_list is not None: self.bypass_list = bypass_list
+        if multi_threaded is not None: self.multi_threaded = bool(multi_threaded)
+        if scan_workers is not None: self.scan_workers = max(1, int(scan_workers))
+        if enable_cache is not None: self.enable_cache = bool(enable_cache)
+        if cache_ttl_minutes is not None: self.cache_ttl_minutes = max(1, int(cache_ttl_minutes))
+
+    def clear_cache(self) -> int:
+        """Clears all cached web scrape versions."""
+        with self._cache_lock:
+            count = len(self._scrape_cache)
+            self._scrape_cache.clear()
+            print(f"[VersionChecker] Cleared scrape cache ({count} entries).")
+            return count
 
     def get_status(self) -> Dict[str, Any]:
         return {
             "is_scanning": self.is_scanning,
             "webhook_configured": bool(self.webhook_url),
             "enable_notifications": self.enable_notifications,
-            "has_credentials": bool(self.username and self.password)
+            "has_credentials": bool(self.username and self.password),
+            "multi_threaded": self.multi_threaded,
+            "scan_workers": self.scan_workers,
+            "enable_cache": self.enable_cache,
+            "cache_ttl_minutes": self.cache_ttl_minutes,
+            "cached_entries": len(self._scrape_cache)
         }
 
-    def start_scan_async(self, games: List[Dict[str, Any]], progress_cb: Optional[Callable] = None) -> bool:
+    def start_scan_async(
+        self,
+        games: List[Dict[str, Any]],
+        progress_cb: Optional[Callable] = None,
+        multi_threaded: Optional[bool] = None,
+        scan_workers: Optional[int] = None
+    ) -> bool:
         if self.is_scanning:
             return False
+        if multi_threaded is not None:
+            self.multi_threaded = bool(multi_threaded)
+        if scan_workers is not None:
+            self.scan_workers = max(1, int(scan_workers))
+
         self.is_scanning = True
         self._stop_requested = False
         self._scan_thread = threading.Thread(
@@ -141,10 +192,33 @@ class VersionChecker:
         return False
 
     def scrape_online_version(self, origin_url: str) -> Optional[str]:
-        """Scrapes the live version string from Online-Fix.me or SteamRIP page."""
+        """Scrapes the live version string from Online-Fix.me or SteamRIP page, utilizing memory cache if enabled."""
         if not origin_url or not origin_url.startswith("http"):
             return None
 
+        cache_key = origin_url.strip().rstrip("/").lower()
+
+        # Step 1: Check memory scrape cache
+        if self.enable_cache:
+            with self._cache_lock:
+                cached = self._scrape_cache.get(cache_key)
+                if cached:
+                    cached_ver, timestamp = cached
+                    if (time.time() - timestamp) < (self.cache_ttl_minutes * 60):
+                        return cached_ver
+
+        # Step 2: Live scrape
+        scraped_ver = self._scrape_online_version_uncached(origin_url)
+
+        # Step 3: Save to cache
+        if self.enable_cache and scraped_ver:
+            with self._cache_lock:
+                self._scrape_cache[cache_key] = (scraped_ver, time.time())
+
+        return scraped_ver
+
+    def _scrape_online_version_uncached(self, origin_url: str) -> Optional[str]:
+        """Performs raw HTTP request and HTML parsing on the release page."""
         try:
             resp = self.session.get(origin_url, timeout=10)
             if resp.status_code != 200:
@@ -243,15 +317,16 @@ class VersionChecker:
 
     def _scan_worker(self, games: List[Dict[str, Any]], progress_cb: Optional[Callable]):
         total = len(games)
-        updates_found = 0
+        updates_found = [0]
         outdated_games: List[Dict[str, Any]] = []
+        current_idx = [0]
 
-        print(f"[VersionChecker] Starting live audit for {total} games...")
+        mode_str = f"Multi-Threaded ({self.scan_workers} workers)" if self.multi_threaded else "Sequential"
+        print(f"[VersionChecker] Starting live audit for {total} games [{mode_str}, Cache: {self.enable_cache}]...")
 
-        for idx, game in enumerate(games, start=1):
+        def process_single_game(game: Dict[str, Any]):
             if self._stop_requested:
-                print("[VersionChecker] Scan aborted by user.")
-                break
+                return
 
             title = game.get("title") or game.get("name", "Unknown Game")
             db_version = str(game.get("version", "")).strip()
@@ -260,12 +335,14 @@ class VersionChecker:
 
             # Check if game is bypassed
             if title in self.bypass_list:
-                continue
+                with self._progress_lock:
+                    current_idx[0] += 1
+                return
 
-            # Step 1: Live scrape from origin URL
+            # Live scrape from origin URL (uses short-term cache if active)
             scraped_ver = self.scrape_online_version(origin_url)
 
-            # Step 2: Compare Download-DB Version vs Live Online Version
+            # Compare Download-DB Version vs Live Online Version
             has_update = False
             if scraped_ver:
                 norm_db = self.normalize_version(db_version)
@@ -274,7 +351,12 @@ class VersionChecker:
                 # Flag as update ONLY if live site differs from Download-DB!
                 if norm_scraped and norm_db and not self.are_versions_equal(db_version, scraped_ver):
                     has_update = True
-                    updates_found += 1
+
+            with self._progress_lock:
+                current_idx[0] += 1
+                idx = current_idx[0]
+                if has_update:
+                    updates_found[0] += 1
                     outdated_games.append({
                         "title": title,
                         "db_version": db_version,
@@ -286,7 +368,7 @@ class VersionChecker:
             local_display = str(installed_version) if installed_version else "Not Installed"
 
             # Progress update
-            if progress_cb:
+            if progress_cb and not self._stop_requested:
                 progress_cb({
                     "status": "progress",
                     "current": idx,
@@ -303,12 +385,32 @@ class VersionChecker:
                     "is_installed": bool(installed_version)
                 })
 
-            time.sleep(0.08)
+        # Branch: Multi-Threaded vs Sequential
+        if self.multi_threaded and total > 1:
+            workers = min(self.scan_workers, total)
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [executor.submit(process_single_game, g) for g in games]
+                for future in as_completed(futures):
+                    if self._stop_requested:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        break
+                    try:
+                        future.result()
+                    except Exception as fe:
+                        print(f"[VersionChecker] Worker thread error: {fe}")
+        else:
+            for game in games:
+                if self._stop_requested:
+                    print("[VersionChecker] Scan aborted by user.")
+                    break
+                process_single_game(game)
+                time.sleep(0.06)
 
         self.is_scanning = False
-        print(f"[VersionChecker] Audit complete. Found {updates_found} updates.")
+        final_updates = updates_found[0]
+        print(f"[VersionChecker] Audit complete. Found {final_updates} updates.")
 
-        # Step 3: Dispatch Discord Webhook if configured and updates were found
+        # Dispatch Discord Webhook if configured and updates were found
         if outdated_games and self.webhook_url and self.enable_notifications:
             self.send_discord_bulk_notification(outdated_games)
 
@@ -316,7 +418,7 @@ class VersionChecker:
             progress_cb({
                 "status": "completed",
                 "total": total,
-                "updates_found": updates_found,
+                "updates_found": final_updates,
                 "outdated_list": outdated_games
             })
 
@@ -352,7 +454,7 @@ class VersionChecker:
                     "description": "The following releases have newer patches published on Online-Fix / SteamRIP:",
                     "color": 16753920,  # Fanta Gold/Orange
                     "fields": fields,
-                    "footer": {"text": "FANTA OFME Downloader v2.0.3"}
+                    "footer": {"text": "FANTA OFME Downloader v2.0.4"}
                 }]
             }
 
