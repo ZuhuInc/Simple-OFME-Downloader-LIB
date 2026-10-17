@@ -298,7 +298,26 @@ class VersionChecker:
                             if cleaned:
                                 return cleaned
 
-            # 3. Generic title/h1 parser
+            # 3. Cracked-Games Parser
+            elif "cracked-games.org" in origin_url:
+                # Step A: Find emerald paragraph/span with Build / version number
+                for tag in soup.find_all(class_=re.compile(r"text-emerald-400")):
+                    txt = tag.get_text(strip=True)
+                    if re.search(r"\d", txt) and not any(k in txt.lower() for k in ["latest", "crc", "sha"]):
+                        m = re.search(r"(?:Build\s*)?([A-Za-z0-9_\.\-]+)", txt, re.IGNORECASE)
+                        if m:
+                            cleaned = self.clean_version_string(m.group(1))
+                            if cleaned:
+                                return cleaned
+
+                # Step B: Regex search in page HTML for Build <id>
+                m = re.search(r"Build\s*([A-Za-z0-9_\.\-]+)", html, re.IGNORECASE)
+                if m:
+                    cleaned = self.clean_version_string(m.group(1))
+                    if cleaned:
+                        return cleaned
+
+            # 4. Generic title/h1 parser
             title_elem = soup.find("title")
             if title_elem:
                 t_text = title_elem.get_text()

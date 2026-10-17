@@ -37,6 +37,7 @@ class ConfigDefaults:
     steam_user_id: str = ""
     steam_id: str = ""
     rar_password: str = "online-fix.me"
+    cg_password: str = "cracked-games.org"
     concurrent_downloads: int = 2
     speed_unit: str = "MB/s"
     size_unit: str = "GB"

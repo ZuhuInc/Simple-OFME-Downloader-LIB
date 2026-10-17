@@ -30,11 +30,13 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
         else:
             games = [g.to_dict() for g in db_manager.games]
 
-        # Step 2: Filter by source provider (OFME vs SteamRIP vs All)
+        # Step 2: Filter by source provider (OFME vs SteamRIP vs CG vs All)
         if source in ['ofme', 'onlinefix', 'online-fix']:
             games = [g for g in games if 'online-fix.me' in (g.get('origin_url') or '').lower()]
         elif source in ['sr', 'steamrip', 'steam-rip']:
             games = [g for g in games if 'steamrip.com' in (g.get('origin_url') or '').lower()]
+        elif source in ['cg', 'crackedgames', 'cracked-games']:
+            games = [g for g in games if 'cracked-games.org' in (g.get('origin_url') or '').lower()]
 
         # Step 3: Configure bypass list, multi-threading, and caching
         use_bypass = bool(data.get('use_bypass', False))

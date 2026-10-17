@@ -15,6 +15,7 @@ class SettingsController {
         this.downloadPathInput = document.getElementById('set_download_path');
         this.extractPathInput = document.getElementById('set_extract_path');
         this.rarPasswordInput = document.getElementById('set_rar_password');
+        this.cgPasswordInput = document.getElementById('set_cg_password');
         this.speedUnitSelect = document.getElementById('set_speed_unit');
         this.sizeUnitSelect = document.getElementById('set_size_unit');
         this.showDownloadSpeedCheck = document.getElementById('set_show_download_speed');
@@ -305,6 +306,7 @@ class SettingsController {
         if (this.downloadPathInput) this.downloadPathInput.value = this.settings.download_path || '';
         if (this.extractPathInput) this.extractPathInput.value = this.settings.extract_path || '';
         if (this.rarPasswordInput) this.rarPasswordInput.value = this.settings.rar_password || 'online-fix.me';
+        if (this.cgPasswordInput) this.cgPasswordInput.value = this.settings.cg_password || 'cracked-games.org';
         if (this.concurrencyInput) this.concurrencyInput.value = this.settings.concurrent_downloads || 2;
         if (this.speedUnitSelect) this.speedUnitSelect.value = this.settings.speed_unit || 'MB/s';
         if (this.sizeUnitSelect) this.sizeUnitSelect.value = this.settings.size_unit || (this.settings.show_size_in_gb === false ? 'MB' : 'GB');
@@ -327,6 +329,7 @@ class SettingsController {
             download_path: this.downloadPathInput?.value || '',
             extract_path: this.extractPathInput?.value || '',
             rar_password: this.rarPasswordInput?.value || 'online-fix.me',
+            cg_password: this.cgPasswordInput?.value || 'cracked-games.org',
             concurrent_downloads: parseInt(this.concurrencyInput?.value || 2, 10),
             speed_unit: this.speedUnitSelect?.value || 'MB/s',
             size_unit: this.sizeUnitSelect?.value || 'GB',

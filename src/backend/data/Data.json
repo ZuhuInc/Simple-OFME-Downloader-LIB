@@ -2281,5 +2281,18 @@
         ],
         "fix_url": "https://gofile.io/d/DOedqX",
         "category": "General"
+    },
+    "LEGO Party!": {
+        "version": "25358321",
+        "host": "GoFile",
+        "approx_size": "7.3 GB",
+        "description": "LEGO® Party! is a 4-player party game that's built different! Compete against your friends in wacky Challenge Zones and 60 hilarious minigames from across your favorite LEGO sets like LEGO Pirates, LEGO Space, LEGO NINJAGO® and more. Join your friends online no matter their platform, or get together for a LEGO Party game night. With multiple game modes and tons of minifigures to unlock, you’ll have all the bricks to build the ultimate party!",
+        "thumbnail": "https://cracked-games.org/uploads/cover/lego-party-cover.webp",
+        "origin_url": "https://cracked-games.org/lego-party-free-download",
+        "parts": [
+            "https://gofile.io/d/8SottNqt"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }

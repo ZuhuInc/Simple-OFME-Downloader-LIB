@@ -98,48 +98,58 @@ class Extractor:
         success = False
         error_msg = ""
 
+        passwords_to_try = [password]
+        for alt in ["cracked-games.org", "online-fix.me", ""]:
+            if alt not in passwords_to_try:
+                passwords_to_try.append(alt)
+
         # Method 1: WinRAR
         if self.is_winrar_available():
-            cmd = [
-                self.winrar_path,
-                "x",                # Extract with full paths
-                "-ibck",            # Background mode
-                f"-p{password}",    # Password
-                "-o+",              # Overwrite existing files
-                "-y",               # Assume Yes on all queries
-                archive_path,
-                extract_dir + os.sep
-            ]
-            try:
-                print(f"[Extractor] Running WinRAR: {' '.join(cmd[:4])} -> {extract_dir}", flush=True)
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
-                if result.returncode in [0, 1]:
-                    success = True
-                else:
-                    error_msg = f"WinRAR code {result.returncode}: {result.stderr or result.stdout}"
-            except Exception as e:
-                error_msg = f"WinRAR execution error: {e}"
+            for p in passwords_to_try:
+                cmd = [
+                    self.winrar_path,
+                    "x",                # Extract with full paths
+                    "-ibck",            # Background mode
+                    f"-p{p}",           # Password
+                    "-o+",              # Overwrite existing files
+                    "-y",               # Assume Yes on all queries
+                    archive_path,
+                    extract_dir + os.sep
+                ]
+                try:
+                    print(f"[Extractor] Running WinRAR: {' '.join(cmd[:4])} -> {extract_dir}", flush=True)
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+                    if result.returncode in [0, 1]:
+                        success = True
+                        error_msg = ""
+                        break
+                    else:
+                        error_msg = f"WinRAR code {result.returncode}: {result.stderr or result.stdout}"
+                except Exception as e:
+                    error_msg = f"WinRAR execution error: {e}"
 
         # Method 2: 7-Zip fallback
         if not success and self.is_sevenzip_available():
-            cmd = [
-                self.sevenzip_path,
-                "x",
-                "-y",
-                f"-p{password}",
-                f"-o{extract_dir}",
-                archive_path
-            ]
-            try:
-                print(f"[Extractor] Running 7-Zip: {' '.join(cmd[:4])} -> {extract_dir}", flush=True)
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
-                if result.returncode in [0, 1]:
-                    success = True
-                    error_msg = ""
-                else:
-                    error_msg = f"7-Zip code {result.returncode}: {result.stderr or result.stdout}"
-            except Exception as e:
-                error_msg = f"7-Zip execution error: {e}"
+            for p in passwords_to_try:
+                cmd = [
+                    self.sevenzip_path,
+                    "x",
+                    "-y",
+                    f"-p{p}",
+                    f"-o{extract_dir}",
+                    archive_path
+                ]
+                try:
+                    print(f"[Extractor] Running 7-Zip: {' '.join(cmd[:4])} -> {extract_dir}", flush=True)
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+                    if result.returncode in [0, 1]:
+                        success = True
+                        error_msg = ""
+                        break
+                    else:
+                        error_msg = f"7-Zip code {result.returncode}: {result.stderr or result.stdout}"
+                except Exception as e:
+                    error_msg = f"7-Zip execution error: {e}"
 
         # Method 3: Python zipfile fallback for .zip files
         if not success and archive_path.lower().endswith(".zip"):

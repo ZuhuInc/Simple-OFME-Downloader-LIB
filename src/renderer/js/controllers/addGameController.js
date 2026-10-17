@@ -251,7 +251,7 @@ class AddGameController {
     async handleAutoFetch() {
         const url = this.autoFetchInput?.value.trim();
         if (!url) {
-            window.uiController.showToast('Please paste a release URL first (Online-Fix or SteamRIP)', 'warning');
+            window.uiController.showToast('Please paste a release URL first (Online-Fix, SteamRIP, or Cracked-Games)', 'warning');
             return;
         }
 

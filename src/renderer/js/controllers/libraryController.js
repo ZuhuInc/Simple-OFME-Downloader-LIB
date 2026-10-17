@@ -155,8 +155,13 @@ class LibraryController {
             if (this.currentFilter === '2' && game.status !== 2) return false;
             if (this.currentFilter === '0' && game.status !== 0) return false;
 
-            // Host check
-            if (this.currentHost && game.host !== this.currentHost) return false;
+            // Host / Source check
+            if (this.currentHost) {
+                const target = this.currentHost.toLowerCase();
+                const matchesHost = (game.host || '').toLowerCase() === target;
+                const matchesSource = (game.source || '').toLowerCase() === target;
+                if (!matchesHost && !matchesSource) return false;
+            }
 
             // Search query
             if (this.searchQuery) {
@@ -228,7 +233,7 @@ class LibraryController {
                 <div class="card-info">
                     <h3 class="card-title" title="${game.title}">${game.title}</h3>
                     <div class="card-meta">
-                        <span class="card-host"><i class="fa-solid fa-server"></i> ${game.host || 'Unknown'}</span>
+                        <span class="card-host" title="Source: ${game.source || 'Unknown'} | Host: ${game.host || 'Direct'}"><i class="fa-solid fa-server"></i> ${game.source ? `<span style="color: var(--accent); font-weight: 600;">${game.source}</span> &bull; ` : ''}${game.host || 'Direct'}</span>
                         <span class="card-version">v${game.version || '1.0'}</span>
                     </div>
                 </div>

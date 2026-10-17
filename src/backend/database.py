@@ -37,7 +37,8 @@ class GameEntry:
         is_downloaded: bool = False,
         location: Optional[str] = None,
         parts: Optional[List[str]] = None,
-        steam_url: Optional[str] = None
+        steam_url: Optional[str] = None,
+        source: Optional[str] = None
     ):
         self.id = raw_id
         self.index = index
@@ -57,6 +58,37 @@ class GameEntry:
         self.is_downloaded = is_downloaded
         self.location = location
         self.steam_url = steam_url
+        self.source = self._determine_source(origin_url, host, source)
+
+    @staticmethod
+    def _determine_source(origin_url: str, host: str = "", raw_source: Optional[str] = None) -> str:
+        if raw_source:
+            s_up = str(raw_source).strip().upper()
+            if s_up in ("OFME", "ONLINE-FIX", "ONLINEFIX"):
+                return "OFME"
+            if s_up in ("SR", "STEAMRIP"):
+                return "SR"
+            if s_up in ("CG", "CRACKED-GAMES", "CRACKEDGAMES"):
+                return "CG"
+            return str(raw_source).strip()
+
+        u = (origin_url or "").lower()
+        if "online-fix.me" in u:
+            return "OFME"
+        if "steamrip.com" in u:
+            return "SR"
+        if "cracked-games.org" in u:
+            return "CG"
+
+        h = (host or "").upper()
+        if h in ("OFME", "ONLINE-FIX", "ONLINEFIX"):
+            return "OFME"
+        if h in ("SR", "STEAMRIP"):
+            return "SR"
+        if h in ("CG", "CRACKED-GAMES", "CRACKEDGAMES"):
+            return "CG"
+
+        return ""
 
     @property
     def status_code(self) -> int:
@@ -124,7 +156,8 @@ class GameEntry:
             "installed_version": self.installed_version,
             "is_downloaded": bool(self.is_downloaded or self.installed_version),
             "location": self.location,
-            "steam_url": self.steam_url
+            "steam_url": self.steam_url,
+            "source": self.source
         }
 
 
@@ -140,6 +173,14 @@ class DatabaseManager:
         self.games: List[GameEntry] = []
         self.hosts: List[str] = []
         self.last_updated: float = 0.0
+
+    def _update_hosts_list(self):
+        found_sources = {g.source for g in self.games if g.source}
+        found_hosts = {g.host for g in self.games if g.host and g.host.upper() not in ("OFME", "SR", "CG")}
+        primary_sources = ["OFME", "SR", "CG"]
+        active_sources = [s for s in primary_sources if s in found_sources or s in ("OFME", "SR", "CG")]
+        active_hosts = sorted(list(found_hosts))
+        self.hosts = active_sources + [h for h in active_hosts if h not in active_sources]
 
     def get_active_db_path(self) -> str:
         """Returns the active file path for Data.json based on configuration."""
@@ -222,7 +263,7 @@ class DatabaseManager:
 
         if raw_content:
             self.games = self.parse_database(raw_content, installed_data)
-            self.hosts = sorted(list({g.host for g in self.games if g.host}))
+            self._update_hosts_list()
             self.last_updated = time.time()
 
         return self.games
@@ -340,7 +381,7 @@ class DatabaseManager:
 
         # Reload in-memory games list
         self.games = self.parse_database(current_data, installed_data)
-        self.hosts = sorted(list({g.host for g in self.games if g.host}))
+        self._update_hosts_list()
         self.last_updated = time.time()
 
         for g in self.games:
@@ -568,9 +609,13 @@ class DatabaseManager:
             q = query.lower()
             results = [g for g in results if q in g.title.lower() or q in g.description.lower()]
 
-        # 2. Host Filter
+        # 2. Host / Source Filter
         if host and host.lower() != "all":
-            results = [g for g in results if g.host.lower() == host.lower()]
+            h_lower = host.lower()
+            results = [
+                g for g in results
+                if (g.host and g.host.lower() == h_lower) or (g.source and g.source.lower() == h_lower)
+            ]
 
         # 3. Status Filter (all, downloaded, needs_update, up_to_date)
         if status_filter and status_filter.lower() != "all":

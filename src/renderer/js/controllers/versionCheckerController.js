@@ -11,6 +11,7 @@ class VersionCheckerController {
         this.resultsTable = null;
         this.scanOfmeBtn = null;
         this.scanSteamripBtn = null;
+        this.scanCgBtn = null;
         this.scanAllSourcesBtn = null;
         this.installedOnlyCheck = null;
         this.enableBypassCheck = null;
@@ -68,6 +69,7 @@ class VersionCheckerController {
         this.resultsTable = document.getElementById('vcResultsTableBody');
         this.scanOfmeBtn = document.getElementById('scanOfmeBtn');
         this.scanSteamripBtn = document.getElementById('scanSteamripBtn');
+        this.scanCgBtn = document.getElementById('scanCgBtn');
         this.scanAllSourcesBtn = document.getElementById('scanAllSourcesBtn');
         this.installedOnlyCheck = document.getElementById('vcInstalledOnlyCheck');
         this.enableBypassCheck = document.getElementById('vcEnableBypassCheck');
@@ -160,6 +162,12 @@ class VersionCheckerController {
         if (this.scanSteamripBtn) {
             this.scanSteamripBtn.addEventListener('click', () => {
                 this.startScan({ source: 'sr', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled(), enable_cache: this.isCacheEnabled() });
+            });
+        }
+
+        if (this.scanCgBtn) {
+            this.scanCgBtn.addEventListener('click', () => {
+                this.startScan({ source: 'cg', installed_only: this.isInstalledOnly(), use_bypass: this.isBypassEnabled(), enable_cache: this.isCacheEnabled() });
             });
         }
 
@@ -294,7 +302,7 @@ class VersionCheckerController {
         }
 
         const modeLabel = options.multi_threaded ? '⚡ Fast Parallel' : 'Sequential';
-        const srcName = options.source === 'ofme' ? 'Online-Fix (OFME)' : (options.source === 'sr' ? 'SteamRIP (SR)' : 'All Sources');
+        const srcName = options.source === 'ofme' ? 'Online-Fix (OFME)' : (options.source === 'sr' ? 'SteamRIP (SR)' : (options.source === 'cg' ? 'Cracked-Games (CG)' : 'All Sources'));
         const scopeName = options.installed_only ? 'Installed Only' : 'All Games';
         const cacheLabel = options.enable_cache ? 'Cache ON' : 'Cache OFF';
         if (this.scanStatusText) this.scanStatusText.textContent = `Auditing ${srcName} [${scopeName}, ${cacheLabel}] (${modeLabel})...`;
@@ -982,6 +990,7 @@ class VersionCheckerController {
         if (!this.scanOfmeBtn) this.queryElements();
         if (this.scanOfmeBtn) this.scanOfmeBtn.disabled = this.isScanning;
         if (this.scanSteamripBtn) this.scanSteamripBtn.disabled = this.isScanning;
+        if (this.scanCgBtn) this.scanCgBtn.disabled = this.isScanning;
         if (this.scanAllSourcesBtn) this.scanAllSourcesBtn.disabled = this.isScanning;
         if (this.stopBtn) this.stopBtn.disabled = !this.isScanning;
     }

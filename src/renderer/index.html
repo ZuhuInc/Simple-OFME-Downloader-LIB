@@ -93,16 +93,18 @@
                         <div class="filter-pill" data-filter="0">NOT INSTALLED</div>
                     </div>
 
-                    <select id="hostFilterSelect" class="select-dropdown">
-                        <option value="">All Hosts</option>
-                    </select>
+                    <div class="header-dropdowns-group">
+                        <select id="hostFilterSelect" class="select-dropdown">
+                            <option value="">All Hosts</option>
+                        </select>
 
-                    <select id="sortFilterSelect" class="select-dropdown">
-                        <option value="default">Default Order</option>
-                        <option value="name-asc">Name (A-Z)</option>
-                        <option value="name-desc">Name (Z-A)</option>
-                        <option value="size">File Size</option>
-                    </select>
+                        <select id="sortFilterSelect" class="select-dropdown">
+                            <option value="default">Default Order</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="size">File Size</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="library-stats-bar" style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); padding: 0 4px;">
@@ -134,11 +136,12 @@
                 <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                     <div>
                         <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">Version Checker & Online Audit</h2>
-                        <p style="font-size: 12px; color: var(--text-muted);">Scrapes Online-Fix.me and SteamRIP to verify if newer patches or builds have been released.</p>
+                        <p style="font-size: 12px; color: var(--text-muted);">Scrapes Online-Fix.me, SteamRIP, and Cracked-Games to verify if newer patches or builds have been released.</p>
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                         <button id="scanOfmeBtn" class="btn btn-primary" title="Audit Online-Fix releases only"><i class="fa-solid fa-gamepad"></i> Audit OFME</button>
-                        <button id="scanSteamripBtn" class="btn btn-secondary" style="border-color: rgba(96, 165, 250, 0.4); color: #93c5fd;" title="Audit SteamRIP releases only"><i class="fa-solid fa-cloud-arrow-down"></i> Audit SteamRIP (SR)</button>
+                        <button id="scanSteamripBtn" class="btn btn-secondary" style="border-color: rgba(96, 165, 250, 0.4); color: #93c5fd;" title="Audit SteamRIP releases only"><i class="fa-solid fa-cloud-arrow-down"></i> Audit SR</button>
+                        <button id="scanCgBtn" class="btn btn-secondary" style="border-color: rgba(52, 211, 153, 0.4); color: #6ee7b7;" title="Audit Cracked-Games releases only"><i class="fa-solid fa-cube"></i> Audit CG</button>
                         <button id="scanAllSourcesBtn" class="btn btn-secondary" title="Audit all sources"><i class="fa-solid fa-earth-americas"></i> Audit All</button>
                         <button id="stopScanBtn" class="btn btn-secondary" disabled><i class="fa-solid fa-stop"></i> Stop</button>
                     </div>
@@ -443,10 +446,18 @@
 
                         <div class="form-row">
                             <div class="form-label-area">
-                                <span class="form-label">Default Archive Password</span>
-                                <span class="form-desc">Standard password used by Online-Fix archives</span>
+                                <span class="form-label">Online-Fix Archive Password</span>
+                                <span class="form-desc">Standard password used by Online-Fix (OFME) archives</span>
                             </div>
                             <input type="text" id="set_rar_password" class="form-input" value="online-fix.me">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Cracked-Games Archive Password</span>
+                                <span class="form-desc">Standard password used by Cracked-Games (CG) archives</span>
+                            </div>
+                            <input type="text" id="set_cg_password" class="form-input" value="cracked-games.org">
                         </div>
 
                         <div class="form-row">
@@ -1022,12 +1033,12 @@
                 <div class="glass-card" style="background: rgba(212, 168, 83, 0.05); border: 1px dashed rgba(212, 168, 83, 0.35); padding: 12px 14px; margin-bottom: 14px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <span style="font-size: 12px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Fetch From Online-Fix.me or SteamRIP
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Fetch From Online-Fix, SteamRIP, or Cracked-Games
                         </span>
                         <span style="font-size: 10px; color: var(--text-muted);">Paste release link to autofill</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="agAutoFetchUrlInput" class="form-input" placeholder="https://online-fix.me/games/... or https://steamrip.com/..." style="flex: 1; font-size: 12px;">
+                        <input type="text" id="agAutoFetchUrlInput" class="form-input" placeholder="https://online-fix.me/... or https://steamrip.com/... or https://cracked-games.org/..." style="flex: 1; font-size: 12px;">
                         <button type="button" id="agAutoFetchBtn" class="btn btn-primary btn-sm" style="white-space: nowrap; padding: 0 14px;">
                             <i class="fa-solid fa-bolt"></i> Auto-Fetch
                         </button>

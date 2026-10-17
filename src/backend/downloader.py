@@ -383,7 +383,16 @@ class Downloader:
                             else:
                                 extract_dir = default_base
 
-                        rar_password = self.config.get("rar_password", "online-fix.me") if self.config else "online-fix.me"
+                        origin_url_lower = str(job.meta.get("origin_url") or "").lower()
+                        archive_pwd = job.meta.get("archive_password")
+                        if not archive_pwd:
+                            if "cracked-games.org" in origin_url_lower:
+                                archive_pwd = "cracked-games.org"
+                            elif "steamrip.com" in origin_url_lower:
+                                archive_pwd = ""
+                            else:
+                                archive_pwd = self.config.get("rar_password", "online-fix.me") if self.config else "online-fix.me"
+
                         delete_after = job.meta.get("auto_delete_archive")
                         if delete_after is None:
                             delete_after = self.config.get("auto_delete_archive", True) if self.config else True
@@ -396,7 +405,7 @@ class Downloader:
                         extract_res = self.extractor.extract_archive(
                             archive_path=job.dest_file,
                             extract_dir=extract_dir,
-                            password=rar_password,
+                            password=archive_pwd,
                             delete_after=delete_after,
                             game_title=title,
                             is_fix=is_fix,
