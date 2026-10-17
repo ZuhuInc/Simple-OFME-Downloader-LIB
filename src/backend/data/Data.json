@@ -2111,7 +2111,7 @@
     "Surgeon Simulator 2": {
         "version": "10092021",
         "host": "GoFile",
-        "approx_size": "N/A",
+        "approx_size": "10 GB",
         "description": "No description available.",
         "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/774791/library_600x900_2x.jpg?t=1726595384",
         "origin_url": "https://online-fix.me/games/simulator/18264-surgeon-simulator-2-po-seti.html",
@@ -2119,6 +2119,19 @@
             "https://gofile.io/d/FWbhhq5G"
         ],
         "fix_url": "https://gofile.io/d/3mfS0hEs",
+        "category": "General"
+    },
+    "Risk of Rain 2": {
+        "version": "1.5.0",
+        "host": "GoFile",
+        "approx_size": "4GB",
+        "description": "Escape a chaotic alien planet by fighting through hordes of frenzied monsters – with your friends, or on your own. Combine loot in surprising ways and master each character until you become the havoc you feared upon your first crash landing",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/632360/library_600x900_2x.jpg?t=1751307943",
+        "origin_url": "https://online-fix.me/games/shooter/16146-risk-of-rain-2-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/e3tk69Is"
+        ],
+        "fix_url": "https://gofile.io/d/FCKRrfUX",
         "category": "General"
     },
     "MIMESIS": {
