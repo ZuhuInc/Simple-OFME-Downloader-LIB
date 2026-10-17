@@ -145,6 +145,10 @@ class DownloadController {
         if (job.error_msg) {
             return `<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> ${job.error_msg}</span>`;
         }
+        if (job.status === 'extracting') {
+            const sizeStr = this.formatBytes(job.total_bytes || job.downloaded_bytes);
+            return `${job.filename || 'Archive'} &bull; <span class="download-size-text">${sizeStr} Archive</span> &bull; <span style="color: var(--accent);"><i class="fa-solid fa-gear fa-spin"></i> Unpacking to disk...</span>`;
+        }
         const parts = [job.filename || 'Archive'];
         if (this.showTotal) {
             parts.push(`<span class="download-size-text">${this.formatDownloadProgress(job.downloaded_bytes, job.total_bytes)}</span>`);
@@ -152,14 +156,58 @@ class DownloadController {
         return parts.join(' &bull; ');
     }
 
+    renderActionsHtml(job) {
+        const percent = (job.progress || 0).toFixed(1);
+        const speedFormatted = this.formatSpeed(job.speed_bytes || 0);
+        const targetFolder = job.meta?.extracted_dir || job.dest_file;
+
+        return `
+            <span class="download-speed-badge" style="${(this.showSpeed && job.status === 'downloading') ? '' : 'display: none;'}">${speedFormatted}</span>
+            <span class="download-percent-badge" style="${(this.showPercent && (job.status === 'downloading' || job.status === 'paused' || job.status === 'completed')) ? '' : 'display: none;'}">${percent}%</span>
+            ${job.status === 'extracting' ? `
+                <span class="download-speed-badge" style="color: var(--accent); background: rgba(212, 168, 83, 0.15);"><i class="fa-solid fa-gear fa-spin"></i> Extracting...</span>
+            ` : ''}
+            ${job.status === 'downloading' ? `
+                <button class="btn-icon" title="Pause" onclick="window.downloadController.pauseJob('${job.id}')">
+                    <i class="fa-solid fa-pause"></i>
+                </button>
+            ` : (job.status === 'paused' ? `
+                <button class="btn-icon" title="Resume" onclick="window.downloadController.resumeJob('${job.id}')">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+            ` : '')}
+            ${job.status === 'error' && job.url ? `
+                <button class="btn btn-sm btn-secondary" title="Open Link in Browser" onclick="window.downloadController.openExternalUrl('${job.url}')">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link
+                </button>
+            ` : ''}
+            ${job.status === 'completed' && targetFolder ? `
+                <button class="btn btn-sm btn-secondary" title="Open Game Folder" onclick="window.downloadController.openFolder('${targetFolder.replace(/\\/g, '\\\\')}')">
+                    <i class="fa-solid fa-folder-open"></i> Open Folder
+                </button>
+            ` : ''}
+            ${job.status === 'completed' ? `
+                <button class="btn btn-sm btn-primary" title="Extract / Re-extract" onclick="window.downloadController.extractJob('${job.id}')">
+                    <i class="fa-solid fa-file-zipper"></i> Extract
+                </button>
+            ` : ''}
+            ${job.status !== 'completed' && job.status !== 'extracting' ? `
+                <button class="btn-icon btn-icon-danger" title="Cancel / Remove" onclick="window.downloadController.cancelJob('${job.id}')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            ` : ''}
+        `;
+    }
+
     createJobElement(job) {
         const div = document.createElement('div');
         div.className = `glass-card download-card status-${job.status}`;
         div.id = `job-${job.id}`;
+        div._lastRenderedStatus = job.status;
 
         const percent = (job.progress || 0).toFixed(1);
-        const title = job.meta?.title || job.filename || `Download #${job.id}`;
-        const speedFormatted = this.formatSpeed(job.speed_bytes || 0);
+        const cleanJobId = String(job.id || '').replace(/^job_/i, '');
+        const title = job.meta?.title || job.filename || `Download #${cleanJobId}`;
 
         const getStatusText = (status, pct) => {
             const pctStr = this.showPercent ? ` (${pct}%)` : '';
@@ -187,8 +235,6 @@ class DownloadController {
             }
         };
 
-        const targetFolder = job.meta?.extracted_dir || job.dest_file;
-
         div.innerHTML = `
             <div class="download-card-header">
                 <div class="download-title-area">
@@ -199,37 +245,7 @@ class DownloadController {
                     </div>
                 </div>
                 <div class="download-actions">
-                    <span class="download-speed-badge" style="${(this.showSpeed && job.status === 'downloading') ? '' : 'display: none;'}">${speedFormatted}</span>
-                    <span class="download-percent-badge" style="${(this.showPercent && (job.status === 'downloading' || job.status === 'paused' || job.status === 'completed')) ? '' : 'display: none;'}">${percent}%</span>
-                    ${job.status === 'downloading' ? `
-                        <button class="btn-icon" title="Pause" onclick="window.downloadController.pauseJob('${job.id}')">
-                            <i class="fa-solid fa-pause"></i>
-                        </button>
-                    ` : (job.status === 'paused' ? `
-                        <button class="btn-icon" title="Resume" onclick="window.downloadController.resumeJob('${job.id}')">
-                            <i class="fa-solid fa-play"></i>
-                        </button>
-                    ` : '')}
-                    ${job.status === 'error' && job.url ? `
-                        <button class="btn btn-sm btn-secondary" title="Open Link in Browser" onclick="window.downloadController.openExternalUrl('${job.url}')">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link
-                        </button>
-                    ` : ''}
-                    ${job.status === 'completed' && targetFolder ? `
-                        <button class="btn btn-sm btn-secondary" title="Open Game Folder" onclick="window.downloadController.openFolder('${targetFolder.replace(/\\/g, '\\\\')}')">
-                            <i class="fa-solid fa-folder-open"></i> Open Folder
-                        </button>
-                    ` : ''}
-                    ${job.status === 'completed' ? `
-                        <button class="btn btn-sm btn-primary" title="Extract / Re-extract" onclick="window.downloadController.extractJob('${job.id}')">
-                            <i class="fa-solid fa-file-zipper"></i> Extract
-                        </button>
-                    ` : ''}
-                    ${job.status !== 'completed' && job.status !== 'extracting' ? `
-                        <button class="btn-icon btn-icon-danger" title="Cancel / Remove" onclick="window.downloadController.cancelJob('${job.id}')">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    ` : ''}
+                    ${this.renderActionsHtml(job)}
                 </div>
             </div>
             <div class="download-progress-bar">
@@ -237,7 +253,7 @@ class DownloadController {
             </div>
             <div class="download-card-footer">
                 <span class="download-status-label status-text-${job.status}">${getStatusText(job.status, percent)}</span>
-                <span class="download-eta">${job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : (job.status === 'resolving' ? 'Resolving host link' : ''))}</span>
+                <span class="download-eta">${job.status === 'extracting' ? 'Unpacking to Games directory...' : (job.status === 'completed' ? 'Installed / Ready' : (job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : (job.status === 'resolving' ? 'Resolving host link' : ''))))}</span>
             </div>
         `;
         return div;
@@ -304,7 +320,15 @@ class DownloadController {
 
         const eta = card.querySelector('.download-eta');
         if (eta) {
-            eta.textContent = job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : '');
+            eta.textContent = job.status === 'extracting' ? 'Unpacking to Games directory...' : (job.status === 'completed' ? 'Installed / Ready' : (job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : '')));
+        }
+
+        if (card._lastRenderedStatus !== job.status) {
+            card._lastRenderedStatus = job.status;
+            const actions = card.querySelector('.download-actions');
+            if (actions) {
+                actions.innerHTML = this.renderActionsHtml(job);
+            }
         }
 
         const icon = card.querySelector('.download-icon');

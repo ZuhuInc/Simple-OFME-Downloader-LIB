@@ -530,7 +530,8 @@ class DetailsController {
             });
 
             if (res.success) {
-                window.uiController.showToast(`Added to Download Queue (Job #${res.job_id})`, 'success');
+                const cleanJobId = String(res.job_id || '').replace(/^job_/i, '');
+                window.uiController.showToast(`Added to Download Queue (Job #${cleanJobId})`, 'success');
                 window.uiController.switchTab('downloadsTab');
                 this.close();
             }
