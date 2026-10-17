@@ -16,6 +16,10 @@ class SettingsController {
         this.extractPathInput = document.getElementById('set_extract_path');
         this.rarPasswordInput = document.getElementById('set_rar_password');
         this.speedUnitSelect = document.getElementById('set_speed_unit');
+        this.sizeUnitSelect = document.getElementById('set_size_unit');
+        this.showDownloadSpeedCheck = document.getElementById('set_show_download_speed');
+        this.showDownloadPercentCheck = document.getElementById('set_show_download_percent');
+        this.showDownloadTotalCheck = document.getElementById('set_show_download_total');
         this.autoExtractCheck = document.getElementById('set_auto_extract');
         this.autoDeleteArchiveCheck = document.getElementById('set_auto_delete_archive');
         this.concurrencyInput = document.getElementById('set_concurrency');
@@ -56,6 +60,42 @@ class SettingsController {
     bindEvents() {
         if (this.saveBtn) {
             this.saveBtn.addEventListener('click', () => this.saveCurrentSettings());
+        }
+
+        if (this.sizeUnitSelect) {
+            this.sizeUnitSelect.addEventListener('change', () => {
+                if (window.downloadController) {
+                    window.downloadController.sizeUnit = this.sizeUnitSelect.value;
+                    window.downloadController.renderQueue();
+                }
+            });
+        }
+
+        if (this.showDownloadSpeedCheck) {
+            this.showDownloadSpeedCheck.addEventListener('change', () => {
+                if (window.downloadController) {
+                    window.downloadController.showSpeed = this.showDownloadSpeedCheck.checked;
+                    window.downloadController.renderQueue();
+                }
+            });
+        }
+
+        if (this.showDownloadPercentCheck) {
+            this.showDownloadPercentCheck.addEventListener('change', () => {
+                if (window.downloadController) {
+                    window.downloadController.showPercent = this.showDownloadPercentCheck.checked;
+                    window.downloadController.renderQueue();
+                }
+            });
+        }
+
+        if (this.showDownloadTotalCheck) {
+            this.showDownloadTotalCheck.addEventListener('change', () => {
+                if (window.downloadController) {
+                    window.downloadController.showTotal = this.showDownloadTotalCheck.checked;
+                    window.downloadController.renderQueue();
+                }
+            });
         }
 
         if (this.clearCacheBtn) {
@@ -267,6 +307,10 @@ class SettingsController {
         if (this.rarPasswordInput) this.rarPasswordInput.value = this.settings.rar_password || 'online-fix.me';
         if (this.concurrencyInput) this.concurrencyInput.value = this.settings.concurrent_downloads || 2;
         if (this.speedUnitSelect) this.speedUnitSelect.value = this.settings.speed_unit || 'MB/s';
+        if (this.sizeUnitSelect) this.sizeUnitSelect.value = this.settings.size_unit || (this.settings.show_size_in_gb === false ? 'MB' : 'GB');
+        if (this.showDownloadSpeedCheck) this.showDownloadSpeedCheck.checked = this.settings.show_download_speed !== false;
+        if (this.showDownloadPercentCheck) this.showDownloadPercentCheck.checked = this.settings.show_download_percent !== false;
+        if (this.showDownloadTotalCheck) this.showDownloadTotalCheck.checked = this.settings.show_download_total !== false;
         if (this.autoExtractCheck) this.autoExtractCheck.checked = this.settings.auto_extract !== false;
         if (this.autoDeleteArchiveCheck) this.autoDeleteArchiveCheck.checked = this.settings.auto_delete_archive !== false;
         if (this.useLocalDbCheck) this.useLocalDbCheck.checked = Boolean(this.settings.use_local_db);
@@ -285,6 +329,11 @@ class SettingsController {
             rar_password: this.rarPasswordInput?.value || 'online-fix.me',
             concurrent_downloads: parseInt(this.concurrencyInput?.value || 2, 10),
             speed_unit: this.speedUnitSelect?.value || 'MB/s',
+            size_unit: this.sizeUnitSelect?.value || 'GB',
+            show_size_in_gb: (this.sizeUnitSelect?.value || 'GB') === 'GB',
+            show_download_speed: Boolean(this.showDownloadSpeedCheck?.checked),
+            show_download_percent: Boolean(this.showDownloadPercentCheck?.checked),
+            show_download_total: Boolean(this.showDownloadTotalCheck?.checked),
             auto_extract: Boolean(this.autoExtractCheck?.checked),
             auto_delete_archive: Boolean(this.autoDeleteArchiveCheck?.checked),
             use_local_db: Boolean(this.useLocalDbCheck?.checked),
@@ -297,6 +346,11 @@ class SettingsController {
 
         if (window.downloadController) {
             window.downloadController.speedUnit = payload.speed_unit;
+            window.downloadController.sizeUnit = payload.size_unit;
+            window.downloadController.showSpeed = payload.show_download_speed;
+            window.downloadController.showPercent = payload.show_download_percent;
+            window.downloadController.showTotal = payload.show_download_total;
+            window.downloadController.renderQueue();
         }
 
         try {

@@ -501,6 +501,50 @@
                                 <option value="Mbps">Mbps (Megabits/sec)</option>
                             </select>
                         </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Progress Size Unit</span>
+                                <span class="form-desc">Preferred unit for progress and file sizes (auto-switches to MB if &lt; 1 GB)</span>
+                            </div>
+                            <select id="set_size_unit" class="select-dropdown" style="min-width: 140px;">
+                                <option value="GB">GB (Gigabytes)</option>
+                                <option value="MB">MB (Megabytes)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Show Download Speed</span>
+                                <span class="form-desc">Display real-time transfer rate badge on active downloads</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_show_download_speed" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Show Download Percentage</span>
+                                <span class="form-desc">Display completion percentage (%) on active download cards</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_show_download_percent" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Show Total Download Progress</span>
+                                <span class="form-desc">Display downloaded and total file size progress (e.g. 7.2 GB / 15.0 GB or MB)</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_show_download_total" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 

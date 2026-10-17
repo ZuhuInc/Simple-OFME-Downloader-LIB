@@ -39,7 +39,11 @@ class ConfigDefaults:
     rar_password: str = "online-fix.me"
     concurrent_downloads: int = 2
     speed_unit: str = "MB/s"
+    size_unit: str = "GB"
     show_size_in_gb: bool = True
+    show_download_speed: bool = True
+    show_download_percent: bool = True
+    show_download_total: bool = True
     enable_notifications: bool = True
     enable_webhook: bool = True
     webhook_url: str = ""

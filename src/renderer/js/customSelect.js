@@ -175,17 +175,28 @@ class CustomSelect {
 
     open() {
         this.wrapper.classList.add('open');
-        const parentCard = this.wrapper.closest('.glass-card, .library-header, .form-row, .modal-dialog, .steam-profile-card');
-        if (parentCard) {
-            parentCard.classList.add('custom-select-active-parent');
+        let el = this.wrapper.parentElement;
+        while (el && el !== document.body) {
+            if (el.classList.contains('glass-card') ||
+                el.classList.contains('library-header') ||
+                el.classList.contains('form-row') ||
+                el.classList.contains('settings-group') ||
+                el.classList.contains('modal-dialog') ||
+                el.classList.contains('steam-profile-card')) {
+                el.classList.add('custom-select-active-parent');
+            }
+            el = el.parentElement;
         }
     }
 
     close() {
         this.wrapper.classList.remove('open');
-        const parentCard = this.wrapper.closest('.glass-card, .library-header, .form-row, .modal-dialog, .steam-profile-card');
-        if (parentCard) {
-            parentCard.classList.remove('custom-select-active-parent');
+        let el = this.wrapper.parentElement;
+        while (el && el !== document.body) {
+            if (!el.querySelector('.custom-select-wrapper.open')) {
+                el.classList.remove('custom-select-active-parent');
+            }
+            el = el.parentElement;
         }
     }
 
@@ -195,7 +206,7 @@ class CustomSelect {
     }
 
     static initAll(root = document) {
-        const selects = root.querySelectorAll('select.select-dropdown, select.form-select, select#steamAccountSelect, select#assistedHostSelect, select#set_speed_unit, select#hostFilterSelect, select#sortFilterSelect');
+        const selects = root.querySelectorAll('select.select-dropdown, select.form-select, select#steamAccountSelect, select#assistedHostSelect, select#set_speed_unit, select#set_size_unit, select#hostFilterSelect, select#sortFilterSelect');
         selects.forEach(select => {
             if (!select.classList.contains('custom-select-native-hidden')) {
                 new CustomSelect(select);
