@@ -659,9 +659,10 @@ class VersionCheckerController {
         window.uiController.showToast(`Batch update started for ${this.detectedOutdated.length} games...`, 'info');
 
         try {
+            const prefHost = window.settingsController?.settings?.preferred_host || 'GoFile';
             const res = await window.apiClient.batchUpdateGames({
                 games: this.detectedOutdated,
-                preferred_host: 'GoFile'
+                preferred_host: prefHost
             });
 
             this.isBatchUpdating = false;
@@ -731,10 +732,11 @@ class VersionCheckerController {
         window.uiController.showToast(`Scraping Online-Fix release data for ${gameTitle || 'game'}...`, 'info');
 
         try {
+            const prefHost = window.settingsController?.settings?.preferred_host || 'GoFile';
             const res = await window.apiClient.scrapeGameData({
                 origin_url: originUrl,
                 game_title: gameTitle,
-                preferred_host: 'GoFile'
+                preferred_host: prefHost
             });
 
             if (!res || !res.success) {
@@ -791,7 +793,7 @@ class VersionCheckerController {
             hostSelect.innerHTML = '';
             const hosts = (data.available_hosts && Object.keys(data.available_hosts).length > 0)
                 ? Object.keys(data.available_hosts)
-                : ['GoFile', 'VikingFile', 'Pixeldrain', '1Fichier', 'Google Drive', 'Direct'];
+                : ['GoFile', 'PixelDrain', 'BuzzHeavier', 'VikingFile', '1Fichier', 'Google Drive', 'Direct'];
 
             hosts.forEach(h => {
                 const opt = document.createElement('option');

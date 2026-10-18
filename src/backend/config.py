@@ -41,6 +41,7 @@ class ConfigDefaults:
     concurrent_downloads: int = 2
     speed_unit: str = "MB/s"
     size_unit: str = "GB"
+    preferred_host: str = "GoFile"
     show_size_in_gb: bool = True
     show_download_speed: bool = True
     show_download_percent: bool = True

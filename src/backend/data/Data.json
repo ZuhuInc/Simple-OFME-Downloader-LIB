@@ -2246,15 +2246,15 @@
     },
     "How to Fish": {
         "version": "1.0.10",
-        "host": "GoFile",
-        "approx_size": "Unknown",
+        "host": "PixelDrain",
+        "approx_size": "408MB",
         "description": "No description available.",
         "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4001890/abb34408050861207b4bb3b7d45cd11bc7077fbf/library_capsule_2x.jpg?t=1763391415",
         "origin_url": "https://online-fix.me/games/adventures/18205-how-to-fish-po-seti.html",
         "parts": [
-            "https://gofile.io/d/1w4kZQ2p"
+            "https://pixeldrain.com/u/FyK47Rtw"
         ],
-        "fix_url": "https://gofile.io/d/rE5ZOdcx",
+        "fix_url": "https://pixeldrain.com/u/WkEbG6uv",
         "category": "General"
     },
     "Ghost of Tsushima DIRECTORS CUT": {
@@ -2293,6 +2293,19 @@
             "https://gofile.io/d/8SottNqt"
         ],
         "fix_url": "",
+        "category": "General"
+    },
+    "UNO Online": {
+        "version": "12012023",
+        "host": "PixelDrain",
+        "approx_size": "Unknown",
+        "description": "No description available.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/470220/8315ac8b7e91e0501b473cff7cf88b1b67906489/library_capsule_2x.jpg?t=1761164194",
+        "origin_url": "https://online-fix.me/games/strategy/18267-uno-online.html",
+        "parts": [
+            "https://pixeldrain.com/u/R8wxanHH"
+        ],
+        "fix_url": "https://pixeldrain.com/u/QnqXJYnM",
         "category": "General"
     }
 }

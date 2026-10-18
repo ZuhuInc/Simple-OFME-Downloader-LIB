@@ -11,6 +11,7 @@ import time
 import shutil
 import hashlib
 import tempfile
+import urllib.parse
 import requests
 from typing import Dict, Optional, Tuple, Any, Callable
 
@@ -369,13 +370,52 @@ class LinkResolver:
                 except Exception: pass
 
         # 1. PixelDrain resolver
-        if "pixeldrain.com/u/" in url:
-            file_id = url.split("/u/")[-1].split("?")[0].split("/")[0]
+        if "pixeldrain.com/u/" in url or "pixeldrain.com/api/file/" in url:
+            file_id = url.split("/u/")[-1].split("/api/file/")[-1].split("?")[0].split("/")[0]
             direct_url = f"https://pixeldrain.com/api/file/{file_id}?download"
-            log(f"PixelDrain link resolved to direct stream: {direct_url}")
-            return direct_url, f"pixeldrain_{file_id}.zip", None
+            file_name = None
+            try:
+                info_r = requests.get(f"https://pixeldrain.com/api/file/{file_id}/info", timeout=5)
+                if info_r.status_code == 200:
+                    info_j = info_r.json()
+                    if info_j.get("name"):
+                        file_name = info_j["name"]
+            except Exception:
+                pass
+            log(f"PixelDrain link resolved to direct stream: {direct_url} (name: {file_name or f'pixeldrain_{file_id}.zip'})")
+            return direct_url, file_name or f"pixeldrain_{file_id}.zip", None
 
-        # 2. BuzzHeavier & bzzhr.to resolver
+        # 2. FileDitch resolver
+        if "fileditch.com" in url or "fileditchfiles" in url:
+            log(f"Resolving FileDitch link: {url}")
+            parsed = urllib.parse.urlparse(url)
+            base_name = os.path.basename(parsed.path)
+            file_name = None
+            if base_name and any(base_name.lower().endswith(ext) for ext in [".rar", ".zip", ".7z", ".bin", ".iso", ".tar", ".gz", ".exe"]):
+                file_name = base_name
+                log(f"FileDitch direct archive detected: {file_name}")
+                return url, file_name, None
+
+            # If it's a landing page, attempt to extract the direct archive URL
+            try:
+                s = requests.Session()
+                s.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+                r = s.get(url, timeout=10)
+                if r.status_code == 200:
+                    from bs4 import BeautifulSoup
+                    soup = BeautifulSoup(r.text, 'html.parser')
+                    dl_a = soup.find('a', href=re.compile(r'fileditchfiles|/download/|\.(rar|zip|7z)', re.I))
+                    if dl_a and dl_a.get('href'):
+                        direct_url = urllib.parse.urljoin(url, dl_a['href'])
+                        fn = os.path.basename(urllib.parse.urlparse(direct_url).path)
+                        log(f"FileDitch landing page resolved to direct stream: {direct_url}")
+                        return direct_url, fn or None, None
+            except Exception as fd_err:
+                log(f"FileDitch page resolving notice: {fd_err}")
+
+            return url, base_name if (base_name and "." in base_name) else None, None
+
+        # 3. BuzzHeavier & bzzhr.to resolver
         if "buzzheavier.com/" in url or "bzzhr.to/" in url:
             log(f"Resolving BuzzHeavier / bzzhr.to link: {url}")
             file_id = url.split("buzzheavier.com/")[-1].split("bzzhr.to/")[-1].split("?")[0].strip("/").replace("f/", "")

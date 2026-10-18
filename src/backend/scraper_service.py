@@ -300,7 +300,7 @@ class OnlineFixScraper:
                 if "gofile" in h or "gofile" in s:
                     return "GoFile"
                 if "pixeldrain" in h or "pixel" in s:
-                    return "Pixeldrain"
+                    return "PixelDrain"
                 if "1fichier" in h or "1fichier" in s:
                     return "1Fichier"
                 if "dropbox" in h or "dropbox" in s:
@@ -371,12 +371,10 @@ class OnlineFixScraper:
             # Determine selected host data
             selected_host = preferred_host
             if selected_host not in available_hosts and available_hosts:
-                if "BuzzHeavier" in available_hosts:
-                    selected_host = "BuzzHeavier"
-                elif "FileDitch" in available_hosts:
-                    selected_host = "FileDitch"
-                elif "GoFile" in available_hosts:
-                    selected_host = "GoFile"
+                for cand in ["GoFile", "PixelDrain", "BuzzHeavier"]:
+                    if cand in available_hosts:
+                        selected_host = cand
+                        break
                 else:
                     selected_host = next(iter(available_hosts))
 
@@ -573,7 +571,7 @@ class OnlineFixScraper:
             # Select preferred host
             selected_host = preferred_host
             if selected_host not in available_hosts:
-                for cand in ["GoFile", "FileDitch", "BuzzHeavier", "PixelDrain", "VoidFiles", "Direct"]:
+                for cand in ["GoFile", "PixelDrain", "BuzzHeavier", "VoidFiles", "Direct"]:
                     if cand in available_hosts:
                         selected_host = cand
                         break
@@ -628,7 +626,7 @@ class OnlineFixScraper:
                 elif "viking" in host_name.lower() or (data_links_raw and "vikingfile" in data_links_raw.lower()):
                     norm_name = "VikingFile"
                 elif "pixel" in host_name.lower() or (data_links_raw and "pixeldrain" in data_links_raw.lower()):
-                    norm_name = "Pixeldrain"
+                    norm_name = "PixelDrain"
                 elif "1fichier" in host_name.lower() or (data_links_raw and "1fichier" in data_links_raw.lower()):
                     norm_name = "1Fichier"
                 elif "drive" in host_name.lower() or (data_links_raw and "drive.google" in data_links_raw.lower()):

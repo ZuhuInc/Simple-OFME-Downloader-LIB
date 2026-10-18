@@ -526,6 +526,18 @@
 
                         <div class="form-row">
                             <div class="form-label-area">
+                                <span class="form-label">Preferred Hosting Mirror</span>
+                                <span class="form-desc">Default mirror to prioritize when scraping and fetching game updates</span>
+                            </div>
+                            <select id="set_preferred_host" class="select-dropdown" style="min-width: 140px;">
+                                <option value="GoFile">GoFile</option>
+                                <option value="PixelDrain">PixelDrain</option>
+                                <option value="BuzzHeavier">BuzzHeavier</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
                                 <span class="form-label">Show Download Speed</span>
                                 <span class="form-desc">Display real-time transfer rate badge on active downloads</span>
                             </div>
@@ -955,8 +967,9 @@
                         <label class="form-label">Mirror Hosting</label>
                         <select id="assistedHostSelect" class="select-dropdown" style="width: 100%; cursor: pointer;">
                             <option value="GoFile">GoFile</option>
+                            <option value="PixelDrain">PixelDrain</option>
+                            <option value="BuzzHeavier">BuzzHeavier</option>
                             <option value="VikingFile">VikingFile</option>
-                            <option value="Pixeldrain">Pixeldrain</option>
                             <option value="1Fichier">1Fichier</option>
                             <option value="Google Drive">Google Drive</option>
                             <option value="Direct">Direct</option>
@@ -1065,10 +1078,9 @@
                             <select id="agHostSelect" class="form-input" style="cursor: pointer;">
                                 <option value="GoFile">GoFile</option>
                                 <option value="PixelDrain">PixelDrain</option>
+                                <option value="BuzzHeavier">BuzzHeavier</option>
                                 <option value="VikingFile">VikingFile</option>
                                 <option value="1Fichier">1Fichier</option>
-                                <option value="BuzzHeavier">BuzzHeavier</option>
-                                <option value="FileDitch">FileDitch</option>
                                 <option value="Google Drive">Google Drive</option>
                                 <option value="Mega">Mega</option>
                                 <option value="Direct">Direct</option>

@@ -18,6 +18,7 @@ class SettingsController {
         this.cgPasswordInput = document.getElementById('set_cg_password');
         this.speedUnitSelect = document.getElementById('set_speed_unit');
         this.sizeUnitSelect = document.getElementById('set_size_unit');
+        this.preferredHostSelect = document.getElementById('set_preferred_host');
         this.showDownloadSpeedCheck = document.getElementById('set_show_download_speed');
         this.showDownloadPercentCheck = document.getElementById('set_show_download_percent');
         this.showDownloadTotalCheck = document.getElementById('set_show_download_total');
@@ -310,6 +311,7 @@ class SettingsController {
         if (this.concurrencyInput) this.concurrencyInput.value = this.settings.concurrent_downloads || 2;
         if (this.speedUnitSelect) this.speedUnitSelect.value = this.settings.speed_unit || 'MB/s';
         if (this.sizeUnitSelect) this.sizeUnitSelect.value = this.settings.size_unit || (this.settings.show_size_in_gb === false ? 'MB' : 'GB');
+        if (this.preferredHostSelect) this.preferredHostSelect.value = this.settings.preferred_host || 'GoFile';
         if (this.showDownloadSpeedCheck) this.showDownloadSpeedCheck.checked = this.settings.show_download_speed !== false;
         if (this.showDownloadPercentCheck) this.showDownloadPercentCheck.checked = this.settings.show_download_percent !== false;
         if (this.showDownloadTotalCheck) this.showDownloadTotalCheck.checked = this.settings.show_download_total !== false;
@@ -333,6 +335,7 @@ class SettingsController {
             concurrent_downloads: parseInt(this.concurrencyInput?.value || 2, 10),
             speed_unit: this.speedUnitSelect?.value || 'MB/s',
             size_unit: this.sizeUnitSelect?.value || 'GB',
+            preferred_host: this.preferredHostSelect?.value || 'GoFile',
             show_size_in_gb: (this.sizeUnitSelect?.value || 'GB') === 'GB',
             show_download_speed: Boolean(this.showDownloadSpeedCheck?.checked),
             show_download_percent: Boolean(this.showDownloadPercentCheck?.checked),
