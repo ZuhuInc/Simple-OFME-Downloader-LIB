@@ -2320,5 +2320,21 @@
         ],
         "fix_url": "",
         "category": "General"
+    },
+    "Permafrost": {
+        "version": "0.44.3.4684-stable",
+        "host": "GoFile",
+        "approx_size": "30 GB",
+        "description": "Permafrost is a story-driven survival sandbox set in a frozen, post-apocalyptic world. Discover a vast lore-rich open world, alone or in co-op with up to 4 players. Explore, scavenge, craft, and build a network of shelters to outlast the cold.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/2254990/5ee3665e1135fc0840d59e9d1af7a7698276f7c1/library_600x900_2x.jpg?t=1762444965",
+        "origin_url": "https://online-fix.me/games/sandbox/18272-permafrost-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/BHqtzc2e",
+            "https://gofile.io/d/glAXHK52",
+            "https://gofile.io/d/h5LhMyLg",
+            "https://gofile.io/d/1DNfpnEG"
+        ],
+        "fix_url": "https://gofile.io/d/j165J9PE",
+        "category": "General"
     }
 }
