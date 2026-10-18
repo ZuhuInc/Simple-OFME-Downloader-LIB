@@ -1,6 +1,6 @@
 {
   "name": "fanta-ofme-dwnld",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Fanta OFME Downloader - Online-Fix Game Manager & Downloader",
   "main": "./src/main/main.js",
   "author": "ZuhuInc",
@@ -8,6 +8,8 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
+    "set-version": "node scripts/set-version.js",
+    "version:bump": "node scripts/set-version.js",
     "build:backend": "node scripts/build.js --target=backend",
     "build:file": "node scripts/build.js --target=file",
     "build:installer": "node scripts/build.js --target=installer",

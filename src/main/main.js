@@ -300,7 +300,8 @@ function startBackend() {
         ...process.env,
         PYTHONUNBUFFERED: '1',
         FANTA_BACKEND_PORT: '5004',
-        FANTA_SOURCE_MODE: sourceMode ? '1' : '0'
+        FANTA_SOURCE_MODE: sourceMode ? '1' : '0',
+        FANTA_APP_VERSION: app.getVersion()
       }
     });
 

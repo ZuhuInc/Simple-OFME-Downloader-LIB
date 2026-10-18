@@ -4,7 +4,7 @@
  */
 
 function formatVersion(v) {
-    if (!v) return 'v2.0.4';
+    if (!v) return '';
     return 'v' + String(v).trim().replace(/^[vV]+/i, '');
 }
 

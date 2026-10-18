@@ -247,6 +247,18 @@ class Config:
             return False
         return not getattr(sys, 'frozen', False)
 
+    @staticmethod
+    def get_app_version() -> str:
+        try:
+            from backend import __version__
+            return __version__
+        except ImportError:
+            try:
+                from src.backend import __version__
+                return __version__
+            except ImportError:
+                return os.environ.get("FANTA_APP_VERSION", "2.0.5")
+
     def get_local_db_path(self) -> str:
         custom_path = self.get("local_db_path")
         if custom_path and os.path.exists(custom_path):

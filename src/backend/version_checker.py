@@ -13,6 +13,14 @@ from requests.adapters import HTTPAdapter
 from bs4 import BeautifulSoup
 from typing import List, Dict, Any, Optional, Callable, Tuple
 
+try:
+    from backend import __version__
+except ImportError:
+    try:
+        from src.backend import __version__
+    except ImportError:
+        __version__ = "2.0.5"
+
 
 class VersionChecker:
     def __init__(
@@ -473,7 +481,7 @@ class VersionChecker:
                     "description": "The following releases have newer patches published on Online-Fix / SteamRIP:",
                     "color": 16753920,  # Fanta Gold/Orange
                     "fields": fields,
-                    "footer": {"text": "FANTA OFME Downloader v2.0.4"}
+                    "footer": {"text": f"FANTA OFME Downloader v{__version__}"}
                 }]
             }
 
