@@ -2336,5 +2336,18 @@
         ],
         "fix_url": "https://gofile.io/d/j165J9PE",
         "category": "General"
+    },
+    "Bloodborne: GOTY": {
+        "version": "1.09",
+        "host": "GoFile",
+        "approx_size": "28.8GB",
+        "description": "From the studio behind Demon’s Souls™ and Dark Souls™ comes the critically acclaimed action RPG beloved by 2 million players worldwide.",
+        "thumbnail": "https://steamrip.com/wp-content/uploads/2026/10/Bloodborne_featured.jpg",
+        "origin_url": "https://steamrip.com/bloodborne-goty-free-download-recompiled/",
+        "parts": [
+            "https://gofile.io/d/mgQeKlxM"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }
