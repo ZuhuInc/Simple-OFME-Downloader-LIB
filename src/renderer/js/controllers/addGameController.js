@@ -138,6 +138,25 @@ class AddGameController {
             this.addPartBtn.addEventListener('click', () => this.addPartRow());
         }
 
+        // Host selector change listener to swap mirror parts dynamically
+        if (this.hostSelect) {
+            this.hostSelect.addEventListener('change', () => {
+                const selectedHost = this.hostSelect.value;
+                if (this.currentAvailableHosts && this.currentAvailableHosts[selectedHost]) {
+                    const hostData = this.currentAvailableHosts[selectedHost];
+                    if (Array.isArray(hostData.parts) && hostData.parts.length > 0) {
+                        this.setParts(hostData.parts);
+                    }
+                    if (hostData.fix_url && this.fixUrlInput) {
+                        this.fixUrlInput.value = hostData.fix_url;
+                    }
+                    if (window.uiController) {
+                        window.uiController.showToast(`Switched download parts to ${selectedHost}`, 'info');
+                    }
+                }
+            });
+        }
+
         // Bulk paste parts
         if (this.pasteMultiPartsBtn) {
             this.pasteMultiPartsBtn.addEventListener('click', () => this.handleBulkPasteParts());
@@ -251,7 +270,7 @@ class AddGameController {
     async handleAutoFetch() {
         const url = this.autoFetchInput?.value.trim();
         if (!url) {
-            window.uiController.showToast('Please paste a release URL first (Online-Fix or SteamRIP)', 'warning');
+            window.uiController.showToast('Please paste a release URL first (Online-Fix, SteamRIP, or Cracked-Games)', 'warning');
             return;
         }
 
@@ -261,11 +280,14 @@ class AddGameController {
 
         try {
             window.uiController.showToast('Scraping release metadata & hosters...', 'info');
-            const data = await window.apiClient.scrapeGameInfo({ url });
+            const prefHost = window.settingsController?.settings?.preferred_host || 'GoFile';
+            const data = await window.apiClient.scrapeGameInfo({ url, preferred_host: prefHost });
 
             if (!data || data.error) {
                 throw new Error(data.error || 'Failed to parse game page.');
             }
+
+            this.currentAvailableHosts = data.available_hosts || {};
 
             // Populate form fields
             if (data.title && this.titleInput) this.titleInput.value = data.title;

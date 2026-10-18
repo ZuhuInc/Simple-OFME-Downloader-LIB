@@ -337,7 +337,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 10px;
     flex-wrap: wrap;
     position: relative;
     z-index: 10;
@@ -345,8 +345,8 @@ html, body {
 
 .search-box-wrapper {
     position: relative;
-    flex: 1;
-    min-width: 240px;
+    flex: 1 1 200px;
+    min-width: 160px;
 }
 
 .search-box-wrapper i {
@@ -361,12 +361,12 @@ html, body {
 
 .search-input {
     width: 100%;
-    padding: 10px 14px 10px 38px;
+    padding: 9px 14px 9px 36px;
     background: rgba(15, 15, 20, 0.6);
     border: 1px solid var(--border-glass);
     border-radius: var(--radius-md);
     color: #fff;
-    font-size: 13px;
+    font-size: 12px;
     outline: none;
     transition: var(--transition);
 }
@@ -379,21 +379,30 @@ html, body {
 .filter-pills-group {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     background: rgba(15, 15, 20, 0.6);
-    padding: 4px;
+    padding: 3px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-glass);
+    flex-shrink: 0;
 }
 
 .filter-pill {
-    padding: 6px 14px;
+    padding: 5px 11px;
     border-radius: var(--radius-sm);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
     cursor: pointer;
     transition: var(--transition);
+    white-space: nowrap;
+}
+
+.header-dropdowns-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .filter-pill:hover {
@@ -454,11 +463,11 @@ select:focus,
 }
 
 .custom-select-wrapper.open {
-    z-index: 1000;
+    z-index: 10005;
 }
 
 .custom-select-active-parent {
-    z-index: 999 !important;
+    z-index: 10000 !important;
     position: relative !important;
 }
 
@@ -524,7 +533,7 @@ select:focus,
     border-radius: var(--radius-md);
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(212, 168, 83, 0.1);
     backdrop-filter: blur(20px);
-    z-index: 2000;
+    z-index: 20000;
     padding: 6px;
     opacity: 0;
     transform: translateY(-8px) scale(0.98);
@@ -961,6 +970,22 @@ select option,
     padding: 4px 10px;
     border-radius: var(--radius-sm);
     border: 1px solid rgba(212, 168, 83, 0.2);
+}
+
+.download-percent-badge {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-glass);
+}
+
+.download-size-text {
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
 }
 
 .download-progress-bar {

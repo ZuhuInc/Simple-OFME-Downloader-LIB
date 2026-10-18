@@ -1,6 +1,6 @@
-# FANTA OFME Downloader (v2.0.3)
+# FANTA OFME Downloader (v2.0.5)
 
-![Version](https://img.shields.io/badge/version-2.0.3-d4a853.svg)
+![Version](https://img.shields.io/badge/version-2.0.5-d4a853.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078d7.svg)
 ![Electron](https://img.shields.io/badge/Electron-26.6.10-47848F.svg)
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg)
@@ -61,12 +61,18 @@ A desktop game library manager and automated downloader for Online-Fix releases.
 >
 > 1. Go to the [**Releases Page**](https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases).
 > 2. Choose your preferred build from **Assets**:
->    - **Setup Installer (`Fanta OFME Downloader Setup 2.0.3.exe`)**: Recommended for automated background update support.
->    - **Standalone Portable (`Fanta OFME Downloader Portable 2.0.3.exe`)**: Self-contained single-executable build without installation.
+>    - **Setup Installer (`Fanta OFME Downloader Setup 2.0.5.exe`)**: Recommended for automated background update support.
+>    - **Standalone Portable (`Fanta OFME Downloader Portable 2.0.5.exe`)**: Self-contained single-executable build without installation.
 > 3. **Important:** Ensure [**WinRAR**](https://www.win-rar.com/) is installed for automated archive unpacking.
 > 4. Launch the app and start downloading!
 >
 > [**Go to the Releases Page to Download**](https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases)
+>
+> ---
+>
+> #### 🔄 How Application Updates Work:
+> - **Setup Installer build**: Supports automated background updates. When a newer release is published, the app notifies you in Settings ➔ **Application Updates** where you can download and install it in one click.
+> - **Portable build**: Checks GitHub Releases on launch and alerts you with a direct download link whenever a newer build is available.
 
 ---
 
@@ -161,6 +167,20 @@ npm run dev
 
 ---
 
+### Version Management & Bumping
+
+To update the application version across all project files (`package.json`, `package-lock.json`, `src/renderer/index.html` placeholders, backend fallback in `src/backend/__init__.py`, and documentation in `README.md`), run:
+
+```bash
+# Set a specific new version (e.g., 2.0.6)
+npm run set-version 2.0.6
+
+# Or edit "version" in package.json and sync all project files automatically
+npm run set-version
+```
+
+---
+
 ### Building & Packaging Executables
 
 The build pipeline uses `scripts/build.js` to freeze the Python backend into a standalone binary using PyInstaller and packages Electron using `electron-builder`:
@@ -180,8 +200,8 @@ npm run build:backend
 ```
 
 #### Build Output Directories:
-- `build/File/`: Contains `Fanta OFME Downloader Portable 2.0.3.exe` and `win-unpacked/`.
-- `build/Installer/`: Contains `Fanta OFME Downloader Setup 2.0.3.exe`, `latest.yml`, and blockmap.
+- `build/File/`: Contains `Fanta OFME Downloader Portable 2.0.5.exe` and `win-unpacked/`.
+- `build/Installer/`: Contains `Fanta OFME Downloader Setup 2.0.5.exe`, `latest.yml`, and blockmap.
 
 ---
 

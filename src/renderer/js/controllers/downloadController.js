@@ -9,11 +9,35 @@ class DownloadController {
         this.queueContainer = document.getElementById('downloadQueueContainer');
         this.emptyState = document.getElementById('downloadEmptyState');
         this.speedUnit = 'MB/s'; // or 'Mbps'
+        this.sizeUnit = 'GB'; // 'GB' or 'MB'
+        this.showSpeed = true;
+        this.showPercent = true;
+        this.showTotal = true;
     }
 
-    init() {
+    async init() {
         this.bindEvents();
+        await this.loadSettingsPreferences();
         this.loadExistingDownloads();
+    }
+
+    async loadSettingsPreferences() {
+        try {
+            const data = await window.apiClient.getSettings();
+            if (data && data.settings) {
+                if (data.settings.speed_unit) this.speedUnit = data.settings.speed_unit;
+                if (data.settings.size_unit) {
+                    this.sizeUnit = data.settings.size_unit;
+                } else if (data.settings.show_size_in_gb !== undefined) {
+                    this.sizeUnit = data.settings.show_size_in_gb ? 'GB' : 'MB';
+                }
+                if (data.settings.show_download_speed !== undefined) this.showSpeed = Boolean(data.settings.show_download_speed);
+                if (data.settings.show_download_percent !== undefined) this.showPercent = Boolean(data.settings.show_download_percent);
+                if (data.settings.show_download_total !== undefined) this.showTotal = Boolean(data.settings.show_download_total);
+            }
+        } catch (err) {
+            console.error('[DownloadController] Failed to load preferences:', err);
+        }
     }
 
     bindEvents() {
@@ -85,28 +109,118 @@ class DownloadController {
         });
     }
 
+    formatDownloadProgress(downloaded, total) {
+        if (!total || total === 0) {
+            if (downloaded && downloaded > 0) {
+                return this.formatBytes(downloaded);
+            }
+            return '--';
+        }
+
+        const GB = 1024 * 1024 * 1024;
+        const isPreferredGB = (this.sizeUnit || 'GB').toUpperCase() === 'GB';
+
+        if (isPreferredGB) {
+            if (total >= GB) {
+                const totalStr = this.formatBytes(total, 'GB');
+                const downloadedStr = (downloaded >= GB)
+                    ? this.formatBytes(downloaded, 'GB')
+                    : this.formatBytes(downloaded, 'MB');
+                return `${downloadedStr} / ${totalStr}`;
+            } else {
+                // When in GB mode but file is less than 1 GB, automatically switch to MB for this specific download
+                const totalStr = this.formatBytes(total, 'MB');
+                const downloadedStr = this.formatBytes(downloaded, 'MB');
+                return `${downloadedStr} / ${totalStr}`;
+            }
+        } else {
+            // Preferred unit is MB: format both in MB
+            const totalStr = this.formatBytes(total, 'MB');
+            const downloadedStr = this.formatBytes(downloaded, 'MB');
+            return `${downloadedStr} / ${totalStr}`;
+        }
+    }
+
+    getSubtitleContent(job) {
+        if (job.error_msg) {
+            return `<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> ${job.error_msg}</span>`;
+        }
+        if (job.status === 'extracting') {
+            const sizeStr = this.formatBytes(job.total_bytes || job.downloaded_bytes);
+            return `${job.filename || 'Archive'} &bull; <span class="download-size-text">${sizeStr} Archive</span> &bull; <span style="color: var(--accent);"><i class="fa-solid fa-gear fa-spin"></i> Unpacking to disk...</span>`;
+        }
+        const parts = [job.filename || 'Archive'];
+        if (this.showTotal) {
+            parts.push(`<span class="download-size-text">${this.formatDownloadProgress(job.downloaded_bytes, job.total_bytes)}</span>`);
+        }
+        return parts.join(' &bull; ');
+    }
+
+    renderActionsHtml(job) {
+        const percent = (job.progress || 0).toFixed(1);
+        const speedFormatted = this.formatSpeed(job.speed_bytes || 0);
+        const targetFolder = job.meta?.extracted_dir || job.dest_file;
+
+        return `
+            <span class="download-speed-badge" style="${(this.showSpeed && job.status === 'downloading') ? '' : 'display: none;'}">${speedFormatted}</span>
+            <span class="download-percent-badge" style="${(this.showPercent && (job.status === 'downloading' || job.status === 'paused' || job.status === 'completed')) ? '' : 'display: none;'}">${percent}%</span>
+            ${job.status === 'extracting' ? `
+                <span class="download-speed-badge" style="color: var(--accent); background: rgba(212, 168, 83, 0.15);"><i class="fa-solid fa-gear fa-spin"></i> Extracting...</span>
+            ` : ''}
+            ${job.status === 'downloading' ? `
+                <button class="btn-icon" title="Pause" onclick="window.downloadController.pauseJob('${job.id}')">
+                    <i class="fa-solid fa-pause"></i>
+                </button>
+            ` : (job.status === 'paused' ? `
+                <button class="btn-icon" title="Resume" onclick="window.downloadController.resumeJob('${job.id}')">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+            ` : '')}
+            ${job.status === 'error' && job.url ? `
+                <button class="btn btn-sm btn-secondary" title="Open Link in Browser" onclick="window.downloadController.openExternalUrl('${job.url}')">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link
+                </button>
+            ` : ''}
+            ${job.status === 'completed' && targetFolder ? `
+                <button class="btn btn-sm btn-secondary" title="Open Game Folder" onclick="window.downloadController.openFolder('${targetFolder.replace(/\\/g, '\\\\')}')">
+                    <i class="fa-solid fa-folder-open"></i> Open Folder
+                </button>
+            ` : ''}
+            ${job.status === 'completed' ? `
+                <button class="btn btn-sm btn-primary" title="Extract / Re-extract" onclick="window.downloadController.extractJob('${job.id}')">
+                    <i class="fa-solid fa-file-zipper"></i> Extract
+                </button>
+            ` : ''}
+            ${job.status !== 'completed' && job.status !== 'extracting' ? `
+                <button class="btn-icon btn-icon-danger" title="Cancel / Remove" onclick="window.downloadController.cancelJob('${job.id}')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            ` : ''}
+        `;
+    }
+
     createJobElement(job) {
         const div = document.createElement('div');
         div.className = `glass-card download-card status-${job.status}`;
         div.id = `job-${job.id}`;
+        div._lastRenderedStatus = job.status;
 
         const percent = (job.progress || 0).toFixed(1);
-        const title = job.meta?.title || job.filename || `Download #${job.id}`;
-        const speedFormatted = this.formatSpeed(job.speed_bytes || 0);
-        const downloadedFormatted = this.formatBytes(job.downloaded_bytes || 0);
-        const totalFormatted = this.formatBytes(job.total_bytes || 0);
+        const cleanJobId = String(job.id || '').replace(/^job_/i, '');
+        const title = job.meta?.title || job.filename || `Download #${cleanJobId}`;
 
         const getStatusText = (status, pct) => {
+            const pctStr = this.showPercent ? ` (${pct}%)` : '';
             switch(status) {
                 case 'resolving': return 'RESOLVING LINK...';
                 case 'connecting': return 'CONNECTING TO STREAM...';
-                case 'downloading': return `DOWNLOADING (${pct}%)`;
+                case 'downloading': return `DOWNLOADING${pctStr}`;
                 case 'extracting': return 'EXTRACTING ARCHIVE...';
                 case 'completed': return 'INSTALLED / READY';
-                case 'paused': return 'PAUSED';
+                case 'paused': return `PAUSED${pctStr}`;
                 case 'error': return 'DOWNLOAD ERROR';
                 case 'cancelled': return 'CANCELLED';
-                default: return `${status.toUpperCase()} (${pct}%)`;
+                default: return `${status.toUpperCase()}${pctStr}`;
             }
         };
 
@@ -121,48 +235,17 @@ class DownloadController {
             }
         };
 
-        const targetFolder = job.meta?.extracted_dir || job.dest_file;
-
         div.innerHTML = `
             <div class="download-card-header">
                 <div class="download-title-area">
                     <i class="${getIconClass(job.status)} download-icon" style="${job.status === 'error' ? 'color: var(--danger);' : (job.status === 'completed' ? 'color: var(--success);' : '')}"></i>
                     <div>
                         <h4 class="download-title">${title}</h4>
-                        <span class="download-subtitle">${job.error_msg ? `<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> ${job.error_msg}</span>` : `${job.filename || 'Archive'} &bull; ${downloadedFormatted} / ${totalFormatted}`}</span>
+                        <span class="download-subtitle">${this.getSubtitleContent(job)}</span>
                     </div>
                 </div>
                 <div class="download-actions">
-                    <span class="download-speed-badge" style="${job.status === 'downloading' ? '' : 'display: none;'}">${speedFormatted}</span>
-                    ${job.status === 'downloading' ? `
-                        <button class="btn-icon" title="Pause" onclick="window.downloadController.pauseJob('${job.id}')">
-                            <i class="fa-solid fa-pause"></i>
-                        </button>
-                    ` : (job.status === 'paused' ? `
-                        <button class="btn-icon" title="Resume" onclick="window.downloadController.resumeJob('${job.id}')">
-                            <i class="fa-solid fa-play"></i>
-                        </button>
-                    ` : '')}
-                    ${job.status === 'error' && job.url ? `
-                        <button class="btn btn-sm btn-secondary" title="Open Link in Browser" onclick="window.downloadController.openExternalUrl('${job.url}')">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link
-                        </button>
-                    ` : ''}
-                    ${job.status === 'completed' && targetFolder ? `
-                        <button class="btn btn-sm btn-secondary" title="Open Game Folder" onclick="window.downloadController.openFolder('${targetFolder.replace(/\\/g, '\\\\')}')">
-                            <i class="fa-solid fa-folder-open"></i> Open Folder
-                        </button>
-                    ` : ''}
-                    ${job.status === 'completed' ? `
-                        <button class="btn btn-sm btn-primary" title="Extract / Re-extract" onclick="window.downloadController.extractJob('${job.id}')">
-                            <i class="fa-solid fa-file-zipper"></i> Extract
-                        </button>
-                    ` : ''}
-                    ${job.status !== 'completed' && job.status !== 'extracting' ? `
-                        <button class="btn-icon btn-icon-danger" title="Cancel / Remove" onclick="window.downloadController.cancelJob('${job.id}')">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    ` : ''}
+                    ${this.renderActionsHtml(job)}
                 </div>
             </div>
             <div class="download-progress-bar">
@@ -170,7 +253,7 @@ class DownloadController {
             </div>
             <div class="download-card-footer">
                 <span class="download-status-label status-text-${job.status}">${getStatusText(job.status, percent)}</span>
-                <span class="download-eta">${job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : (job.status === 'resolving' ? 'Resolving host link' : ''))}</span>
+                <span class="download-eta">${job.status === 'extracting' ? 'Unpacking to Games directory...' : (job.status === 'completed' ? 'Installed / Ready' : (job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : (job.status === 'resolving' ? 'Resolving host link' : ''))))}</span>
             </div>
         `;
         return div;
@@ -201,11 +284,21 @@ class DownloadController {
 
         const speedBadge = card.querySelector('.download-speed-badge');
         if (speedBadge) {
-            if (job.status === 'downloading') {
+            if (this.showSpeed && job.status === 'downloading') {
                 speedBadge.style.display = 'inline-flex';
                 speedBadge.textContent = this.formatSpeed(job.speed_bytes || 0);
             } else {
                 speedBadge.style.display = 'none';
+            }
+        }
+
+        const percentBadge = card.querySelector('.download-percent-badge');
+        if (percentBadge) {
+            if (this.showPercent && (job.status === 'downloading' || job.status === 'paused' || job.status === 'completed')) {
+                percentBadge.style.display = 'inline-flex';
+                percentBadge.textContent = `${percent}%`;
+            } else {
+                percentBadge.style.display = 'none';
             }
         }
 
@@ -214,21 +307,28 @@ class DownloadController {
             statusLabel.className = `download-status-label status-text-${job.status}`;
             if (job.status === 'extracting') statusLabel.textContent = 'EXTRACTING ARCHIVE...';
             else if (job.status === 'completed') statusLabel.textContent = 'INSTALLED / READY';
-            else statusLabel.textContent = `${job.status.toUpperCase()} (${percent}%)`;
+            else {
+                const pctStr = this.showPercent ? ` (${percent}%)` : '';
+                statusLabel.textContent = `${job.status.toUpperCase()}${pctStr}`;
+            }
         }
 
         const subtitle = card.querySelector('.download-subtitle');
         if (subtitle) {
-            if (job.error_msg) {
-                subtitle.innerHTML = `<span style="color: var(--danger);"><i class="fa-solid fa-circle-exclamation"></i> ${job.error_msg}</span>`;
-            } else {
-                subtitle.innerHTML = `${job.filename || 'Archive'} &bull; ${this.formatBytes(job.downloaded_bytes || 0)} / ${this.formatBytes(job.total_bytes || 0)}`;
-            }
+            subtitle.innerHTML = this.getSubtitleContent(job);
         }
 
         const eta = card.querySelector('.download-eta');
         if (eta) {
-            eta.textContent = job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : '');
+            eta.textContent = job.status === 'extracting' ? 'Unpacking to Games directory...' : (job.status === 'completed' ? 'Installed / Ready' : (job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : '')));
+        }
+
+        if (card._lastRenderedStatus !== job.status) {
+            card._lastRenderedStatus = job.status;
+            const actions = card.querySelector('.download-actions');
+            if (actions) {
+                actions.innerHTML = this.renderActionsHtml(job);
+            }
         }
 
         const icon = card.querySelector('.download-icon');
@@ -296,8 +396,20 @@ class DownloadController {
         }
     }
 
-    formatBytes(bytes) {
-        if (!bytes || bytes === 0) return '0 B';
+    formatBytes(bytes, forceUnit = null) {
+        if (!bytes || bytes <= 0) return forceUnit ? `0 ${forceUnit}` : '0 B';
+        const MB = 1024 * 1024;
+        const GB = 1024 * 1024 * 1024;
+
+        if (forceUnit === 'MB') {
+            const val = bytes / MB;
+            return (val >= 100 ? Math.round(val).toLocaleString() : parseFloat(val.toFixed(1)).toLocaleString()) + ' MB';
+        }
+        if (forceUnit === 'GB') {
+            const val = bytes / GB;
+            return parseFloat(val.toFixed(1)) + ' GB';
+        }
+
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));

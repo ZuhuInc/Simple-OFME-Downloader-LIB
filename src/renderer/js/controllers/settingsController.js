@@ -4,7 +4,7 @@
  */
 
 function formatVersion(v) {
-    if (!v) return 'v2.0.3';
+    if (!v) return '';
     return 'v' + String(v).trim().replace(/^[vV]+/i, '');
 }
 
@@ -15,7 +15,13 @@ class SettingsController {
         this.downloadPathInput = document.getElementById('set_download_path');
         this.extractPathInput = document.getElementById('set_extract_path');
         this.rarPasswordInput = document.getElementById('set_rar_password');
+        this.cgPasswordInput = document.getElementById('set_cg_password');
         this.speedUnitSelect = document.getElementById('set_speed_unit');
+        this.sizeUnitSelect = document.getElementById('set_size_unit');
+        this.preferredHostSelect = document.getElementById('set_preferred_host');
+        this.showDownloadSpeedCheck = document.getElementById('set_show_download_speed');
+        this.showDownloadPercentCheck = document.getElementById('set_show_download_percent');
+        this.showDownloadTotalCheck = document.getElementById('set_show_download_total');
         this.autoExtractCheck = document.getElementById('set_auto_extract');
         this.autoDeleteArchiveCheck = document.getElementById('set_auto_delete_archive');
         this.concurrencyInput = document.getElementById('set_concurrency');
@@ -23,6 +29,13 @@ class SettingsController {
         this.localDbPathInput = document.getElementById('set_local_db_path');
         this.saveBtn = document.getElementById('saveSettingsBtn');
         this.consoleFeed = document.getElementById('consoleLogFeed');
+
+        // Audit & Scrape Cache controls
+        this.multiThreadedScanCheck = document.getElementById('set_multi_threaded_scan');
+        this.scanWorkersInput = document.getElementById('set_scan_workers');
+        this.enableScrapeCacheCheck = document.getElementById('set_enable_scrape_cache');
+        this.scrapeCacheTtlInput = document.getElementById('set_scrape_cache_ttl');
+        this.clearCacheBtn = document.getElementById('clearScrapeCacheBtn');
 
         // Update UI elements
         this.checkUpdatesBtn = document.getElementById('checkForUpdatesBtn');
@@ -49,6 +62,59 @@ class SettingsController {
     bindEvents() {
         if (this.saveBtn) {
             this.saveBtn.addEventListener('click', () => this.saveCurrentSettings());
+        }
+
+        if (this.sizeUnitSelect) {
+            this.sizeUnitSelect.addEventListener('change', () => {
+                if (window.downloadController) {
+                    window.downloadController.sizeUnit = this.sizeUnitSelect.value;
+                    window.downloadController.renderQueue();
+                }
+            });
+        }
+
+        if (this.showDownloadSpeedCheck) {
+            this.showDownloadSpeedCheck.addEventListener('change', () => {
+                if (window.downloadController) {
+                    window.downloadController.showSpeed = this.showDownloadSpeedCheck.checked;
+                    window.downloadController.renderQueue();
+                }
+            });
+        }
+
+        if (this.showDownloadPercentCheck) {
+            this.showDownloadPercentCheck.addEventListener('change', () => {
+                if (window.downloadController) {
+                    window.downloadController.showPercent = this.showDownloadPercentCheck.checked;
+                    window.downloadController.renderQueue();
+                }
+            });
+        }
+
+        if (this.showDownloadTotalCheck) {
+            this.showDownloadTotalCheck.addEventListener('change', () => {
+                if (window.downloadController) {
+                    window.downloadController.showTotal = this.showDownloadTotalCheck.checked;
+                    window.downloadController.renderQueue();
+                }
+            });
+        }
+
+        if (this.clearCacheBtn) {
+            this.clearCacheBtn.addEventListener('click', async () => {
+                try {
+                    const res = await window.apiClient.clearScrapeCache();
+                    const count = (res && res.cleared_entries !== undefined) ? res.cleared_entries : 0;
+                    if (window.uiController) {
+                        window.uiController.showToast(`Scrape cache cleared! (${count} entries removed)`, 'success');
+                    }
+                    this.appendLog(`Scrape cache cleared (${count} entries removed)`, 'info');
+                } catch (e) {
+                    if (window.uiController) {
+                        window.uiController.showToast(`Failed to clear cache: ${e.message}`, 'danger');
+                    }
+                }
+            });
         }
 
         const copyLogsBtn = document.getElementById('copyConsoleLogsBtn');
@@ -241,12 +307,22 @@ class SettingsController {
         if (this.downloadPathInput) this.downloadPathInput.value = this.settings.download_path || '';
         if (this.extractPathInput) this.extractPathInput.value = this.settings.extract_path || '';
         if (this.rarPasswordInput) this.rarPasswordInput.value = this.settings.rar_password || 'online-fix.me';
+        if (this.cgPasswordInput) this.cgPasswordInput.value = this.settings.cg_password || 'cracked-games.org';
         if (this.concurrencyInput) this.concurrencyInput.value = this.settings.concurrent_downloads || 2;
         if (this.speedUnitSelect) this.speedUnitSelect.value = this.settings.speed_unit || 'MB/s';
+        if (this.sizeUnitSelect) this.sizeUnitSelect.value = this.settings.size_unit || (this.settings.show_size_in_gb === false ? 'MB' : 'GB');
+        if (this.preferredHostSelect) this.preferredHostSelect.value = this.settings.preferred_host || 'GoFile';
+        if (this.showDownloadSpeedCheck) this.showDownloadSpeedCheck.checked = this.settings.show_download_speed !== false;
+        if (this.showDownloadPercentCheck) this.showDownloadPercentCheck.checked = this.settings.show_download_percent !== false;
+        if (this.showDownloadTotalCheck) this.showDownloadTotalCheck.checked = this.settings.show_download_total !== false;
         if (this.autoExtractCheck) this.autoExtractCheck.checked = this.settings.auto_extract !== false;
         if (this.autoDeleteArchiveCheck) this.autoDeleteArchiveCheck.checked = this.settings.auto_delete_archive !== false;
         if (this.useLocalDbCheck) this.useLocalDbCheck.checked = Boolean(this.settings.use_local_db);
         if (this.localDbPathInput) this.localDbPathInput.value = this.settings.local_db_path || '';
+        if (this.multiThreadedScanCheck) this.multiThreadedScanCheck.checked = Boolean(this.settings.multi_threaded_scan);
+        if (this.scanWorkersInput) this.scanWorkersInput.value = this.settings.scan_workers || 6;
+        if (this.enableScrapeCacheCheck) this.enableScrapeCacheCheck.checked = Boolean(this.settings.enable_scrape_cache);
+        if (this.scrapeCacheTtlInput) this.scrapeCacheTtlInput.value = this.settings.scrape_cache_ttl_minutes || 15;
     }
 
     async saveCurrentSettings() {
@@ -255,16 +331,32 @@ class SettingsController {
             download_path: this.downloadPathInput?.value || '',
             extract_path: this.extractPathInput?.value || '',
             rar_password: this.rarPasswordInput?.value || 'online-fix.me',
+            cg_password: this.cgPasswordInput?.value || 'cracked-games.org',
             concurrent_downloads: parseInt(this.concurrencyInput?.value || 2, 10),
             speed_unit: this.speedUnitSelect?.value || 'MB/s',
+            size_unit: this.sizeUnitSelect?.value || 'GB',
+            preferred_host: this.preferredHostSelect?.value || 'GoFile',
+            show_size_in_gb: (this.sizeUnitSelect?.value || 'GB') === 'GB',
+            show_download_speed: Boolean(this.showDownloadSpeedCheck?.checked),
+            show_download_percent: Boolean(this.showDownloadPercentCheck?.checked),
+            show_download_total: Boolean(this.showDownloadTotalCheck?.checked),
             auto_extract: Boolean(this.autoExtractCheck?.checked),
             auto_delete_archive: Boolean(this.autoDeleteArchiveCheck?.checked),
             use_local_db: Boolean(this.useLocalDbCheck?.checked),
-            local_db_path: this.localDbPathInput?.value.trim() || ''
+            local_db_path: this.localDbPathInput?.value.trim() || '',
+            multi_threaded_scan: Boolean(this.multiThreadedScanCheck?.checked),
+            scan_workers: parseInt(this.scanWorkersInput?.value || 6, 10),
+            enable_scrape_cache: Boolean(this.enableScrapeCacheCheck?.checked),
+            scrape_cache_ttl_minutes: parseInt(this.scrapeCacheTtlInput?.value || 15, 10)
         };
 
         if (window.downloadController) {
             window.downloadController.speedUnit = payload.speed_unit;
+            window.downloadController.sizeUnit = payload.size_unit;
+            window.downloadController.showSpeed = payload.show_download_speed;
+            window.downloadController.showPercent = payload.show_download_percent;
+            window.downloadController.showTotal = payload.show_download_total;
+            window.downloadController.renderQueue();
         }
 
         try {

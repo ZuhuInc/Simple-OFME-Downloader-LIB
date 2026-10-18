@@ -19,7 +19,7 @@
         <div class="title-bar-left">
             <img class="app-icon" src="assets/OFME-DWND-ICO.ico" alt="Logo">
             <span class="app-title">FANTA OFME</span>
-            <span class="app-version-tag">v2.0.3</span>
+            <span class="app-version-tag">v2.0.5</span>
             <span id="sourceModeBadge" class="status-pill status-installed" style="display: none; font-size: 10px; padding: 2px 8px; margin-left: 6px; background: rgba(212, 168, 83, 0.18); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.4);">SOURCE MODE</span>
         </div>
         <div class="title-bar-controls">
@@ -93,16 +93,18 @@
                         <div class="filter-pill" data-filter="0">NOT INSTALLED</div>
                     </div>
 
-                    <select id="hostFilterSelect" class="select-dropdown">
-                        <option value="">All Hosts</option>
-                    </select>
+                    <div class="header-dropdowns-group">
+                        <select id="hostFilterSelect" class="select-dropdown">
+                            <option value="">All Hosts</option>
+                        </select>
 
-                    <select id="sortFilterSelect" class="select-dropdown">
-                        <option value="default">Default Order</option>
-                        <option value="name-asc">Name (A-Z)</option>
-                        <option value="name-desc">Name (Z-A)</option>
-                        <option value="size">File Size</option>
-                    </select>
+                        <select id="sortFilterSelect" class="select-dropdown">
+                            <option value="default">Default Order</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="size">File Size</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="library-stats-bar" style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); padding: 0 4px;">
@@ -134,19 +136,12 @@
                 <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                     <div>
                         <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">Version Checker & Online Audit</h2>
-                        <p style="font-size: 12px; color: var(--text-muted);">Scrapes Online-Fix.me and SteamRIP to verify if newer patches or builds have been released.</p>
+                        <p style="font-size: 12px; color: var(--text-muted);">Scrapes Online-Fix.me, SteamRIP, and Cracked-Games to verify if newer patches or builds have been released.</p>
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; background: rgba(255,255,255,0.04); padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);">
-                            <input type="checkbox" id="vcInstalledOnlyCheck" checked style="accent-color: var(--accent); cursor: pointer;">
-                            <span>Installed Only</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; background: rgba(255,255,255,0.04); padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);" title="When checked, games on your bypass list will be skipped during audits">
-                            <input type="checkbox" id="vcEnableBypassCheck" checked style="accent-color: var(--accent); cursor: pointer;">
-                            <span style="display: flex; align-items: center; gap: 5px;"><i class="fa-solid fa-bell-slash" style="font-size: 11px;"></i> Apply Bypass List</span>
-                        </label>
                         <button id="scanOfmeBtn" class="btn btn-primary" title="Audit Online-Fix releases only"><i class="fa-solid fa-gamepad"></i> Audit OFME</button>
-                        <button id="scanSteamripBtn" class="btn btn-secondary" style="border-color: rgba(96, 165, 250, 0.4); color: #93c5fd;" title="Audit SteamRIP releases only"><i class="fa-solid fa-cloud-arrow-down"></i> Audit SteamRIP (SR)</button>
+                        <button id="scanSteamripBtn" class="btn btn-secondary" style="border-color: rgba(96, 165, 250, 0.4); color: #93c5fd;" title="Audit SteamRIP releases only"><i class="fa-solid fa-cloud-arrow-down"></i> Audit SR</button>
+                        <button id="scanCgBtn" class="btn btn-secondary" style="border-color: rgba(52, 211, 153, 0.4); color: #6ee7b7;" title="Audit Cracked-Games releases only"><i class="fa-solid fa-cube"></i> Audit CG</button>
                         <button id="scanAllSourcesBtn" class="btn btn-secondary" title="Audit all sources"><i class="fa-solid fa-earth-americas"></i> Audit All</button>
                         <button id="stopScanBtn" class="btn btn-secondary" disabled><i class="fa-solid fa-stop"></i> Stop</button>
                     </div>
@@ -154,8 +149,11 @@
 
                 <!-- Scan Progress Card -->
                 <div class="glass-card">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px;">
                         <span id="vcScanStatusText" style="color: var(--text-secondary);">Ready to scan.</span>
+                        <button id="vcUpdateAllBtn" class="btn btn-primary btn-sm" style="display: none; padding: 4px 12px; font-size: 11px;" title="Review and batch update all detected outdated games in Data.json">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Update All Outdated (<span id="vcOutdatedCount">0</span>)
+                        </button>
                     </div>
                     <div class="download-progress-bar">
                         <div id="vcProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
@@ -185,9 +183,75 @@
                     </table>
                 </div>
 
+                <!-- ⚙️ Audit & Scan Preferences -->
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-sliders" style="color: var(--accent);"></i> Audit & Scan Preferences
+                            </h3>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Configure comparison scope, threading, and bypass filtering. Your selections are remembered automatically.</p>
+                        </div>
+                        <button id="vcManageBypassesBtn" class="btn btn-secondary btn-sm" title="View and manage bypassed games">
+                            <i class="fa-solid fa-bell-slash" style="color: var(--accent);"></i> Manage Bypasses (<span id="vcBypassCount">0</span>)
+                        </button>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Multi-Threaded Live Audits</span>
+                                <span class="form-desc">Scrapes multiple game releases concurrently for fast scans (off uses safe sequential checking)</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="vcFastScanToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Audit Installed Games Only</span>
+                                <span class="form-desc">Only scans games currently downloaded/installed on your system instead of your full catalog</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="vcInstalledOnlyCheck">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Apply Bypass List</span>
+                                <span class="form-desc">Skip games added to your bypass list during online version audits</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="vcEnableBypassCheck">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Use Short-Term Scrape Cache</span>
+                                <span class="form-desc">Cache online page scrapes in memory to speed up repeat scans and avoid redundant re-fetching</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="vcEnableCacheCheck">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Online-Fix Credentials & Webhooks -->
                 <div class="glass-card">
-                    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #fff;">Online-Fix & Webhook Settings</h3>
+                    <div style="margin-bottom: 14px;">
+                        <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-gear" style="color: var(--accent);"></i> Online-Fix & Webhook Settings
+                        </h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Manage authentication credentials for Online-Fix.me and real-time Discord webhook notifications.</p>
+                    </div>
                     <div class="settings-group">
                         <div class="form-row">
                             <div class="form-label-area">
@@ -327,12 +391,25 @@
 
             <!-- ⚙️ TAB 5: SETTINGS & LOGS -->
             <section id="settingsTab" class="tab-content-panel">
-                <div class="glass-card">
-                    <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">General Application Settings</h2>
-                    <p style="font-size: 12px; color: var(--text-muted);">Customize installation directories, WinRAR extraction, speed units, and concurrency.</p>
+                <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+                    <div>
+                        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff;">General Application Settings</h2>
+                        <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Customize installation directories, WinRAR extraction, download concurrency, and version audit cache.</p>
+                    </div>
+                    <button id="saveSettingsBtn" class="btn btn-primary" style="white-space: nowrap; padding: 8px 20px; font-size: 13px;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Preferences
+                    </button>
                 </div>
 
+                <!-- 📁 Category 1: Paths & Extraction -->
                 <div class="glass-card">
+                    <div style="margin-bottom: 14px;">
+                        <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-folder-tree" style="color: var(--accent);"></i> Paths & Extraction
+                        </h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Configure default download and extraction folders, WinRAR executable, and decompression behavior.</p>
+                    </div>
+
                     <div class="settings-group">
                         <div class="form-row">
                             <div class="form-label-area">
@@ -369,18 +446,18 @@
 
                         <div class="form-row">
                             <div class="form-label-area">
-                                <span class="form-label">Default Archive Password</span>
-                                <span class="form-desc">Standard password used by Online-Fix archives</span>
+                                <span class="form-label">Online-Fix Archive Password</span>
+                                <span class="form-desc">Standard password used by Online-Fix (OFME) archives</span>
                             </div>
                             <input type="text" id="set_rar_password" class="form-input" value="online-fix.me">
                         </div>
 
                         <div class="form-row">
                             <div class="form-label-area">
-                                <span class="form-label">Concurrent Downloads</span>
-                                <span class="form-desc">Max parallel download threads allowed</span>
+                                <span class="form-label">Cracked-Games Archive Password</span>
+                                <span class="form-desc">Standard password used by Cracked-Games (CG) archives</span>
                             </div>
-                            <input type="number" id="set_concurrency" class="form-input" min="1" max="5" value="2" style="max-width: 100px;">
+                            <input type="text" id="set_cg_password" class="form-input" value="cracked-games.org">
                         </div>
 
                         <div class="form-row">
@@ -404,10 +481,31 @@
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ⚡ Category 2: Download Engine & Performance -->
+                <div class="glass-card">
+                    <div style="margin-bottom: 14px;">
+                        <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-bolt" style="color: var(--accent);"></i> Download Engine & Performance
+                        </h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Manage parallel downloading concurrency and data transfer rate display formatting.</p>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Concurrent Downloads</span>
+                                <span class="form-desc">Max parallel download threads allowed</span>
+                            </div>
+                            <input type="number" id="set_concurrency" class="form-input" min="1" max="5" value="2" style="max-width: 100px;">
+                        </div>
 
                         <div class="form-row">
                             <div class="form-label-area">
                                 <span class="form-label">Speed Display Unit</span>
+                                <span class="form-desc">Unit used to display download and network speeds</span>
                             </div>
                             <select id="set_speed_unit" class="select-dropdown" style="min-width: 140px;">
                                 <option value="MB/s">MB/s (Megabytes/sec)</option>
@@ -415,8 +513,115 @@
                             </select>
                         </div>
 
-                        <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
-                            <button id="saveSettingsBtn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Preferences</button>
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Progress Size Unit</span>
+                                <span class="form-desc">Preferred unit for progress and file sizes (auto-switches to MB if &lt; 1 GB)</span>
+                            </div>
+                            <select id="set_size_unit" class="select-dropdown" style="min-width: 140px;">
+                                <option value="GB">GB (Gigabytes)</option>
+                                <option value="MB">MB (Megabytes)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Preferred Hosting Mirror</span>
+                                <span class="form-desc">Default mirror to prioritize when scraping and fetching game updates</span>
+                            </div>
+                            <select id="set_preferred_host" class="select-dropdown" style="min-width: 140px;">
+                                <option value="GoFile">GoFile</option>
+                                <option value="PixelDrain">PixelDrain</option>
+                                <option value="BuzzHeavier">BuzzHeavier</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Show Download Speed</span>
+                                <span class="form-desc">Display real-time transfer rate badge on active downloads</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_show_download_speed" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Show Download Percentage</span>
+                                <span class="form-desc">Display completion percentage (%) on active download cards</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_show_download_percent" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Show Total Download Progress</span>
+                                <span class="form-desc">Display downloaded and total file size progress (e.g. 7.2 GB / 15.0 GB or MB)</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_show_download_total" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🕒 Category 3: Version Audit & Scrape Cache -->
+                <div class="glass-card">
+                    <div style="margin-bottom: 14px;">
+                        <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent);"></i> Version Audit & Scrape Cache
+                        </h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Configure multi-worker scraping concurrency and short-term memory caching of online versions.</p>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Multi-Threaded Live Audits (Default)</span>
+                                <span class="form-desc">Audit online versions across multiple parallel worker threads</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_multi_threaded_scan">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Audit Worker Threads</span>
+                                <span class="form-desc">Number of concurrent scraping workers (default: 6)</span>
+                            </div>
+                            <input type="number" id="set_scan_workers" class="form-input" min="1" max="16" value="6" style="max-width: 100px;">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Short-Term Scrape Cache</span>
+                                <span class="form-desc">Cache online page scrapes in memory to prevent redundant re-fetching</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_enable_scrape_cache">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Scrape Cache Duration (Minutes)</span>
+                                <span class="form-desc">How long scraped web pages stay valid in memory (e.g. 5 to 60 minutes)</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button type="button" id="clearScrapeCacheBtn" class="btn btn-secondary btn-sm" title="Clear cached scrape results">
+                                    <i class="fa-solid fa-broom"></i> Clear Cache
+                                </button>
+                                <input type="number" id="set_scrape_cache_ttl" class="form-input" min="1" max="1440" value="15" style="max-width: 100px;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -473,7 +678,7 @@
                             </h3>
                             <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Seamless background updates powered by GitHub Releases.</p>
                         </div>
-                        <span id="updateAppVersionBadge" class="status-pill status-installed" style="font-size: 11px;">v2.0.3</span>
+                        <span id="updateAppVersionBadge" class="status-pill status-installed" style="font-size: 11px;">v2.0.5</span>
                     </div>
 
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 12px;">
@@ -508,7 +713,12 @@
                 <!-- Console Logs Feed -->
                 <div class="glass-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h3 style="font-size: 14px; font-weight: 600; color: #fff;">Live Console Feed</h3>
+                        <div>
+                            <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-terminal" style="color: var(--accent);"></i> Live Console Feed
+                            </h3>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Real-time system diagnostics, WebSocket bridge messages, and backend process logs.</p>
+                        </div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <button id="copyConsoleLogsBtn" class="btn-icon" title="Copy Console Logs"><i class="fa-solid fa-copy"></i></button>
                             <button id="clearConsoleLogsBtn" class="btn-icon" title="Clear Logs"><i class="fa-solid fa-trash-can"></i></button>
@@ -757,8 +967,9 @@
                         <label class="form-label">Mirror Hosting</label>
                         <select id="assistedHostSelect" class="select-dropdown" style="width: 100%; cursor: pointer;">
                             <option value="GoFile">GoFile</option>
+                            <option value="PixelDrain">PixelDrain</option>
+                            <option value="BuzzHeavier">BuzzHeavier</option>
                             <option value="VikingFile">VikingFile</option>
-                            <option value="Pixeldrain">Pixeldrain</option>
                             <option value="1Fichier">1Fichier</option>
                             <option value="Google Drive">Google Drive</option>
                             <option value="Direct">Direct</option>
@@ -835,12 +1046,12 @@
                 <div class="glass-card" style="background: rgba(212, 168, 83, 0.05); border: 1px dashed rgba(212, 168, 83, 0.35); padding: 12px 14px; margin-bottom: 14px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <span style="font-size: 12px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Fetch From Online-Fix.me or SteamRIP
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Fetch From Online-Fix, SteamRIP, or Cracked-Games
                         </span>
                         <span style="font-size: 10px; color: var(--text-muted);">Paste release link to autofill</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="agAutoFetchUrlInput" class="form-input" placeholder="https://online-fix.me/games/... or https://steamrip.com/..." style="flex: 1; font-size: 12px;">
+                        <input type="text" id="agAutoFetchUrlInput" class="form-input" placeholder="https://online-fix.me/... or https://steamrip.com/... or https://cracked-games.org/..." style="flex: 1; font-size: 12px;">
                         <button type="button" id="agAutoFetchBtn" class="btn btn-primary btn-sm" style="white-space: nowrap; padding: 0 14px;">
                             <i class="fa-solid fa-bolt"></i> Auto-Fetch
                         </button>
@@ -867,10 +1078,9 @@
                             <select id="agHostSelect" class="form-input" style="cursor: pointer;">
                                 <option value="GoFile">GoFile</option>
                                 <option value="PixelDrain">PixelDrain</option>
+                                <option value="BuzzHeavier">BuzzHeavier</option>
                                 <option value="VikingFile">VikingFile</option>
                                 <option value="1Fichier">1Fichier</option>
-                                <option value="BuzzHeavier">BuzzHeavier</option>
-                                <option value="FileDitch">FileDitch</option>
                                 <option value="Google Drive">Google Drive</option>
                                 <option value="Mega">Mega</option>
                                 <option value="Direct">Direct</option>
@@ -970,6 +1180,100 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- 🚫 BYPASS LIST MANAGER MODAL -->
+    <div id="bypassManagerModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 620px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-top-actions">
+                <button id="closeBypassModalBtn" class="modal-top-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-right: 30px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--danger);">
+                    <i class="fa-solid fa-bell-slash"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Version Check Bypass List</h3>
+                    <p style="font-size: 11px; color: var(--text-muted); margin: 0;">Games on this list are ignored during live audits and update checks.</p>
+                </div>
+            </div>
+
+            <div class="search-box-wrapper" style="margin-bottom: 14px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="bypassSearchInput" class="search-input" placeholder="Search bypassed games...">
+            </div>
+
+            <!-- Scrollable list of bypassed games -->
+            <div id="bypassListContainer" style="overflow-y: auto; flex: 1; max-height: 400px; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;" class="custom-scroll">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Footer -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 14px; margin-top: 14px;">
+                <button type="button" id="clearAllBypassesBtn" class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);">
+                    <i class="fa-solid fa-trash-can"></i> Clear All Bypasses
+                </button>
+                <button type="button" id="closeBypassModalFooterBtn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⚡ BATCH UPDATE CONFIRMATION MODAL -->
+    <div id="batchUpdateConfirmModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 680px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-top-actions">
+                <button id="closeBatchUpdateModalBtn" class="modal-top-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-right: 30px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(212, 168, 83, 0.15); border: 1px solid rgba(212, 168, 83, 0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent);">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Batch Update Outdated Games</h3>
+                    <p style="font-size: 11px; color: var(--text-muted); margin: 0;">Review detected online updates before updating catalog <code style="color: var(--accent);">Data.json</code>.</p>
+                </div>
+            </div>
+
+            <!-- Outdated Games Preview Table -->
+            <div style="overflow-y: auto; flex: 1; max-height: 320px; margin-bottom: 12px; border: 1px solid var(--border-glass); border-radius: var(--radius-sm);" class="custom-scroll">
+                <table class="fanta-table" style="margin: 0;">
+                    <thead>
+                        <tr>
+                            <th>Game Title</th>
+                            <th>Current (DB)</th>
+                            <th>New (Online)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batchUpdatePreviewTableBody">
+                        <!-- Dynamically filled -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Live Progress Bar & Status (hidden initially) -->
+            <div id="batchUpdateProgressSection" style="display: none; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border-glass);">
+                <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                    <span id="batchUpdateStatusText" style="color: var(--text-secondary); font-weight: 500;">Updating [0/0]...</span>
+                    <span id="batchUpdatePercentText" style="color: var(--accent); font-family: var(--font-mono);">0%</span>
+                </div>
+                <div class="download-progress-bar">
+                    <div id="batchUpdateProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 14px;">
+                <span id="batchUpdateTotalNotice" style="font-size: 11px; color: var(--text-muted);">0 games ready to update</span>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" id="cancelBatchUpdateBtn" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="confirmBatchUpdateBtn" class="btn btn-primary">
+                        <i class="fa-solid fa-bolt"></i> Confirm & Update All
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

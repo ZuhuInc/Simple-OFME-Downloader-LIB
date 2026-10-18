@@ -37,9 +37,15 @@ class ConfigDefaults:
     steam_user_id: str = ""
     steam_id: str = ""
     rar_password: str = "online-fix.me"
+    cg_password: str = "cracked-games.org"
     concurrent_downloads: int = 2
     speed_unit: str = "MB/s"
+    size_unit: str = "GB"
+    preferred_host: str = "GoFile"
     show_size_in_gb: bool = True
+    show_download_speed: bool = True
+    show_download_percent: bool = True
+    show_download_total: bool = True
     enable_notifications: bool = True
     enable_webhook: bool = True
     webhook_url: str = ""
@@ -52,6 +58,10 @@ class ConfigDefaults:
     auto_extract: bool = True
     auto_delete_archive: bool = True
     gofile_token: str = ""
+    multi_threaded_scan: bool = False
+    scan_workers: int = 6
+    enable_scrape_cache: bool = False
+    scrape_cache_ttl_minutes: int = 15
 
 
 def get_bundled_data_path(filename: str = "Data.json") -> str:
@@ -236,6 +246,18 @@ class Config:
         if env_mode == '0':
             return False
         return not getattr(sys, 'frozen', False)
+
+    @staticmethod
+    def get_app_version() -> str:
+        try:
+            from backend import __version__
+            return __version__
+        except ImportError:
+            try:
+                from src.backend import __version__
+                return __version__
+            except ImportError:
+                return os.environ.get("FANTA_APP_VERSION", "2.0.5")
 
     def get_local_db_path(self) -> str:
         custom_path = self.get("local_db_path")

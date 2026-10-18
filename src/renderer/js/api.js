@@ -148,6 +148,8 @@ class ApiClient {
         return this.request('/api/version-check/bypass/toggle', { method: 'POST', body: payload });
     }
     clearBypassList() { return this.request('/api/version-check/bypass/clear', { method: 'POST' }); }
+    clearScrapeCache() { return this.request('/api/version-check/cache/clear', { method: 'POST' }); }
+    batchUpdateGames(payload) { return this.request('/api/version-check/batch-update', { method: 'POST', body: payload }); }
 }
 
 window.apiClient = new ApiClient();

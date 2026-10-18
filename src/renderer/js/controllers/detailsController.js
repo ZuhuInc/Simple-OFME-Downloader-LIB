@@ -180,7 +180,8 @@ class DetailsController {
         if (this.coverEl) this.coverEl.src = game.thumbnail || 'assets/OFME-DWND-ICO.ico';
         if (this.titleEl) this.titleEl.textContent = game.title || 'Unknown Game';
         if (this.descEl) this.descEl.textContent = game.description || 'No description available.';
-        if (this.hostEl) this.hostEl.textContent = game.host || 'Direct';
+        const hostDisplay = game.source ? `${game.source} (${game.host || 'Direct'})` : (game.host || 'Direct');
+        if (this.hostEl) this.hostEl.textContent = hostDisplay;
         if (this.sizeEl) this.sizeEl.textContent = game.approx_size || game.size || 'N/A';
         if (this.versionEl) this.versionEl.textContent = `v${game.version || '1.0'}`;
 
@@ -350,7 +351,8 @@ class DetailsController {
         if (this.setupGameTitle) this.setupGameTitle.textContent = this.currentGame.title || 'Unknown Game';
         if (this.setupGameVersion) this.setupGameVersion.textContent = `v${this.currentGame.version || '1.0'}`;
         if (this.setupGameSize) this.setupGameSize.textContent = this.currentGame.approx_size || this.currentGame.size || 'Unknown';
-        if (this.setupGameHost) this.setupGameHost.textContent = this.currentGame.host || 'Direct';
+        const hostDisplay = this.currentGame.source ? `${this.currentGame.source} (${this.currentGame.host || 'Direct'})` : (this.currentGame.host || 'Direct');
+        if (this.setupGameHost) this.setupGameHost.textContent = hostDisplay;
         if (this.setupAutoExtractCheck) this.setupAutoExtractCheck.checked = autoExtract;
         if (this.setupDeleteArchiveCheck) this.setupDeleteArchiveCheck.checked = autoDelete;
 
@@ -530,7 +532,8 @@ class DetailsController {
             });
 
             if (res.success) {
-                window.uiController.showToast(`Added to Download Queue (Job #${res.job_id})`, 'success');
+                const cleanJobId = String(res.job_id || '').replace(/^job_/i, '');
+                window.uiController.showToast(`Added to Download Queue (Job #${cleanJobId})`, 'success');
                 window.uiController.switchTab('downloadsTab');
                 this.close();
             }

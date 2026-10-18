@@ -197,7 +197,11 @@ class Downloader:
                     download_url = resolved_url
                     resolved_cookies = cookies
                     print(f"[Downloader] [{job.id}] Direct CDN stream URL: {download_url}", flush=True)
-                if resolved_name and job.filename.endswith(".bin"):
+                if resolved_name and (
+                    job.filename.endswith(".bin")
+                    or not any(job.filename.lower().endswith(ext) for ext in [".rar", ".zip", ".7z", ".iso", ".tar", ".gz", ".exe"])
+                    or job.filename == os.path.basename(job.url.split("?")[0])
+                ):
                     job.filename = resolved_name
                     job.dest_file = os.path.join(self.download_path, resolved_name)
             except Exception as res_err:
@@ -258,6 +262,17 @@ class Downloader:
 
             with requests.get(download_url, headers=headers, cookies=resolved_cookies, stream=True, timeout=30) as resp:
                 if resp.status_code in (200, 206):
+                    # Check Content-Disposition for server-provided filename if not already an archive
+                    cd = resp.headers.get("content-disposition", "")
+                    if cd and "filename" in cd:
+                        cd_m = re.search(r'filename\*?=(?:UTF-8\'\')?["\']?([^"\';]+)["\']?', cd, re.IGNORECASE)
+                        if cd_m:
+                            cd_fn = cd_m.group(1).strip()
+                            if cd_fn and not job.filename.lower().endswith((".rar", ".zip", ".7z", ".iso")):
+                                job.filename = cd_fn
+                                job.dest_file = os.path.join(self.download_path, cd_fn)
+                                print(f"[Downloader] [{job.id}] Updated destination filename from Content-Disposition: {cd_fn}", flush=True)
+
                     content_type = resp.headers.get("content-type", "").lower()
                     content_length = int(resp.headers.get("content-length", 0))
                     total_expected = job.downloaded_bytes + content_length
@@ -383,7 +398,16 @@ class Downloader:
                             else:
                                 extract_dir = default_base
 
-                        rar_password = self.config.get("rar_password", "online-fix.me") if self.config else "online-fix.me"
+                        origin_url_lower = str(job.meta.get("origin_url") or "").lower()
+                        archive_pwd = job.meta.get("archive_password")
+                        if not archive_pwd:
+                            if "cracked-games.org" in origin_url_lower:
+                                archive_pwd = "cracked-games.org"
+                            elif "steamrip.com" in origin_url_lower:
+                                archive_pwd = ""
+                            else:
+                                archive_pwd = self.config.get("rar_password", "online-fix.me") if self.config else "online-fix.me"
+
                         delete_after = job.meta.get("auto_delete_archive")
                         if delete_after is None:
                             delete_after = self.config.get("auto_delete_archive", True) if self.config else True
@@ -396,7 +420,7 @@ class Downloader:
                         extract_res = self.extractor.extract_archive(
                             archive_path=job.dest_file,
                             extract_dir=extract_dir,
-                            password=rar_password,
+                            password=archive_pwd,
                             delete_after=delete_after,
                             game_title=title,
                             is_fix=is_fix,
@@ -442,7 +466,14 @@ class Downloader:
 
                 else:
                     job.status = "error"
-                    job.error_msg = f"Server returned HTTP {resp.status_code}"
+                    if resp.status_code == 403 and (
+                        "cloudflare" in resp.headers.get("server", "").lower()
+                        or resp.headers.get("cf-mitigated") == "challenge"
+                        or "fileditch" in download_url.lower()
+                    ):
+                        job.error_msg = "Host blocked direct download (Cloudflare Challenge 403). Try PixelDrain or GoFile, or click 'Open Link'."
+                    else:
+                        job.error_msg = f"Server returned HTTP {resp.status_code}"
                     print(f"[Downloader] [{job.id}] ERROR: {job.error_msg}", flush=True)
                     self._notify(job)
 

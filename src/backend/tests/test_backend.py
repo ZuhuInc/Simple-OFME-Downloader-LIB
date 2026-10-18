@@ -69,6 +69,11 @@ Fix:
         url, name, cookies = LinkResolver.resolve_url("https://pixeldrain.com/u/sample123")
         self.assertEqual(url, "https://pixeldrain.com/api/file/sample123?download")
 
+    def test_fileditch_resolve(self):
+        url, name, cookies = LinkResolver.resolve_url("https://fileditchfiles.st/balpha10/111/part1.rar")
+        self.assertEqual(url, "https://fileditchfiles.st/balpha10/111/part1.rar")
+        self.assertEqual(name, "part1.rar")
+
     def test_buzzheavier_resolve(self):
         url, name, cookies = LinkResolver.resolve_url("https://bzzhr.to/liksw0ew4pu8")
         self.assertTrue("ts.bzzhr.to" in url or "liksw0ew4pu8" in url)

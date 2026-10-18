@@ -66,6 +66,8 @@ class OnlineFixScraper:
 
         if "steamrip.com" in origin_url.lower():
             return self.scrape_steamrip_page(origin_url, preferred_host=preferred_host)
+        elif "cracked-games.org" in origin_url.lower():
+            return self.scrape_crackedgames_page(origin_url, preferred_host=preferred_host)
         else:
             return self.scrape_onlinefix_page(origin_url, preferred_host=preferred_host)
 
@@ -175,6 +177,7 @@ class OnlineFixScraper:
                 "description": description,
                 "origin_url": origin_url,
                 "hosters_url": hosters_url,
+                "source": "OFME",
                 "available_hosts": available_hosts
             }
 
@@ -297,7 +300,7 @@ class OnlineFixScraper:
                 if "gofile" in h or "gofile" in s:
                     return "GoFile"
                 if "pixeldrain" in h or "pixel" in s:
-                    return "Pixeldrain"
+                    return "PixelDrain"
                 if "1fichier" in h or "1fichier" in s:
                     return "1Fichier"
                 if "dropbox" in h or "dropbox" in s:
@@ -368,12 +371,10 @@ class OnlineFixScraper:
             # Determine selected host data
             selected_host = preferred_host
             if selected_host not in available_hosts and available_hosts:
-                if "BuzzHeavier" in available_hosts:
-                    selected_host = "BuzzHeavier"
-                elif "FileDitch" in available_hosts:
-                    selected_host = "FileDitch"
-                elif "GoFile" in available_hosts:
-                    selected_host = "GoFile"
+                for cand in ["GoFile", "PixelDrain", "BuzzHeavier"]:
+                    if cand in available_hosts:
+                        selected_host = cand
+                        break
                 else:
                     selected_host = next(iter(available_hosts))
 
@@ -390,11 +391,214 @@ class OnlineFixScraper:
                 "description": description,
                 "thumbnail": thumbnail,
                 "origin_url": origin_url,
+                "source": "SR",
                 "available_hosts": available_hosts
             }
 
         except Exception as e:
             print(f"[Scraper] SteamRIP scraping error: {e}")
+            return {"success": False, "error": str(e)}
+
+    def scrape_crackedgames_page(self, origin_url: str, preferred_host: str = "GoFile") -> Dict[str, Any]:
+        """
+        Scrapes game metadata and direct download buttons/mirrors directly from Cracked-Games.org.
+        """
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+            }
+            resp = self.session.get(origin_url, headers=headers, timeout=15)
+            if resp.status_code != 200:
+                return {"success": False, "error": f"Failed to fetch Cracked-Games page (Status {resp.status_code})"}
+
+            html = resp.text
+            soup = BeautifulSoup(html, "html.parser")
+
+            # 1. Parse Title
+            title = ""
+            h1 = soup.find("h1")
+            if h1:
+                raw_title = h1.get_text(separator=" ").strip()
+                title = re.sub(r"[®™]", "", raw_title).strip()
+                title = re.sub(r"\s*(?:\([^\)]*\)|Free\s*Download|PC\s*Game|Full\s*Version).*", "", title, flags=re.IGNORECASE).strip()
+
+            if not title:
+                title_tag = soup.find("title")
+                if title_tag:
+                    raw_title = title_tag.get_text().split("Free Download")[0].split("—")[0].strip()
+                    title = re.sub(r"[®™]", "", raw_title).strip()
+
+            # 2. Parse Version / Build
+            version = ""
+            for tag in soup.find_all(class_=re.compile(r"text-emerald-400")):
+                txt = tag.get_text(strip=True)
+                if re.search(r"\d", txt) and not any(k in txt.lower() for k in ["latest", "crc", "sha"]):
+                    m = re.search(r"(?:Build\s*)?([A-Za-z0-9_\.\-]+)", txt, re.IGNORECASE)
+                    if m:
+                        version = self._clean_version(m.group(1))
+                        if version:
+                            break
+
+            if not version:
+                m = re.search(r"Build\s*([A-Za-z0-9_\.\-]+)", html, re.IGNORECASE)
+                if m:
+                    version = self._clean_version(m.group(1))
+
+            if not version:
+                version = "1.0"
+
+            # 3. Parse Cover / Thumbnail
+            thumbnail = ""
+            header_section = h1.find_parent("section") if h1 else None
+            if header_section:
+                for img in header_section.find_all("img"):
+                    src = img.get("src", "")
+                    if "/uploads/cover/" in src or "/uploads/banner/" in src:
+                        thumbnail = src
+                        if "/uploads/cover/" in src:
+                            break  # Prioritize 3:4 cover art
+
+            if not thumbnail:
+                cover_img = soup.find("img", src=re.compile(r"/uploads/cover/"))
+                if cover_img:
+                    thumbnail = cover_img.get("src", "")
+
+            if not thumbnail:
+                og_img = soup.find("meta", property="og:image")
+                if og_img:
+                    thumbnail = og_img.get("content", "")
+
+            if thumbnail and thumbnail.startswith("/"):
+                thumbnail = "https://cracked-games.org" + thumbnail
+
+            # 4. Parse Size
+            approx_size = ""
+            for sp in soup.find_all("span"):
+                txt = sp.get_text(strip=True)
+                if re.match(r"^\d+(?:\.\d+)?\s*(?:GB|MB)$", txt, re.IGNORECASE):
+                    approx_size = txt
+                    break
+
+            if not approx_size:
+                size_match = re.search(r"\b(\d+(?:\.\d+)?\s*(?:GB|MB))\b", html, re.IGNORECASE)
+                if size_match:
+                    approx_size = size_match.group(1)
+
+            # 5. Parse Description
+            description = "No description available."
+            for h2 in soup.find_all(["h2", "h3"]):
+                if "about the game" in h2.get_text(strip=True).lower():
+                    container = h2.find_parent("div") or h2.find_parent("section")
+                    if container:
+                        card = container.parent if container.name == "div" else container
+                        p_texts = []
+                        for p in card.find_all("p"):
+                            pt = p.get_text(strip=True)
+                            if not pt:
+                                continue
+                            if pt.lower().startswith("key features"):
+                                break
+                            p_texts.append(pt)
+                        if p_texts:
+                            description = " ".join(p_texts[:3])
+                    break
+
+            if description == "No description available.":
+                meta_desc = soup.find("meta", property="og:description") or soup.find("meta", attrs={"name": "description"})
+                if meta_desc and meta_desc.get("content"):
+                    description = meta_desc.get("content").strip()
+
+            # 6. Parse Steam Store URL
+            steam_url = ""
+            steam_a = soup.find("a", href=re.compile(r"store\.steampowered\.com/app/\d+"))
+            if steam_a:
+                steam_url = steam_a.get("href", "")
+
+            # 7. Locate Download Form & Retrieve Host Mirrors
+            available_hosts: Dict[str, Dict[str, Any]] = {}
+            form = soup.find("form", action=re.compile(r"/download"))
+            if form:
+                post_data = {}
+                for inp in form.find_all("input"):
+                    name = inp.get("name")
+                    if name:
+                        post_data[name] = inp.get("value", "")
+
+                download_url = "https://cracked-games.org/download"
+                post_headers = dict(headers)
+                post_headers["Referer"] = origin_url
+
+                try:
+                    r_dl = self.session.post(download_url, data=post_data, headers=post_headers, timeout=15)
+                    if r_dl.status_code == 200:
+                        dl_soup = BeautifulSoup(r_dl.text, "html.parser")
+                        for a in dl_soup.find_all("a", href=True):
+                            href = a.get("href", "").strip()
+                            if not href.startswith("http"):
+                                continue
+                            if any(k in href.lower() for k in ["discord", "twitter", "youtube", "telegram", "facebook", "cracked-games.org"]):
+                                continue
+
+                            # Detect host name
+                            h_name = "Direct"
+                            click_attr = str(a.get("@click", "") or a.get("onclick", "")).lower()
+                            if "gofile" in href.lower() or "hoster: 'gofile'" in click_attr or "hoster: \"gofile\"" in click_attr:
+                                h_name = "GoFile"
+                            elif "fileditch" in href.lower() or "hoster: 'fileditch'" in click_attr or "hoster: \"fileditch\"" in click_attr:
+                                h_name = "FileDitch"
+                            elif "buzzheavier" in href.lower() or "bzzhr.to" in href.lower() or "hoster: 'buzzheavier'" in click_attr:
+                                h_name = "BuzzHeavier"
+                            elif "pixeldrain" in href.lower() or "hoster: 'pixeldrain'" in click_attr:
+                                h_name = "PixelDrain"
+                            elif "voidfiles" in href.lower() or "hoster: 'voidfiles'" in click_attr:
+                                h_name = "VoidFiles"
+                            elif "1fichier" in href.lower():
+                                h_name = "1Fichier"
+
+                            if h_name not in available_hosts:
+                                available_hosts[h_name] = {"parts": [], "fix_url": ""}
+                            if href not in available_hosts[h_name]["parts"]:
+                                available_hosts[h_name]["parts"].append(href)
+                except Exception as post_err:
+                    print(f"[Scraper] Cracked-Games download post error: {post_err}")
+
+            # Fallback if no form mirrors retrieved
+            if not available_hosts:
+                available_hosts["Direct"] = {"parts": [origin_url], "fix_url": ""}
+
+            # Select preferred host
+            selected_host = preferred_host
+            if selected_host not in available_hosts:
+                for cand in ["GoFile", "PixelDrain", "BuzzHeavier", "VoidFiles", "Direct"]:
+                    if cand in available_hosts:
+                        selected_host = cand
+                        break
+                else:
+                    selected_host = next(iter(available_hosts))
+
+            host_data = available_hosts.get(selected_host, {"parts": [], "fix_url": ""})
+
+            return {
+                "success": True,
+                "title": title or "Cracked-Games Game",
+                "version": version or "1.0",
+                "host": selected_host,
+                "parts": host_data.get("parts", []),
+                "fix_url": host_data.get("fix_url", ""),
+                "approx_size": approx_size or "Unknown",
+                "description": description,
+                "thumbnail": thumbnail,
+                "origin_url": origin_url,
+                "source": "CG",
+                "archive_password": "cracked-games.org",
+                "steam_url": steam_url,
+                "available_hosts": available_hosts
+            }
+
+        except Exception as e:
+            print(f"[Scraper] Cracked-Games scraping error: {e}")
             return {"success": False, "error": str(e)}
 
     def _scrape_hosters_portal(self, hosters_url: str) -> Dict[str, Dict[str, Any]]:
@@ -422,7 +626,7 @@ class OnlineFixScraper:
                 elif "viking" in host_name.lower() or (data_links_raw and "vikingfile" in data_links_raw.lower()):
                     norm_name = "VikingFile"
                 elif "pixel" in host_name.lower() or (data_links_raw and "pixeldrain" in data_links_raw.lower()):
-                    norm_name = "Pixeldrain"
+                    norm_name = "PixelDrain"
                 elif "1fichier" in host_name.lower() or (data_links_raw and "1fichier" in data_links_raw.lower()):
                     norm_name = "1Fichier"
                 elif "drive" in host_name.lower() or (data_links_raw and "drive.google" in data_links_raw.lower()):
