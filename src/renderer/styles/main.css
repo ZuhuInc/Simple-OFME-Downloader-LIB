@@ -1792,4 +1792,191 @@ input[type="number"] {
     border-radius: 10px;
 }
 
+/* ─── SPLIT DOWNLOAD BUTTON & MIRROR SELECTORS ─── */
+.btn-group-split {
+    display: inline-flex;
+    position: relative;
+    vertical-align: middle;
+    width: 100%;
+}
+
+.btn-group-split #detailsDownloadMainBtn {
+    flex: 1 1 auto;
+    width: 100%;
+    border-radius: var(--radius-sm);
+}
+
+.btn-group-split.has-mirrors #detailsDownloadMainBtn {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.details-actions-row .btn.btn-split-toggle,
+.btn-split-toggle {
+    flex: 0 0 32px !important;
+    width: 32px !important;
+    max-width: 32px !important;
+    min-width: 32px !important;
+    padding: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: var(--radius-sm) !important;
+    border-bottom-right-radius: var(--radius-sm) !important;
+    border-left: 1px solid rgba(0, 0, 0, 0.25) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.btn-split-toggle i {
+    font-size: 10px !important;
+}
+
+.mirror-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 230px;
+    background: rgba(18, 18, 24, 0.98);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    padding: 6px;
+    z-index: 10010;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mirror-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    text-align: left;
+    width: 100%;
+    transition: var(--transition);
+}
+
+.mirror-dropdown-item:hover {
+    background: rgba(212, 168, 83, 0.15);
+    color: var(--accent);
+}
+
+.mirror-dropdown-item.active {
+    background: rgba(212, 168, 83, 0.22);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.mirror-dropdown-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+}
+
+/* ─── HOST SELECTOR PILLS (Download Setup Modal) ─── */
+.host-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-glass);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.host-pill-btn:hover {
+    color: #fff;
+    border-color: rgba(212, 168, 83, 0.4);
+    background: rgba(212, 168, 83, 0.1);
+}
+
+.host-pill-btn.active {
+    background: rgba(212, 168, 83, 0.2);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(212, 168, 83, 0.15);
+}
+
+/* ─── ADD GAME MODAL: MIRROR CARD ─── */
+.mirror-subcard {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ─── LIBRARY EDIT MODE PILL & OVERLAY BUTTONS ─── */
+#libraryEditModeToggle {
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    letter-spacing: 0.3px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    transition: var(--transition);
+}
+
+#libraryEditModeToggle:hover {
+    background: rgba(212, 168, 83, 0.1);
+    border-color: rgba(212, 168, 83, 0.3);
+    color: var(--text-primary);
+}
+
+.card-overlay-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0 16px;
+}
+
+.card-overlay-actions .card-view-btn {
+    width: 100%;
+    max-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 12px;
+    font-size: 11px;
+    transition: var(--transition);
+}
+
+.card-overlay-actions .card-edit-btn {
+    background: rgba(212, 168, 83, 0.2);
+    border: 1px solid rgba(212, 168, 83, 0.45);
+    color: #fff;
+}
+
+.card-overlay-actions .card-edit-btn:hover {
+    background: rgba(212, 168, 83, 0.4) !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 12px rgba(212, 168, 83, 0.3);
+}
+
+
 

@@ -20,7 +20,12 @@ class DetailsController {
         this.statusEl = document.getElementById('detailsStatus');
         this.locationEl = document.getElementById('detailsLocation');
         this.originLinkEl = document.getElementById('detailsOriginLink');
+        this.downloadGroup = document.getElementById('detailsDownloadGroup');
         this.downloadMainBtn = document.getElementById('detailsDownloadMainBtn');
+        this.downloadBtnText = document.getElementById('detailsDownloadBtnText');
+        this.mirrorToggleBtn = document.getElementById('detailsMirrorToggleBtn');
+        this.mirrorDropdown = document.getElementById('detailsMirrorDropdown');
+        this.selectedMirrorHost = null;
         this.downloadFixBtn = document.getElementById('detailsDownloadFixBtn');
         this.openMirrorBtn = document.getElementById('detailsOpenMirrorBtn');
         this.addSteamBtn = document.getElementById('detailsAddSteamBtn');
@@ -50,6 +55,8 @@ class DetailsController {
         this.setupLocationHelp = document.getElementById('setupLocationHelp');
         this.setupAutoExtractCheck = document.getElementById('setupAutoExtractCheck');
         this.setupDeleteArchiveCheck = document.getElementById('setupDeleteArchiveCheck');
+        this.setupHostSelectorRow = document.getElementById('setupHostSelectorRow');
+        this.setupHostPills = document.getElementById('setupHostPills');
         this.browseInstallPathBtn = document.getElementById('browseInstallPathBtn');
         this.confirmSetupDownloadBtn = document.getElementById('confirmSetupDownloadBtn');
         this.cancelSetupDownloadBtn = document.getElementById('cancelSetupDownloadBtn');
@@ -91,7 +98,8 @@ class DetailsController {
         if (this.openMirrorBtn) {
             this.openMirrorBtn.addEventListener('click', () => {
                 if (this.currentGame) {
-                    const targetUrl = (Array.isArray(this.currentGame.parts) && this.currentGame.parts[0]) || this.currentGame.main_game_url || this.currentGame.download_url || this.currentGame.origin_url;
+                    const activeParts = this.getActiveParts();
+                    const targetUrl = (Array.isArray(activeParts) && activeParts[0]) || this.currentGame.main_game_url || this.currentGame.download_url || this.currentGame.origin_url;
                     if (targetUrl) {
                         if (window.api && window.api.openExternal) {
                             window.api.openExternal(targetUrl);
@@ -104,6 +112,24 @@ class DetailsController {
                 }
             });
         }
+
+        if (this.mirrorToggleBtn) {
+            this.mirrorToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.mirrorDropdown) {
+                    const isVisible = this.mirrorDropdown.style.display === 'flex';
+                    this.mirrorDropdown.style.display = isVisible ? 'none' : 'flex';
+                }
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (this.mirrorDropdown && this.mirrorDropdown.style.display === 'flex') {
+                if (!this.mirrorDropdown.contains(e.target) && !this.mirrorToggleBtn?.contains(e.target)) {
+                    this.mirrorDropdown.style.display = 'none';
+                }
+            }
+        });
 
         if (this.downloadMainBtn) {
             this.downloadMainBtn.addEventListener('click', () => this.openDownloadSetup('main'));
@@ -223,15 +249,14 @@ class DetailsController {
             }
         }
 
+        this.selectedMirrorHost = null;
+
         // Action button labels based on status
-        if (this.downloadMainBtn) {
-            if (game.status === 2) {
-                this.downloadMainBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Update Game';
-            } else if (game.status === 1) {
-                this.downloadMainBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> Re-download';
-            } else {
-                this.downloadMainBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> Download Game';
-            }
+        const actionLabel = game.status === 2 ? 'Update Game' : (game.status === 1 ? 'Re-download' : 'Download Game');
+        if (this.downloadBtnText) {
+            this.downloadBtnText.textContent = actionLabel;
+        } else if (this.downloadMainBtn) {
+            this.downloadMainBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> ${actionLabel}`;
         }
 
         // Toggle Fix button visibility if fix URL is provided
@@ -239,9 +264,14 @@ class DetailsController {
         if (this.downloadFixBtn) {
             this.downloadFixBtn.style.display = hasFix ? 'inline-flex' : 'none';
         }
-        if (this.downloadMainBtn) {
+        if (this.downloadGroup) {
+            this.downloadGroup.style.gridColumn = hasFix ? 'auto' : '1 / -1';
+        } else if (this.downloadMainBtn) {
             this.downloadMainBtn.style.gridColumn = hasFix ? 'auto' : '1 / -1';
         }
+
+        // Render Mirror Dropdown
+        this.renderMirrorDropdown();
 
         // Show/hide remove button based on installation
         if (this.removeGameBtn) {
@@ -356,11 +386,9 @@ class DetailsController {
         if (this.setupAutoExtractCheck) this.setupAutoExtractCheck.checked = autoExtract;
         if (this.setupDeleteArchiveCheck) this.setupDeleteArchiveCheck.checked = autoDelete;
 
-        // Multi-part indicator
-        const isMultiPart = Array.isArray(this.currentGame.parts) && this.currentGame.parts.length > 1;
-        if (isMultiPart && type === 'main') {
-            if (this.setupGameHost) this.setupGameHost.textContent = `${this.currentGame.host || 'Direct'} (${this.currentGame.parts.length} Parts)`;
-        }
+        // Multi-part indicator & Host display
+        this.setupHostSelector();
+        this.updateSetupHostDisplay();
 
         // Contextual styling based on action type
         if (type === 'fix') {
@@ -484,24 +512,29 @@ class DetailsController {
 
         this.closeDownloadSetup();
 
+        const activeParts = this.getActiveParts();
+        const activeFix = this.getActiveFix();
+        const activeHost = this.getActiveHost();
+
         // Multi-part game download execution
-        if (type === 'main' && Array.isArray(this.currentGame.parts) && this.currentGame.parts.length > 1) {
+        if (type === 'main' && Array.isArray(activeParts) && activeParts.length > 1) {
             try {
-                window.uiController.showToast(`Queueing ${this.currentGame.parts.length} parts for ${this.currentGame.title}...`, 'info');
-                for (let i = 0; i < this.currentGame.parts.length; i++) {
-                    const partUrl = this.currentGame.parts[i];
+                window.uiController.showToast(`Queueing ${activeParts.length} parts from ${activeHost} for ${this.currentGame.title}...`, 'info');
+                for (let i = 0; i < activeParts.length; i++) {
+                    const partUrl = activeParts[i];
                     const filename = `${this.currentGame.title}_Part${i + 1}.rar`;
                     await window.apiClient.addDownload(partUrl, filename, {
                         game_id: this.currentGame.id,
                         title: this.currentGame.title,
                         version: this.currentGame.version,
                         type: `main_part_${i + 1}`,
+                        host: activeHost,
                         extract_dir: targetPath,
                         auto_extract: autoExtract,
                         auto_delete_archive: autoDelete
                     });
                 }
-                window.uiController.showToast(`Added ${this.currentGame.parts.length} parts to Download Queue`, 'success');
+                window.uiController.showToast(`Added ${activeParts.length} parts to Download Queue`, 'success');
                 window.uiController.switchTab('downloadsTab');
                 this.close();
                 return;
@@ -511,20 +544,21 @@ class DetailsController {
             }
         }
 
-        const targetUrl = type === 'fix' ? this.currentGame.fix_url : (this.currentGame.main_game_url || this.currentGame.download_url);
+        const targetUrl = type === 'fix' ? activeFix : (activeParts[0] || this.currentGame.main_game_url || this.currentGame.download_url);
         if (!targetUrl) {
             window.uiController.showToast('No direct download link configured for this title.', 'warning');
             return;
         }
 
         try {
-            window.uiController.showToast(`Queueing download for ${this.currentGame.title}...`, 'info');
+            window.uiController.showToast(`Queueing download from ${activeHost} for ${this.currentGame.title}...`, 'info');
             const filename = `${this.currentGame.title}_${type === 'fix' ? 'Fix' : 'Game'}.rar`;
             const res = await window.apiClient.addDownload(targetUrl, filename, {
                 game_id: this.currentGame.id,
                 title: this.currentGame.title,
                 version: this.currentGame.version,
                 location: this.currentGame.location || '',
+                host: activeHost,
                 extract_dir: targetPath,
                 auto_extract: autoExtract,
                 auto_delete_archive: autoDelete,
@@ -540,6 +574,211 @@ class DetailsController {
         } catch (err) {
             window.uiController.showToast(`Download failed: ${err.message}`, 'danger');
         }
+    }
+
+    // ─── MIRROR HELPERS ───
+
+    getActiveHost() {
+        if (!this.currentGame) return 'Direct';
+        if (this.selectedMirrorHost && this.currentGame.mirrors && this.currentGame.mirrors[this.selectedMirrorHost]) {
+            return this.selectedMirrorHost;
+        }
+        return this.currentGame.host || 'Direct';
+    }
+
+    getActiveParts() {
+        if (!this.currentGame) return [];
+        if (this.selectedMirrorHost && this.currentGame.mirrors && this.currentGame.mirrors[this.selectedMirrorHost]) {
+            const m = this.currentGame.mirrors[this.selectedMirrorHost];
+            if (Array.isArray(m.parts) && m.parts.length > 0) return m.parts;
+            if (m.url) return [m.url];
+        }
+        if (Array.isArray(this.currentGame.parts) && this.currentGame.parts.length > 0) {
+            return this.currentGame.parts;
+        }
+        if (this.currentGame.main_game_url) return [this.currentGame.main_game_url];
+        if (this.currentGame.download_url) return [this.currentGame.download_url];
+        return [];
+    }
+
+    getActiveFix() {
+        if (!this.currentGame) return '';
+        if (this.selectedMirrorHost && this.currentGame.mirrors && this.currentGame.mirrors[this.selectedMirrorHost]) {
+            const m = this.currentGame.mirrors[this.selectedMirrorHost];
+            if (m.fix_url) return m.fix_url;
+        }
+        return this.currentGame.fix_url || '';
+    }
+
+    selectMirror(hostKey) {
+        this.selectedMirrorHost = hostKey;
+        if (this.mirrorDropdown) this.mirrorDropdown.style.display = 'none';
+
+        const activeHost = this.getActiveHost();
+        const parts = this.getActiveParts();
+
+        if (this.hostEl) {
+            this.hostEl.textContent = parts.length > 1 ? `${activeHost} (${parts.length} Parts)` : activeHost;
+        }
+
+        const actionLabel = this.currentGame?.status === 2 ? 'Update Game' : (this.currentGame?.status === 1 ? 'Re-download' : 'Download Game');
+        if (this.downloadBtnText) {
+            this.downloadBtnText.textContent = `${actionLabel} (${activeHost})`;
+        }
+
+        if (this.mirrorDropdown) {
+            this.mirrorDropdown.querySelectorAll('.mirror-dropdown-item').forEach(el => {
+                const elKey = el.getAttribute('data-host');
+                if ((!this.selectedMirrorHost && !elKey) || (this.selectedMirrorHost === elKey)) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+        }
+
+        window.uiController?.showToast(`Selected download host: ${activeHost}`, 'info');
+    }
+
+    renderMirrorDropdown() {
+        if (!this.mirrorDropdown) return;
+        this.mirrorDropdown.innerHTML = '';
+        this.mirrorDropdown.style.display = 'none';
+
+        if (!this.currentGame) {
+            if (this.mirrorToggleBtn) this.mirrorToggleBtn.style.display = 'none';
+            if (this.downloadGroup) this.downloadGroup.classList.remove('has-mirrors');
+            if (this.downloadMainBtn) {
+                this.downloadMainBtn.style.borderTopRightRadius = 'var(--radius-sm)';
+                this.downloadMainBtn.style.borderBottomRightRadius = 'var(--radius-sm)';
+            }
+            return;
+        }
+
+        const primaryHost = this.currentGame.host || 'Primary';
+        const primaryParts = (Array.isArray(this.currentGame.parts) ? this.currentGame.parts : [this.currentGame.main_game_url || this.currentGame.download_url]).filter(Boolean);
+        const mirrors = this.currentGame.mirrors || {};
+        const mirrorKeys = Object.keys(mirrors).filter(k => {
+            const m = mirrors[k];
+            return m && ((Array.isArray(m.parts) && m.parts.length > 0) || m.url || m.fix_url);
+        });
+
+        if (mirrorKeys.length === 0) {
+            if (this.mirrorToggleBtn) this.mirrorToggleBtn.style.display = 'none';
+            if (this.downloadGroup) this.downloadGroup.classList.remove('has-mirrors');
+            if (this.downloadMainBtn) {
+                this.downloadMainBtn.style.borderTopRightRadius = 'var(--radius-sm)';
+                this.downloadMainBtn.style.borderBottomRightRadius = 'var(--radius-sm)';
+            }
+            return;
+        }
+
+        if (this.mirrorToggleBtn) this.mirrorToggleBtn.style.display = 'inline-flex';
+        if (this.downloadGroup) this.downloadGroup.classList.add('has-mirrors');
+        if (this.downloadMainBtn) {
+            this.downloadMainBtn.style.borderTopRightRadius = '0';
+            this.downloadMainBtn.style.borderBottomRightRadius = '0';
+        }
+
+        // Primary Host option
+        const primaryItem = document.createElement('button');
+        primaryItem.type = 'button';
+        primaryItem.className = `mirror-dropdown-item ${!this.selectedMirrorHost ? 'active' : ''}`;
+        primaryItem.setAttribute('data-host', '');
+        primaryItem.innerHTML = `
+            <span><i class="fa-solid fa-server" style="margin-right: 6px; color: var(--accent);"></i> ${primaryHost} <strong style="font-size: 10px; opacity: 0.7;">(Default)</strong></span>
+            <span class="mirror-dropdown-badge">${primaryParts.length} ${primaryParts.length === 1 ? 'part' : 'parts'}</span>
+        `;
+        primaryItem.addEventListener('click', () => this.selectMirror(null));
+        this.mirrorDropdown.appendChild(primaryItem);
+
+        // Secondary Mirrors options
+        mirrorKeys.forEach(mKey => {
+            const mData = mirrors[mKey];
+            const mParts = Array.isArray(mData.parts) ? mData.parts : (mData.url ? [mData.url] : []);
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = `mirror-dropdown-item ${this.selectedMirrorHost === mKey ? 'active' : ''}`;
+            item.setAttribute('data-host', mKey);
+            item.innerHTML = `
+                <span><i class="fa-solid fa-cloud-arrow-down" style="margin-right: 6px; color: var(--accent);"></i> ${mKey}</span>
+                <span class="mirror-dropdown-badge">${mParts.length} ${mParts.length === 1 ? 'part' : 'parts'}</span>
+            `;
+            item.addEventListener('click', () => this.selectMirror(mKey));
+            this.mirrorDropdown.appendChild(item);
+        });
+    }
+
+    setupHostSelector() {
+        if (!this.currentGame) return;
+        const mirrors = this.currentGame.mirrors || {};
+        const mirrorKeys = Object.keys(mirrors).filter(k => {
+            const m = mirrors[k];
+            return m && ((Array.isArray(m.parts) && m.parts.length > 0) || m.url || m.fix_url);
+        });
+
+        if (mirrorKeys.length > 0 && this.setupHostSelectorRow && this.setupHostPills) {
+            this.setupHostSelectorRow.style.display = 'flex';
+            this.setupHostPills.innerHTML = '';
+
+            const primaryHost = this.currentGame.host || 'Primary';
+            const primaryPill = document.createElement('button');
+            primaryPill.type = 'button';
+            primaryPill.className = `host-pill-btn ${!this.selectedMirrorHost ? 'active' : ''}`;
+            primaryPill.innerHTML = `<i class="fa-solid fa-check" style="${!this.selectedMirrorHost ? '' : 'display:none;'}"></i> ${primaryHost}`;
+            primaryPill.addEventListener('click', () => {
+                this.selectMirror(null);
+                this.updateSetupHostDisplay();
+                this.updateSetupPillsActive();
+            });
+            this.setupHostPills.appendChild(primaryPill);
+
+            mirrorKeys.forEach(mKey => {
+                const pill = document.createElement('button');
+                pill.type = 'button';
+                pill.className = `host-pill-btn ${this.selectedMirrorHost === mKey ? 'active' : ''}`;
+                pill.innerHTML = `<i class="fa-solid fa-check" style="${this.selectedMirrorHost === mKey ? '' : 'display:none;'}"></i> ${mKey}`;
+                pill.addEventListener('click', () => {
+                    this.selectMirror(mKey);
+                    this.updateSetupHostDisplay();
+                    this.updateSetupPillsActive();
+                });
+                this.setupHostPills.appendChild(pill);
+            });
+        } else if (this.setupHostSelectorRow) {
+            this.setupHostSelectorRow.style.display = 'none';
+        }
+    }
+
+    updateSetupHostDisplay() {
+        if (!this.currentGame || !this.setupGameHost) return;
+        const activeHost = this.getActiveHost();
+        const activeParts = this.getActiveParts();
+        const type = this.pendingDownloadType || 'main';
+        if (activeParts.length > 1 && type === 'main') {
+            this.setupGameHost.textContent = `${activeHost} (${activeParts.length} Parts)`;
+        } else {
+            this.setupGameHost.textContent = activeHost;
+        }
+    }
+
+    updateSetupPillsActive() {
+        if (!this.setupHostPills) return;
+        const pills = this.setupHostPills.querySelectorAll('.host-pill-btn');
+        const primaryHost = this.currentGame?.host || 'Primary';
+        pills.forEach(pill => {
+            const isPrimary = pill.textContent.includes(primaryHost);
+            const isActive = (!this.selectedMirrorHost && isPrimary) || (this.selectedMirrorHost && pill.textContent.includes(this.selectedMirrorHost));
+            if (isActive) {
+                pill.classList.add('active');
+                const icon = pill.querySelector('i');
+                if (icon) icon.style.display = '';
+            } else {
+                pill.classList.remove('active');
+                const icon = pill.querySelector('i');
+                if (icon) icon.style.display = 'none';
+            }
+        });
     }
 
     async addToSteam() {

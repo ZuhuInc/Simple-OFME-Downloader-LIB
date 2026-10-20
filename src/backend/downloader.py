@@ -141,6 +141,24 @@ class Downloader:
             return True
         return False
 
+    def retry_job(self, job_id: Any, new_url: Optional[str] = None) -> bool:
+        with self._lock:
+            job = self.jobs.get(str(job_id))
+            if not job:
+                return False
+            if new_url and str(new_url).strip().startswith("http"):
+                job.url = str(new_url).strip()
+            job.status = "queued"
+            job.error_msg = ""
+            job._cancel_flag = False
+            job._pause_event.set()
+            if job.id not in self._queue:
+                self._queue.append(job.id)
+            print(f"[Downloader] [{job.id}] Retrying download from: {job.url}", flush=True)
+            self._notify(job)
+        self._check_queue()
+        return True
+
     def get_all_jobs(self) -> List[Dict[str, Any]]:
         with self._lock:
             return [job.to_dict() for job in self.jobs.values()]

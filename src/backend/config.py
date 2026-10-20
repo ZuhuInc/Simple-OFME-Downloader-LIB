@@ -62,6 +62,7 @@ class ConfigDefaults:
     scan_workers: int = 6
     enable_scrape_cache: bool = False
     scrape_cache_ttl_minutes: int = 15
+    game_edit_mode: bool = False
 
 
 def get_bundled_data_path(filename: str = "Data.json") -> str:
@@ -257,7 +258,7 @@ class Config:
                 from src.backend import __version__
                 return __version__
             except ImportError:
-                return os.environ.get("FANTA_APP_VERSION", "2.0.5")
+                return os.environ.get("FANTA_APP_VERSION", "2.0.6")
 
     def get_local_db_path(self) -> str:
         custom_path = self.get("local_db_path")

@@ -27,6 +27,9 @@ class SettingsController {
         this.concurrencyInput = document.getElementById('set_concurrency');
         this.useLocalDbCheck = document.getElementById('set_use_local_db');
         this.localDbPathInput = document.getElementById('set_local_db_path');
+        this.gameEditModeCheck = document.getElementById('set_game_edit_mode');
+        this.libraryEditModeToggle = document.getElementById('libraryEditModeToggle');
+        this.libraryEditModeText = document.getElementById('libraryEditModeText');
         this.saveBtn = document.getElementById('saveSettingsBtn');
         this.consoleFeed = document.getElementById('consoleLogFeed');
 
@@ -49,19 +52,52 @@ class SettingsController {
         this.updateProgressPercent = document.getElementById('updateProgressPercent');
         this.updateProgressStatus = document.getElementById('updateProgressStatus');
         this.updateVersionBadge = document.getElementById('updateAppVersionBadge');
+        this.isSourceMode = false;
     }
 
-    init() {
+    async init() {
         this.bindEvents();
+        await this.checkSourceMode();
         this.loadSettings();
         this.initLogListeners();
         this.initUpdaterListeners();
         this.loadAppVersion();
     }
 
+    async checkSourceMode() {
+        let isSource = false;
+        try {
+            if (window.api && typeof window.api.isSourceMode === 'function') {
+                isSource = await window.api.isSourceMode();
+            } else {
+                const status = await window.apiClient.getStatus().catch(() => ({}));
+                isSource = Boolean(status?.is_source_mode);
+            }
+        } catch {
+            isSource = false;
+        }
+        this.isSourceMode = Boolean(isSource);
+        if (this.libraryEditModeToggle) {
+            this.libraryEditModeToggle.style.display = this.isSourceMode ? 'inline-flex' : 'none';
+        }
+        return this.isSourceMode;
+    }
+
     bindEvents() {
         if (this.saveBtn) {
             this.saveBtn.addEventListener('click', () => this.saveCurrentSettings());
+        }
+
+        if (this.gameEditModeCheck) {
+            this.gameEditModeCheck.addEventListener('change', () => {
+                this.setEditMode(this.gameEditModeCheck.checked, true);
+            });
+        }
+
+        if (this.libraryEditModeToggle) {
+            this.libraryEditModeToggle.addEventListener('click', () => {
+                this.setEditMode(!this.isEditMode(), true);
+            });
         }
 
         if (this.sizeUnitSelect) {
@@ -323,6 +359,41 @@ class SettingsController {
         if (this.scanWorkersInput) this.scanWorkersInput.value = this.settings.scan_workers || 6;
         if (this.enableScrapeCacheCheck) this.enableScrapeCacheCheck.checked = Boolean(this.settings.enable_scrape_cache);
         if (this.scrapeCacheTtlInput) this.scrapeCacheTtlInput.value = this.settings.scrape_cache_ttl_minutes || 15;
+        this.setEditMode(Boolean(this.settings.game_edit_mode), false);
+    }
+
+    isEditMode() {
+        return Boolean(this.settings?.game_edit_mode);
+    }
+
+    setEditMode(enabled, saveConfig = false) {
+        this.settings.game_edit_mode = Boolean(enabled);
+        if (this.gameEditModeCheck) this.gameEditModeCheck.checked = this.settings.game_edit_mode;
+
+        if (this.libraryEditModeToggle) {
+            if (this.settings.game_edit_mode) {
+                this.libraryEditModeToggle.style.background = 'rgba(212, 168, 83, 0.12)';
+                this.libraryEditModeToggle.style.borderColor = 'rgba(212, 168, 83, 0.35)';
+                this.libraryEditModeToggle.style.color = 'var(--accent)';
+                if (this.libraryEditModeText) this.libraryEditModeText.textContent = 'ON';
+            } else {
+                this.libraryEditModeToggle.style.background = 'rgba(255, 255, 255, 0.04)';
+                this.libraryEditModeToggle.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                this.libraryEditModeToggle.style.color = 'var(--text-muted)';
+                if (this.libraryEditModeText) this.libraryEditModeText.textContent = 'OFF';
+            }
+            // Toggle on Library page is strictly for Source Mode; otherwise hidden
+            this.libraryEditModeToggle.style.display = this.isSourceMode ? 'inline-flex' : 'none';
+        }
+
+        if (window.libraryController && typeof window.libraryController.renderGrid === 'function') {
+            window.libraryController.renderGrid();
+        }
+
+        if (saveConfig) {
+            this.saveCurrentSettings();
+            window.uiController?.showToast(`Game Edit Mode ${this.settings.game_edit_mode ? 'Enabled' : 'Disabled'}`, 'info');
+        }
     }
 
     async saveCurrentSettings() {
@@ -344,6 +415,7 @@ class SettingsController {
             auto_delete_archive: Boolean(this.autoDeleteArchiveCheck?.checked),
             use_local_db: Boolean(this.useLocalDbCheck?.checked),
             local_db_path: this.localDbPathInput?.value.trim() || '',
+            game_edit_mode: Boolean(this.gameEditModeCheck?.checked),
             multi_threaded_scan: Boolean(this.multiThreadedScanCheck?.checked),
             scan_workers: parseInt(this.scanWorkersInput?.value || 6, 10),
             enable_scrape_cache: Boolean(this.enableScrapeCacheCheck?.checked),

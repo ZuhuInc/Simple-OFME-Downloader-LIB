@@ -38,7 +38,8 @@ class GameEntry:
         location: Optional[str] = None,
         parts: Optional[List[str]] = None,
         steam_url: Optional[str] = None,
-        source: Optional[str] = None
+        source: Optional[str] = None,
+        mirrors: Optional[Dict[str, Any]] = None
     ):
         self.id = raw_id
         self.index = index
@@ -59,6 +60,7 @@ class GameEntry:
         self.location = location
         self.steam_url = steam_url
         self.source = self._determine_source(origin_url, host, source)
+        self.mirrors = mirrors or {}
 
     @staticmethod
     def _determine_source(origin_url: str, host: str = "", raw_source: Optional[str] = None) -> str:
@@ -157,7 +159,8 @@ class GameEntry:
             "is_downloaded": bool(self.is_downloaded or self.installed_version),
             "location": self.location,
             "steam_url": self.steam_url,
-            "source": self.source
+            "source": self.source,
+            "mirrors": self.mirrors or {}
         }
 
 
@@ -308,19 +311,29 @@ class DatabaseManager:
             except Exception as e:
                 print(f"[Database] Warning reading {target_file}: {e}")
 
-        # Match existing entry by exact title, case-insensitive title, or origin_url
+        # Match existing entry by exact title, original_title, case-insensitive title, or origin_url
         target_key = title
         existing_entry = {}
 
-        if title in current_data and isinstance(current_data[title], dict):
-            target_key = title
-            existing_entry = current_data[title]
-        else:
-            for k, v in current_data.items():
-                if k.lower() == title.lower() and isinstance(v, dict):
-                    target_key = k
+        orig_title = str(game_dict.get("original_title", "")).strip()
+        if orig_title:
+            for k, v in list(current_data.items()):
+                if k.lower() == orig_title.lower() and isinstance(v, dict):
                     existing_entry = v
+                    if k != title:
+                        del current_data[k]
                     break
+
+        if not existing_entry:
+            if title in current_data and isinstance(current_data[title], dict):
+                target_key = title
+                existing_entry = current_data[title]
+            else:
+                for k, v in current_data.items():
+                    if k.lower() == title.lower() and isinstance(v, dict):
+                        target_key = k
+                        existing_entry = v
+                        break
 
         raw_origin = str(game_dict.get("origin_url", "")).strip()
         if not existing_entry and raw_origin:
@@ -350,12 +363,38 @@ class DatabaseManager:
         final_desc = raw_desc if raw_desc and raw_desc.lower() not in ("none", "null", "no description available.") else existing_entry.get("description", "No description available.")
 
         raw_size = str(game_dict.get("approx_size", "")).strip()
-        final_size = raw_size if raw_size and raw_size.lower() not in ("none", "null", "unknown", "n/a") else existing_entry.get("approx_size", "Unknown")
+        existing_size = str(existing_entry.get("approx_size", "")).strip()
+        if raw_size and raw_size.lower() not in ("none", "null", "unknown", "n/a"):
+            final_size = raw_size
+        elif existing_size and existing_size.lower() not in ("none", "null", "unknown", "n/a"):
+            final_size = existing_size
+        else:
+            final_size = "Unknown"
 
         final_origin = raw_origin if raw_origin and raw_origin.lower() not in ("none", "null") else existing_entry.get("origin_url", "")
 
         raw_cat = str(game_dict.get("category", "")).strip()
         final_cat = raw_cat if raw_cat and raw_cat.lower() not in ("none", "null", "general") else existing_entry.get("category", "General")
+
+        # Process mirrors if provided or preserve existing
+        raw_mirrors = game_dict.get("mirrors")
+        clean_mirrors = {}
+        if isinstance(raw_mirrors, dict):
+            for m_host, m_data in raw_mirrors.items():
+                if isinstance(m_data, dict):
+                    m_parts_raw = m_data.get("parts", [])
+                    m_parts = []
+                    if isinstance(m_parts_raw, list):
+                        m_parts = [str(p).strip() for p in m_parts_raw if p and str(p).strip().startswith("http")]
+                    elif isinstance(m_parts_raw, str):
+                        m_parts = [p.strip() for p in re.split(r'[\r\n,]+', m_parts_raw) if p.strip().startswith("http")]
+                    if m_parts:
+                        clean_mirrors[str(m_host).strip()] = {
+                            "parts": m_parts,
+                            "fix_url": str(m_data.get("fix_url", "")).strip()
+                        }
+        elif raw_mirrors is None and existing_entry.get("mirrors"):
+            clean_mirrors = existing_entry.get("mirrors")
 
         entry_payload = {
             "version": str(game_dict.get("version", "1.0")).strip() or existing_entry.get("version", "1.0"),
@@ -368,6 +407,8 @@ class DatabaseManager:
             "fix_url": str(game_dict.get("fix_url", "")).strip() if game_dict.get("fix_url") is not None else existing_entry.get("fix_url", ""),
             "category": final_cat or "General"
         }
+        if clean_mirrors:
+            entry_payload["mirrors"] = clean_mirrors
 
         # Update or add game under target_key
         current_data[target_key] = entry_payload
@@ -445,7 +486,8 @@ class DatabaseManager:
                             is_downloaded=is_dl,
                             location=loc,
                             parts=parts_list if parts_list else None,
-                            steam_url=game_state.get("steam_url")
+                            steam_url=game_state.get("steam_url"),
+                            mirrors=info.get("mirrors") or {}
                         )
                         entries.append(entry)
                     return entries
@@ -483,7 +525,8 @@ class DatabaseManager:
                             is_downloaded=is_dl,
                             location=loc,
                             parts=parts_list if parts_list else None,
-                            steam_url=game_state.get("steam_url")
+                            steam_url=game_state.get("steam_url"),
+                            mirrors=item.get("mirrors") or {}
                         )
                         entries.append(entry)
                     return entries

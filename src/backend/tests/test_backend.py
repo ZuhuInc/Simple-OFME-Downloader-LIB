@@ -269,6 +269,93 @@ Fix:
         self.assertTrue(res_del["success"])
         self.assertEqual(len(steam_mgr.get_shortcuts(account_id="1004235037")), 0)
 
+    def test_database_mirrors(self):
+        import json
+        sample_json = json.dumps([{
+            "title": "Mirror Test Title",
+            "version": "2.0.0",
+            "host": "GoFile",
+            "parts": ["https://gofile.io/d/part1", "https://gofile.io/d/part2"],
+            "fix_url": "https://gofile.io/d/fix",
+            "mirrors": {
+                "PixelDrain": {
+                    "parts": ["https://pixeldrain.com/u/p1", "https://pixeldrain.com/u/p2"],
+                    "fix_url": "https://pixeldrain.com/u/fix"
+                }
+            }
+        }])
+        db = DatabaseManager(cache_dir=self.temp_dir, default_url="")
+        games = db.parse_database(sample_json)
+        self.assertEqual(len(games), 1)
+        self.assertEqual(games[0].title, "Mirror Test Title")
+        self.assertIsNotNone(games[0].mirrors)
+        self.assertIn("PixelDrain", games[0].mirrors)
+        self.assertEqual(len(games[0].mirrors["PixelDrain"]["parts"]), 2)
+
+        # Test to_dict serialization
+        d = games[0].to_dict()
+        self.assertIn("mirrors", d)
+        self.assertIn("PixelDrain", d["mirrors"])
+
+        # Test saving game with mirrors using isolated config and temp db path
+        cfg = Config(data_folder=self.temp_dir)
+        custom_db_path = os.path.join(self.temp_dir, "CustomData.json")
+        cfg.set("local_db_path", custom_db_path)
+        db_custom = DatabaseManager(cache_dir=self.temp_dir, default_url="", config=cfg)
+
+        saved = db_custom.add_or_update_game({
+            "title": "New Mirror Game",
+            "version": "1.0",
+            "host": "GoFile",
+            "parts": ["https://gofile.io/d/main"],
+            "mirrors": {
+                "BuzzHeavier": {
+                    "parts": ["https://buzzheavier.com/f/123"],
+                    "fix_url": ""
+                }
+            }
+        })
+        self.assertIsNotNone(saved)
+        self.assertEqual(saved.title, "New Mirror Game")
+        self.assertIn("BuzzHeavier", saved.mirrors)
+
+        with open(custom_db_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            self.assertIn("New Mirror Game", data)
+            self.assertIn("mirrors", data["New Mirror Game"])
+            self.assertIn("BuzzHeavier", data["New Mirror Game"]["mirrors"])
+
+    def test_downloader_retry_job(self):
+        dl = Downloader(download_path=self.temp_dir)
+        job_id = dl.add_job("https://example.com/test.zip", "test.zip", {"title": "Retry Test"})
+        self.assertTrue(job_id.startswith("job_"))
+        
+        # Simulate failure
+        with dl._lock:
+            dl.jobs[job_id].status = "error"
+            dl.jobs[job_id].error_msg = "Connection reset by peer"
+
+        job = dl.get_job(job_id)
+        self.assertEqual(job["status"], "error")
+        self.assertEqual(job["error_msg"], "Connection reset by peer")
+
+        # Retry job without new url
+        retry_res = dl.retry_job(job_id)
+        self.assertTrue(retry_res)
+        job_after = dl.get_job(job_id)
+        self.assertIn(job_after["status"], ("queued", "resolving", "connecting", "downloading"))
+        self.assertEqual(job_after["error_msg"], "")
+
+        # Retry job with alternate mirror link
+        with dl._lock:
+            dl.jobs[job_id].status = "error"
+            dl.jobs[job_id].error_msg = "HTTP 404"
+        retry_mirror = dl.retry_job(job_id, new_url="https://pixeldrain.com/api/file/alt?download")
+        self.assertTrue(retry_mirror)
+        job_mirror = dl.get_job(job_id)
+        self.assertIn(job_mirror["status"], ("queued", "resolving", "connecting", "downloading"))
+        self.assertEqual(job_mirror["url"], "https://pixeldrain.com/api/file/alt?download")
+
 
 if __name__ == "__main__":
     unittest.main()

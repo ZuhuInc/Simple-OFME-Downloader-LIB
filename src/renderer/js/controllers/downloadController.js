@@ -176,6 +176,11 @@ class DownloadController {
                     <i class="fa-solid fa-play"></i>
                 </button>
             ` : '')}
+            ${job.status === 'error' ? `
+                <button class="btn btn-sm btn-primary" title="Retry this download part" onclick="window.downloadController.retryJob('${job.id}')">
+                    <i class="fa-solid fa-arrows-rotate"></i> Retry
+                </button>
+            ` : ''}
             ${job.status === 'error' && job.url ? `
                 <button class="btn btn-sm btn-secondary" title="Open Link in Browser" onclick="window.downloadController.openExternalUrl('${job.url}')">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link
@@ -366,6 +371,19 @@ class DownloadController {
             window.uiController.showToast('Download cancelled', 'info');
         } catch (err) {
             window.uiController.showToast('Failed to cancel download', 'danger');
+        }
+    }
+
+    async retryJob(jobId, newUrl = null) {
+        try {
+            window.uiController.showToast('Retrying download...', 'info');
+            const res = await window.apiClient.retryDownload(jobId, newUrl);
+            if (!res || !res.success) {
+                window.uiController.showToast('Could not restart download', 'danger');
+            }
+        } catch (err) {
+            console.error('[DownloadController] Retry error:', err);
+            window.uiController.showToast('Failed to retry download', 'danger');
         }
     }
 

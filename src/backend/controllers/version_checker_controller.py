@@ -233,11 +233,14 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
                     break
 
         if existing:
-            old_size = existing.get('approx_size') or existing.get('size') or existing.get('ApproxSize')
-            if (not result.get('approx_size') or result.get('approx_size') == 'N/A') and old_size and old_size != 'N/A':
+            old_size = str(existing.get('approx_size') or existing.get('size') or existing.get('ApproxSize') or '').strip()
+            scraped_size = str(result.get('approx_size') or '').strip()
+            if (not scraped_size or scraped_size.lower() in ('n/a', 'unknown', 'none', 'null')) and old_size and old_size.lower() not in ('n/a', 'unknown', 'none', 'null'):
                 result['approx_size'] = old_size
-            if not result.get('thumbnail') and existing.get('thumbnail'):
+            if existing.get('thumbnail'):
                 result['thumbnail'] = existing.get('thumbnail')
+            elif not result.get('thumbnail'):
+                result['thumbnail'] = ''
             if not result.get('description') and existing.get('description'):
                 result['description'] = existing.get('description')
             if not result.get('category') and existing.get('category'):
@@ -271,9 +274,14 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
         if 'parts' in data and data['parts']:
             parts_clean = [p.strip() for p in data['parts'] if p and str(p).strip().startswith('http')]
 
-        approx_size = data.get('approx_size')
-        if not approx_size or str(approx_size).lower() in ('none', 'null', 'unknown', 'n/a'):
-            approx_size = db_game.approx_size if db_game else "Unknown"
+        raw_size = str(data.get('approx_size') or '').strip()
+        existing_size = str(db_game.approx_size if db_game else '').strip()
+        if raw_size and raw_size.lower() not in ('none', 'null', 'unknown', 'n/a'):
+            approx_size = raw_size
+        elif existing_size and existing_size.lower() not in ('none', 'null', 'unknown', 'n/a'):
+            approx_size = existing_size
+        else:
+            approx_size = "Unknown"
 
         description = data.get('description')
         if not description or str(description).lower() in ('none', 'null'):
@@ -283,9 +291,13 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
         if not origin_url or str(origin_url).lower() in ('none', 'null'):
             origin_url = db_game.origin_url if db_game else ""
 
-        thumbnail = data.get('thumbnail')
-        if not thumbnail or str(thumbnail).lower() in ('none', 'null'):
-            thumbnail = db_game.thumbnail if db_game else ""
+        # Always preserve existing database thumbnail when updating
+        existing_thumb = str(db_game.thumbnail if db_game else '').strip()
+        req_thumb = str(data.get('thumbnail') or '').strip()
+        if existing_thumb and existing_thumb.lower() not in ('none', 'null'):
+            thumbnail = existing_thumb
+        else:
+            thumbnail = req_thumb if req_thumb.lower() not in ('none', 'null') else ""
 
         category = data.get('category')
         if not category:
@@ -399,10 +411,22 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
                 parts = list(db_game.parts)
 
             fix_url = (scraped_result.get('fix_url') if isinstance(scraped_result, dict) else '') or (db_game.fix_url if db_game else '')
-            host = (scraped_result.get('host') if isinstance(scraped_result, dict) else '') or (db_game.host if db_game else preferred_host)
-            approx_size = (scraped_result.get('approx_size') if isinstance(scraped_result, dict) else None) or (db_game.approx_size if db_game else "Unknown")
+            # Size: ensure scraped 'N/A' or missing size does not overwrite valid existing size
+            raw_scraped_size = str(scraped_result.get('approx_size', '')).strip() if isinstance(scraped_result, dict) else ''
+            existing_size = str(db_game.approx_size if db_game else '').strip()
+            if raw_scraped_size and raw_scraped_size.lower() not in ('none', 'null', 'unknown', 'n/a'):
+                approx_size = raw_scraped_size
+            elif existing_size and existing_size.lower() not in ('none', 'null', 'unknown', 'n/a'):
+                approx_size = existing_size
+            else:
+                approx_size = "Unknown"
+
             description = (scraped_result.get('description') if isinstance(scraped_result, dict) else None) or (db_game.description if db_game else "No description available.")
-            thumbnail = (scraped_result.get('thumbnail') if isinstance(scraped_result, dict) else None) or (db_game.thumbnail if db_game else "")
+
+            # Thumbnail: Always prioritize existing catalog thumbnail over SteamRIP / Cracked-Games
+            existing_thumb = str(db_game.thumbnail if db_game else '').strip()
+            scraped_thumb = str(scraped_result.get('thumbnail', '')).strip() if isinstance(scraped_result, dict) else ''
+            thumbnail = existing_thumb or scraped_thumb or ""
             category = (db_game.category if (db_game and db_game.category) else "General")
 
             raw_ver = latest_version or (scraped_result.get('version') if isinstance(scraped_result, dict) else None) or (db_game.version if db_game else "1.0")

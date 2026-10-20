@@ -128,9 +128,18 @@ class OnlineFixScraper:
                         break
 
             approx_size = ""
-            size_m = re.search(r"(?:Размер(?:\s*игры)?|Size|File\s*size)\s*:\s*(?:<b>)?\s*([0-9\.,]+\s*(?:GB|MB|KB|ГБ|МБ|КБ|G|M))", html, re.IGNORECASE)
-            if size_m:
-                approx_size = size_m.group(1).strip().replace("ГБ", "GB").replace("МБ", "MB")
+            for elem in soup.find_all(["li", "p", "div", "span", "b", "strong", "td"]):
+                txt = elem.get_text(strip=True)
+                if any(k in txt.lower() for k in ["размер", "game size", "file size", "size:"]):
+                    sm = re.search(r"(?:Размер(?:\s*(?:игры|файла))?|Game\s*Size|File\s*Size|Size)\s*:\s*([0-9\.,]+\s*(?:GB|MB|KB|ГБ|МБ|КБ|G|M)(?:B|Б)?)", txt, re.IGNORECASE)
+                    if sm:
+                        approx_size = sm.group(1).strip().replace("ГБ", "GB").replace("МБ", "MB").replace("КБ", "KB")
+                        break
+
+            if not approx_size:
+                size_m = re.search(r"(?:Размер(?:\s*(?:игры|файла))?|Size|File\s*size)\s*(?:<\/?[^>]+>\s*)*:\s*(?:<\/?[^>]+>\s*)*([0-9\.,]+\s*(?:GB|MB|KB|ГБ|МБ|КБ|G|M)(?:B|Б)?)", html, re.IGNORECASE)
+                if size_m:
+                    approx_size = size_m.group(1).strip().replace("ГБ", "GB").replace("МБ", "MB").replace("КБ", "KB")
 
             # 4. Find Hosters Portal Link
             hosters_url = ""
@@ -173,7 +182,7 @@ class OnlineFixScraper:
                 "host": selected_host,
                 "parts": host_data.get("parts", []),
                 "fix_url": host_data.get("fix_url", ""),
-                "approx_size": approx_size or "N/A",
+                "approx_size": approx_size or "Unknown",
                 "description": description,
                 "origin_url": origin_url,
                 "hosters_url": hosters_url,

@@ -19,7 +19,7 @@
         <div class="title-bar-left">
             <img class="app-icon" src="assets/OFME-DWND-ICO.ico" alt="Logo">
             <span class="app-title">FANTA OFME</span>
-            <span class="app-version-tag">v2.0.5</span>
+            <span class="app-version-tag">v2.0.6</span>
             <span id="sourceModeBadge" class="status-pill status-installed" style="display: none; font-size: 10px; padding: 2px 8px; margin-left: 6px; background: rgba(212, 168, 83, 0.18); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.4);">SOURCE MODE</span>
         </div>
         <div class="title-bar-controls">
@@ -107,8 +107,11 @@
                     </div>
                 </div>
 
-                <div class="library-stats-bar" style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); padding: 0 4px;">
+                <div class="library-stats-bar" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); padding: 0 4px;">
                     <span id="libraryGameCount">Loading games...</span>
+                    <div id="libraryEditModeToggle" class="status-pill" style="cursor: pointer; display: none; align-items: center; gap: 6px; user-select: none; transition: var(--transition);" title="Toggle Game Edit Mode (Click game to edit banner/mirrors/parts)">
+                        <i class="fa-solid fa-pen-to-square"></i> <span>Edit Mode: <strong id="libraryEditModeText">OFF</strong></span>
+                    </div>
                 </div>
 
                 <!-- Games Grid -->
@@ -641,6 +644,20 @@
                     <div class="settings-group">
                         <div class="form-row">
                             <div class="form-label-area">
+                                <span class="form-label" style="display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-pen-to-square" style="color: var(--accent);"></i>
+                                    Enable Game Edit Mode
+                                </span>
+                                <span class="form-desc">Clicking any game in your library directly opens the Editor with its current data pre-filled (banner URL, mirrors, parts, fix) for instant adjustments</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_game_edit_mode">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
                                 <span class="form-label">Use Local Database (Data.json)</span>
                                 <span class="form-desc">Read and write games directly to a local Data.json file instead of remote repository</span>
                             </div>
@@ -678,7 +695,7 @@
                             </h3>
                             <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Seamless background updates powered by GitHub Releases.</p>
                         </div>
-                        <span id="updateAppVersionBadge" class="status-pill status-installed" style="font-size: 11px;">v2.0.5</span>
+                        <span id="updateAppVersionBadge" class="status-pill status-installed" style="font-size: 11px;">v2.0.6</span>
                     </div>
 
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 12px;">
@@ -780,7 +797,15 @@
                     </div>
 
                     <div class="details-actions-row">
-                        <button id="detailsDownloadMainBtn" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-down"></i> Download Game</button>
+                        <div class="btn-group-split" id="detailsDownloadGroup">
+                            <button id="detailsDownloadMainBtn" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-down"></i> <span id="detailsDownloadBtnText">Download Game</span></button>
+                            <button id="detailsMirrorToggleBtn" class="btn btn-primary btn-split-toggle" title="Select Download Mirror" style="display: none;">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div id="detailsMirrorDropdown" class="mirror-dropdown-menu" style="display: none;">
+                                <!-- Dynamically populated mirror options -->
+                            </div>
+                        </div>
                         <button id="detailsDownloadFixBtn" class="btn btn-secondary" style="display: none;"><i class="fa-solid fa-wrench"></i> Download Fix</button>
                         <button id="detailsOpenMirrorBtn" class="btn btn-secondary" title="Open download link in your browser"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Mirror</button>
                         <button id="detailsAddSteamBtn" class="btn btn-secondary"><i class="fa-brands fa-steam"></i> Add to Steam</button>
@@ -821,6 +846,17 @@
                         <span>Size: <strong id="setupGameSize" style="color: #fff;">Unknown</strong></span>
                         <span>Host: <strong id="setupGameHost" style="color: #fff;">GoFile</strong></span>
                     </div>
+                </div>
+            </div>
+
+            <!-- Host / Mirror Selector (when multiple hosts exist) -->
+            <div id="setupHostSelectorRow" style="display: none; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; margin-bottom: 16px; background: rgba(212, 168, 83, 0.08); border: 1px solid rgba(212, 168, 83, 0.25); border-radius: var(--radius-sm);">
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary);">
+                    <i class="fa-solid fa-server" style="color: var(--accent);"></i>
+                    <span>Download Mirror:</span>
+                </div>
+                <div id="setupHostPills" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <!-- Dynamically populated host pills -->
                 </div>
             </div>
 
@@ -1030,12 +1066,12 @@
             </div>
 
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-right: 30px;">
-                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(212, 168, 83, 0.15); border: 1px solid rgba(212, 168, 83, 0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent);">
-                    <i class="fa-solid fa-square-plus"></i>
+                <div id="agModalIconBox" style="width: 38px; height: 38px; border-radius: 10px; background: rgba(212, 168, 83, 0.15); border: 1px solid rgba(212, 168, 83, 0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent);">
+                    <i id="agModalIcon" class="fa-solid fa-square-plus"></i>
                 </div>
                 <div>
-                    <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Add Game to Database</h3>
-                    <p style="font-size: 11px; color: var(--text-muted); margin: 0;">Add a new release directly into local <code style="color: var(--accent);">Data.json</code>.</p>
+                    <h3 id="agModalTitle" style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Add Game to Database</h3>
+                    <p id="agModalSubtitle" style="font-size: 11px; color: var(--text-muted); margin: 0;">Add a new release directly into local <code style="color: var(--accent);">Data.json</code>.</p>
                 </div>
             </div>
 
@@ -1162,6 +1198,24 @@
                     <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 5px; margin-bottom: 6px;">
                         <label class="form-label">Game Description</label>
                         <textarea id="agDescriptionInput" class="form-input" rows="3" placeholder="Short summary of gameplay, features, and genre..." style="resize: vertical; min-height: 60px;"></textarea>
+                    </div>
+
+                    <!-- Secondary Mirrors (Optional) -->
+                    <div class="assisted-parts-section" style="border-color: rgba(212, 168, 83, 0.3); background: rgba(20, 18, 15, 0.6); margin-top: 14px; margin-bottom: 12px;">
+                        <div class="assisted-parts-header">
+                            <span style="color: var(--accent); display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-network-wired" style="color: var(--accent);"></i> Secondary Mirrors (Optional)
+                            </span>
+                            <button type="button" id="agAddMirrorBtn" class="btn btn-secondary" style="padding: 3px 10px; font-size: 11px;">
+                                <i class="fa-solid fa-plus" style="margin-right: 4px;"></i> Add Mirror Host
+                            </button>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-muted); margin: 0 0 10px 0; line-height: 1.4;">
+                            Provide alternative file hosts (e.g. PixelDrain, Mega, 1Fichier) with their own part links and optional fix archive.
+                        </p>
+                        <div id="agMirrorsList" style="display: flex; flex-direction: column; gap: 12px;">
+                            <!-- Dynamically populated mirror sub-cards -->
+                        </div>
                     </div>
 
                 </form>

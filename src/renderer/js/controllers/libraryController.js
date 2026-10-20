@@ -222,12 +222,22 @@ class LibraryController {
             // Fallback poster if local image not found
             const thumbSrc = game.thumbnail || 'assets/OFME-DWND-ICO.ico';
 
+            const isEditMode = Boolean(window.settingsController?.isEditMode());
+            const overlayBtnHtml = isEditMode
+                ? `
+                    <div class="card-overlay-actions">
+                        <button type="button" class="card-view-btn card-details-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</button>
+                        <button type="button" class="card-view-btn card-edit-btn"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                    </div>
+                  `
+                : `<button type="button" class="card-view-btn card-details-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</button>`;
+
             card.innerHTML = `
                 <div class="card-cover-wrapper">
                     <img class="card-cover-img" src="${thumbSrc}" alt="${game.title}" loading="lazy" onerror="this.src='assets/OFME-DWND-ICO.ico'">
                     <span class="card-status-badge ${statusClass}">${statusLabel}</span>
                     <div class="card-overlay">
-                        <button class="card-view-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</button>
+                        ${overlayBtnHtml}
                     </div>
                 </div>
                 <div class="card-info">
@@ -239,8 +249,28 @@ class LibraryController {
                 </div>
             `;
 
+            const detailsBtn = card.querySelector('.card-details-btn');
+            if (detailsBtn) {
+                detailsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    window.detailsController.openGame(game);
+                });
+            }
+
+            const editBtn = card.querySelector('.card-edit-btn');
+            if (editBtn) {
+                editBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    window.addGameController.openForEdit(game);
+                });
+            }
+
             card.addEventListener('click', () => {
-                window.detailsController.openGame(game);
+                if (window.settingsController?.isEditMode()) {
+                    window.addGameController.openForEdit(game);
+                } else {
+                    window.detailsController.openGame(game);
+                }
             });
 
             this.gridEl.appendChild(card);

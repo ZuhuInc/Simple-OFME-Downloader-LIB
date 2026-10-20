@@ -775,11 +775,12 @@ class VersionCheckerController {
         this.currentExistingGame = existingGame;
         if (verInput) verInput.value = data.version || existingGame?.version || '1.0';
         
-        const oldSize = existingGame?.approx_size || existingGame?.size || '';
+        const oldSize = (existingGame?.approx_size || existingGame?.size || '').trim();
         let resolvedSize = '';
-        if (data.approx_size && data.approx_size !== 'N/A') {
-            resolvedSize = data.approx_size;
-        } else if (oldSize && oldSize !== 'N/A') {
+        const scrapedSize = (data.approx_size || '').trim();
+        if (scrapedSize && !['n/a', 'unknown', 'none', 'null'].includes(scrapedSize.toLowerCase())) {
+            resolvedSize = scrapedSize;
+        } else if (oldSize && !['n/a', 'unknown', 'none', 'null'].includes(oldSize.toLowerCase())) {
             resolvedSize = oldSize;
         }
         if (sizeInput) sizeInput.value = resolvedSize;
@@ -915,17 +916,27 @@ class VersionCheckerController {
         }
 
         try {
+            let finalSize = approxSize;
+            if (!finalSize || ['n/a', 'unknown', 'none', 'null'].includes(finalSize.toLowerCase())) {
+                const oldSz = (this.currentExistingGame?.approx_size || this.currentExistingGame?.size || '').trim();
+                finalSize = (oldSz && !['n/a', 'unknown', 'none', 'null'].includes(oldSz.toLowerCase())) ? oldSz : 'Unknown';
+            }
+
+            const existingThumb = this.currentExistingGame?.thumbnail || '';
+            const scrapedThumb = this.currentScrapedData?.thumbnail || '';
+            const finalThumbnail = existingThumb || scrapedThumb || '';
+
             const payload = {
                 title,
                 version,
                 host,
-                approx_size: approxSize,
+                approx_size: finalSize,
                 fix_url: fixUrl,
                 origin_url: originUrl,
                 category,
                 parts,
-                thumbnail: this.currentScrapedData?.thumbnail || this.currentExistingGame?.thumbnail || '',
-                description: this.currentScrapedData?.description || this.currentExistingGame?.description || ''
+                thumbnail: finalThumbnail,
+                description: this.currentExistingGame?.description || this.currentScrapedData?.description || ''
             };
 
             const res = await window.apiClient.applyGameData(payload);

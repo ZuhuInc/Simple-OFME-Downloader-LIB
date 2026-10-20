@@ -122,6 +122,7 @@ class ApiClient {
     pauseDownload(job_id) { return this.request('/api/downloads/pause', { method: 'POST', body: { job_id } }); }
     resumeDownload(job_id) { return this.request('/api/downloads/resume', { method: 'POST', body: { job_id } }); }
     cancelDownload(job_id) { return this.request('/api/downloads/cancel', { method: 'POST', body: { job_id } }); }
+    retryDownload(job_id, url = null) { return this.request('/api/downloads/retry', { method: 'POST', body: { job_id, url } }); }
     extractArchive(payload) { return this.request('/api/extract', { method: 'POST', body: payload }); }
 
     // Steam

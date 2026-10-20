@@ -48,6 +48,14 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
         success = downloader.cancel_job(job_id)
         return jsonify({"success": success})
 
+    @bp.route('/downloads/retry', methods=['POST'])
+    def retry_download():
+        data = request.get_json() or {}
+        job_id = data.get('job_id')
+        new_url = data.get('url')
+        success = downloader.retry_job(job_id, new_url)
+        return jsonify({"success": success})
+
     @bp.route('/extract', methods=['POST'])
     def extract_archive():
         data = request.get_json() or {}
