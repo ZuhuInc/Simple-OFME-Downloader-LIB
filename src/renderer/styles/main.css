@@ -1133,8 +1133,12 @@ select option,
     min-width: 0;
 }
 
+#gameDetailsModal .modal-dialog {
+    max-width: 720px;
+}
+
 .details-header-section {
-    padding-right: 84px; /* Essential: Prevents title and status pill from overlapping top-right action buttons */
+    position: relative;
 }
 
 .details-title-row {
@@ -1142,7 +1146,9 @@ select option,
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 10px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    padding-right: 130px; /* Essential: Prevents title and status pills from overlapping top-right action buttons (Bell, Folder, Close = 112px + 18px safe buffer) */
+    min-height: 32px;
 }
 
 .details-title {
