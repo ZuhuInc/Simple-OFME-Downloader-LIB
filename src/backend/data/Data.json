@@ -2539,5 +2539,18 @@
         ],
         "fix_url": "",
         "category": "General"
+    },
+    "Japanese Ramen Simulator Online": {
+        "version": "1.0.1.132",
+        "host": "GoFile",
+        "approx_size": "10 GB",
+        "description": "Japanese Ramen Simulator is a ramen shop management sim for up to six players. Prepare ingredients, cook noodles, and arrange toppings to craft the perfect bowl. Create original dishes, design your kitchen and dining area, and build your ramen restaurant with friends or on your own!",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4968640/1144ffd5226c13d40c6159994bae4ce60bac9e8e/library_capsule_2x.jpg?t=1791482379",
+        "origin_url": "https://online-fix.me/games/simulator/18281-japanese-ramen-simulator-po-seti.html#comment-id-408347",
+        "parts": [
+            "https://gofile.io/d/JNc9H9LE"
+        ],
+        "fix_url": "https://gofile.io/d/trm0M7iv",
+        "category": "General"
     }
 }
