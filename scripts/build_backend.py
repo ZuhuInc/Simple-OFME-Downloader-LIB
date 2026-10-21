@@ -46,6 +46,22 @@ def build():
         "--hidden-import=winreg",
         "--hidden-import=zlib",
         "--hidden-import=struct",
+        "--collect-all=selenium",
+        "--hidden-import=selenium",
+        "--hidden-import=selenium.webdriver",
+        "--hidden-import=selenium.webdriver.chrome.webdriver",
+        "--hidden-import=selenium.webdriver.chrome.options",
+        "--hidden-import=selenium.webdriver.chrome.service",
+        "--hidden-import=selenium.webdriver.firefox.webdriver",
+        "--hidden-import=selenium.webdriver.firefox.options",
+        "--hidden-import=selenium.webdriver.firefox.service",
+        "--hidden-import=selenium.webdriver.edge.webdriver",
+        "--hidden-import=selenium.webdriver.edge.options",
+        "--hidden-import=selenium.webdriver.edge.service",
+        "--hidden-import=selenium.webdriver.common.by",
+        "--hidden-import=selenium.webdriver.support.ui",
+        "--hidden-import=selenium.webdriver.support.expected_conditions",
+        "--hidden-import=selenium.common.exceptions",
     ]
 
     if os.path.exists(ICON_PATH):
