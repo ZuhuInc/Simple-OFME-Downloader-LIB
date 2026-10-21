@@ -146,6 +146,36 @@ function main() {
     }
   }
 
+  // 6. Update backend fallback in src/backend/version_checker.py
+  const vcPath = path.join(ROOT_DIR, 'src', 'backend', 'version_checker.py');
+  if (fs.existsSync(vcPath)) {
+    let vc = fs.readFileSync(vcPath, 'utf-8');
+    const oldVc = vc;
+    vc = vc.replace(
+      /(__version__\s*=\s*")[0-9.]+(")/g,
+      `$1${targetVersion}$2`
+    );
+    if (vc !== oldVc) {
+      fs.writeFileSync(vcPath, vc, 'utf-8');
+      updatedFiles.push('src/backend/version_checker.py');
+    }
+  }
+
+  // 7. Update backend fallback in src/backend/config.py
+  const configPath = path.join(ROOT_DIR, 'src', 'backend', 'config.py');
+  if (fs.existsSync(configPath)) {
+    let cfg = fs.readFileSync(configPath, 'utf-8');
+    const oldCfg = cfg;
+    cfg = cfg.replace(
+      /(os\.environ\.get\("FANTA_APP_VERSION",\s*")[0-9.]+("\))/g,
+      `$1${targetVersion}$2`
+    );
+    if (cfg !== oldCfg) {
+      fs.writeFileSync(configPath, cfg, 'utf-8');
+      updatedFiles.push('src/backend/config.py');
+    }
+  }
+
   console.log('✅ Synchronization completed:');
   updatedFiles.forEach(file => console.log(`   - ${file}`));
   console.log(`\n🎉 Project version is now set to: v${targetVersion}\n`);

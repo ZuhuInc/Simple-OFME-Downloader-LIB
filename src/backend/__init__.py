@@ -37,7 +37,7 @@ def get_app_version() -> str:
                 pass
 
     # 3. Fallback default
-    return "2.0.6"
+    return "2.0.7"
 
 
 __version__ = get_app_version()
