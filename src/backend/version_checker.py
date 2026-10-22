@@ -41,6 +41,7 @@ class VersionChecker:
         self.password = password
         self.browser_path = browser_path
         self.bypass_list: List[str] = []
+        self.audit_source: str = "all"
         self.is_scanning = False
         self._stop_requested = False
         self._scan_thread: Optional[threading.Thread] = None
@@ -114,7 +115,8 @@ class VersionChecker:
         games: List[Dict[str, Any]],
         progress_cb: Optional[Callable] = None,
         multi_threaded: Optional[bool] = None,
-        scan_workers: Optional[int] = None
+        scan_workers: Optional[int] = None,
+        audit_source: str = "all"
     ) -> bool:
         if self.is_scanning:
             return False
@@ -123,6 +125,7 @@ class VersionChecker:
         if scan_workers is not None:
             self.scan_workers = max(1, int(scan_workers))
 
+        self.audit_source = (audit_source or "all").lower()
         self.is_scanning = True
         self._stop_requested = False
         self._scan_thread = threading.Thread(
@@ -437,9 +440,12 @@ class VersionChecker:
         final_updates = updates_found[0]
         print(f"[VersionChecker] Audit complete. Found {final_updates} updates.")
 
-        # Dispatch Discord Webhook if configured and updates were found
-        if outdated_games and self.webhook_url and self.enable_notifications:
-            self.send_discord_bulk_notification(outdated_games)
+        # Dispatch Discord Webhook if configured
+        if not self._stop_requested and self.webhook_url and self.enable_notifications:
+            if outdated_games:
+                self.send_discord_bulk_notification(outdated_games)
+            else:
+                self.send_discord_up_to_date_notification()
 
         if progress_cb:
             progress_cb({
@@ -458,34 +464,99 @@ class VersionChecker:
         s = re.sub(r"^(?:Build|v|ver|version)\s*", "", s, flags=re.IGNORECASE).strip()
         return f"v{s}"
 
+    @staticmethod
+    def detect_source_provider(origin_url: str) -> str:
+        """Identifies provider name from origin URL."""
+        u = (origin_url or "").lower()
+        if "online-fix.me" in u:
+            return "Online-Fix"
+        if "steamrip.com" in u:
+            return "SteamRIP"
+        if "cracked-games.org" in u:
+            return "Cracked-Games"
+        return ""
+
+    def get_source_label(self) -> str:
+        """Returns readable provider name for current audit scope if specific."""
+        src = getattr(self, "audit_source", "all")
+        if src in ["ofme", "onlinefix", "online-fix"]:
+            return "Online-Fix"
+        if src in ["sr", "steamrip", "steam-rip"]:
+            return "SteamRIP"
+        if src in ["cg", "crackedgames", "cracked-games"]:
+            return "Cracked-Games"
+        return ""
+
     def send_discord_bulk_notification(self, outdated_games: List[Dict[str, Any]]):
         """Dispatches a Discord webhook embed with all outdated games found."""
         if not self.webhook_url or not self.enable_notifications:
             return
 
         try:
+            selected_src = self.get_source_label()
+            if selected_src:
+                sources_text = selected_src
+            else:
+                found_sources = []
+                for g in outdated_games:
+                    src = self.detect_source_provider(g.get("origin_url", ""))
+                    if src and src not in found_sources:
+                        found_sources.append(src)
+                sources_text = " / ".join(found_sources) if found_sources else "Online-Fix / SteamRIP / Cracked-Games"
+
             fields = []
             for g in outdated_games[:25]:  # Discord embed field limit
                 db_disp = self.format_version_display(g.get('db_version'))
                 live_disp = self.format_version_display(g.get('latest_version'))
+                game_src = self.detect_source_provider(g.get('origin_url', ''))
+                # Show source badge per game only when auditing across multiple sources
+                src_badge = f" `[{game_src}]`" if (not selected_src and game_src) else ""
                 fields.append({
-                    "name": f"🎮 {g['title']}",
+                    "name": f"🎮 {g['title']}{src_badge}",
                     "value": f"**Download-DB:** `{db_disp}` ➔ **Live Online:** `{live_disp}`\n[Open Release Page]({g['origin_url']})",
                     "inline": False
                 })
 
             payload = {
-                "username": "FANTA OFME Version Auditor",
+                "username": "OFME Version Checker",
+                "avatar_url": "https://i.imgur.com/01wdU6Q.png",
                 "embeds": [{
                     "title": f"🔔 {len(outdated_games)} New Game Updates Detected Online!",
-                    "description": "The following releases have newer patches published on Online-Fix / SteamRIP:",
+                    "description": f"The following releases have newer patches published on {sources_text}:",
                     "color": 16753920,  # Fanta Gold/Orange
+                    "thumbnail": {"url": "https://i.imgur.com/01wdU6Q.png"},
                     "fields": fields,
-                    "footer": {"text": f"FANTA OFME Downloader v{__version__}"}
+                    "footer": {"text": "ZuhuOFME Checker"}
                 }]
             }
 
             requests.post(self.webhook_url, json=payload, timeout=8)
-            print(f"[VersionChecker] Sent Discord webhook notification for {len(outdated_games)} games.")
+            print(f"[VersionChecker] Sent Discord webhook notification for {len(outdated_games)} games ({sources_text}).")
+        except Exception as e:
+            print(f"[VersionChecker] Webhook send error: {e}")
+
+    def send_discord_up_to_date_notification(self):
+        """Dispatches a Discord webhook embed when all audited games are up to date."""
+        if not self.webhook_url or not self.enable_notifications:
+            return
+
+        try:
+            selected_src = self.get_source_label()
+            scope_desc = f"your {selected_src} library" if selected_src else "your library"
+
+            payload = {
+                "username": "OFME Version Checker",
+                "avatar_url": "https://i.imgur.com/01wdU6Q.png",
+                "embeds": [{
+                    "title": "✅ All Games Up To Date",
+                    "description": f"We checked {scope_desc} and everything is on the latest version.",
+                    "color": 3066993,  # Discord Emerald Green (#2ecc71)
+                    "thumbnail": {"url": "https://i.imgur.com/01wdU6Q.png"},
+                    "footer": {"text": "ZuhuOFME Checker"}
+                }]
+            }
+
+            requests.post(self.webhook_url, json=payload, timeout=8)
+            print(f"[VersionChecker] Sent Discord webhook notification: All games are up to date ({selected_src or 'All Sources'}).")
         except Exception as e:
             print(f"[VersionChecker] Webhook send error: {e}")

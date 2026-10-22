@@ -2528,7 +2528,7 @@
         "category": "General"
     },
     "Minecraft Dungeons II": {
-        "version": "25754144",
+        "version": "25910487",
         "host": "GoFile",
         "approx_size": "8.9 GB",
         "description": "Minecraft Dungeons II is here with more action, more loot, and more adventure. Step through the rift and fight where no hero has been before: the Sift, an uncharted dimension teeming with threats, mysteries, and breathtaking beauty. Gear up and customize your playstyle to face your toughest enemies yet in explosive battles. Brave the unknown as a lone hero, team up with friends in couch, online and mixed co-op, or find allies through matchmaking. The illagers’ plot is already underway, and their cruelty is only matched by their power. Stop them – or lose the Overworld to their corruption. Fight against a new, challenging threat that puts your combat skills to the test like never before Explore the Sift, a new dimension in the Minecraft universe, for the first time",
@@ -2551,6 +2551,19 @@
             "https://gofile.io/d/JNc9H9LE"
         ],
         "fix_url": "https://gofile.io/d/trm0M7iv",
+        "category": "General"
+    },
+    "Scam With Your Friends Online": {
+        "version": "0.1.82",
+        "host": "GoFile",
+        "approx_size": "Unknown",
+        "description": "No description available.",
+        "thumbnail": "",
+        "origin_url": "https://online-fix.me/games/simulator/18284-scam-with-your-friends-online.html",
+        "parts": [
+            "https://gofile.io/d/ChYAGR0R"
+        ],
+        "fix_url": "https://gofile.io/d/VgugNuSM",
         "category": "General"
     }
 }

@@ -70,7 +70,8 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
             games,
             on_vc_progress,
             multi_threaded=multi_threaded,
-            scan_workers=scan_workers
+            scan_workers=scan_workers,
+            audit_source=source
         )
         return jsonify({
             "success": started,
