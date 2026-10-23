@@ -59,6 +59,40 @@ class Extractor:
     def is_any_extractor_available(self) -> bool:
         return self.is_winrar_available() or self.is_sevenzip_available()
 
+    @staticmethod
+    def get_blocking_processes(target_dir: str) -> List[str]:
+        """
+        Checks if any active process has its executable inside target_dir.
+        Returns a list of running process names.
+        """
+        if not target_dir or not os.path.exists(target_dir):
+            return []
+        try:
+            import psutil
+        except ImportError:
+            return []
+
+        try:
+            target_abs = os.path.abspath(target_dir).lower()
+            target_prefix = target_abs if target_abs.endswith(os.sep) else (target_abs + os.sep)
+            blocking = []
+            for proc in psutil.process_iter(['name', 'exe']):
+                try:
+                    exe = proc.info.get('exe')
+                    if not exe or not os.path.isabs(exe) or not os.path.isfile(exe):
+                        continue
+                    exe_abs = os.path.abspath(exe).lower()
+                    if exe_abs.startswith(target_prefix) or exe_abs == target_abs:
+                        blocking.append(proc.info.get('name') or os.path.basename(exe))
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+                except Exception:
+                    continue
+            return sorted(list(set(blocking)))
+        except Exception as e:
+            print(f"[Extractor] Warning inspecting active processes: {e}", flush=True)
+            return []
+
     def extract_archive(
         self,
         archive_path: str,
@@ -78,15 +112,48 @@ class Extractor:
 
         archive_name = os.path.basename(archive_path)
 
-        # Multi-part check: if user passed part2.rar onwards, skip since part1 handles all
-        if ".part" in archive_name.lower() and not (
-            ".part01." in archive_name.lower() or ".part1." in archive_name.lower() or ".part001." in archive_name.lower()
-        ):
-            return {
-                "success": True,
-                "message": "Skipping multi-part piece (handled by part 1)",
-                "extract_dir": extract_dir
-            }
+        # Multi-part check: if user passed part2.rar onwards, auto-route to part 1 if present
+        is_multipart_subsequent = False
+        lower_name = archive_name.lower()
+        part_match = re.search(r'[\._\-\s]part0*([0-9]+)', lower_name)
+        if part_match:
+            try:
+                part_num = int(part_match.group(1))
+                if part_num > 1:
+                    is_multipart_subsequent = True
+            except ValueError:
+                pass
+
+        if is_multipart_subsequent and not ("forza horizon 2" in (game_title or "").lower() or "azimuth" in lower_name):
+            dir_name = os.path.dirname(archive_path)
+            part1_candidate = re.sub(r'([\._\-\s]part0*)([0-9]+)', r'\g<1>1', archive_name, flags=re.IGNORECASE)
+            part1_path = os.path.join(dir_name, part1_candidate)
+            if os.path.exists(part1_path):
+                print(f"[Extractor] Multi-part {archive_name} routed to primary volume {part1_candidate}", flush=True)
+                archive_path = part1_path
+                archive_name = part1_candidate
+            else:
+                return {
+                    "success": True,
+                    "message": f"Skipping multi-part piece {archive_name} (handled by part 1)",
+                    "extract_dir": extract_dir
+                }
+
+        # Check if the game or any process inside the target folder is currently running
+        target_check_dir = extract_dir
+        if not is_fix and game_title:
+            candidate_game_dir = os.path.join(extract_dir, game_title)
+            if os.path.exists(candidate_game_dir):
+                target_check_dir = candidate_game_dir
+
+        blocking_procs = self.get_blocking_processes(target_check_dir)
+        if blocking_procs:
+            proc_list = ", ".join(blocking_procs)
+            err = f"The game is currently running ({proc_list}). Please close the game before extracting."
+            print(f"[Extractor] Aborting extraction: {err}", flush=True)
+            if progress_cb:
+                progress_cb({"status": "error", "error": err, "file": archive_name})
+            return {"success": False, "error": err}
 
         os.makedirs(extract_dir, exist_ok=True)
 
@@ -167,6 +234,7 @@ class Extractor:
                     self.sevenzip_path,
                     "x",
                     "-y",
+                    "-aoa",             # Overwrite all without prompt
                     pwd_arg,
                     f"-o{extract_dir}",
                     archive_path

@@ -3,6 +3,7 @@ Unit tests for Fanta OFME Downloader Backend
 """
 
 import unittest
+import unittest.mock
 import os
 import sys
 import shutil
@@ -400,7 +401,7 @@ Fix:
 
     def test_launch_game_endpoint(self):
         from flask import Flask
-        from ..controllers.games_controller import create_games_blueprint
+        from backend.controllers.games_controller import create_games_blueprint
         import unittest.mock
 
         cfg = Config(data_folder=self.temp_dir)
@@ -448,6 +449,76 @@ Fix:
             mock_popen.assert_called_once()
             self.assertEqual(mock_popen.call_args[0][0], [dummy_exe])
             self.assertEqual(mock_popen.call_args[1]["cwd"], self.temp_dir)
+
+    def test_multipart_downloader_logic(self):
+        downloader = Downloader(download_path=self.temp_dir)
+        j1_id = downloader.add_job(
+            "https://example.com/p1.rar",
+            "Crime Simulator_Part1.rar",
+            meta={"title": "Crime Simulator", "type": "main_part_1", "part_index": 1, "total_parts": 2}
+        )
+        j2_id = downloader.add_job(
+            "https://example.com/p2.rar",
+            "Crime Simulator_Part2.rar",
+            meta={"title": "Crime Simulator", "type": "main_part_2", "part_index": 2, "total_parts": 2}
+        )
+
+        j1 = downloader.jobs[j1_id]
+        j2 = downloader.jobs[j2_id]
+
+        self.assertTrue(downloader._is_multipart_job(j1))
+        self.assertTrue(downloader._is_multipart_job(j2))
+
+        siblings = downloader._get_sibling_part_jobs_locked(j1)
+        self.assertEqual(len(siblings), 2)
+        self.assertEqual(siblings[0].id, j1_id)
+        self.assertEqual(siblings[1].id, j2_id)
+
+    def test_extractor_blocking_processes_and_routing(self):
+        extractor = Extractor()
+
+        # 1. Blocking process check on current python process directory
+        running_blocking = extractor.get_blocking_processes(os.path.dirname(sys.executable))
+        self.assertTrue(any("python" in p.lower() for p in running_blocking))
+
+        # 2. Empty directory has zero blocking processes
+        empty_dir = os.path.join(self.temp_dir, "empty_game")
+        os.makedirs(empty_dir, exist_ok=True)
+        self.assertEqual(extractor.get_blocking_processes(empty_dir), [])
+
+        # 3. extract_archive aborts if blocking processes detected
+        dummy_archive = os.path.join(self.temp_dir, "dummy_fix.zip")
+        with open(dummy_archive, "w") as f:
+            f.write("dummy")
+
+        with unittest.mock.patch.object(extractor, 'get_blocking_processes', return_value=['Launcher.exe']):
+            res = extractor.extract_archive(
+                archive_path=dummy_archive,
+                extract_dir=empty_dir,
+                is_fix=True
+            )
+            self.assertFalse(res["success"])
+            self.assertIn("The game is currently running (Launcher.exe)", res["error"])
+
+        # 4. Multi-part part 2 auto-route to part 1
+        part1_path = os.path.join(self.temp_dir, "Game_Part1.rar")
+        part2_path = os.path.join(self.temp_dir, "Game_Part2.rar")
+        with open(part1_path, "w") as f:
+            f.write("part1")
+        with open(part2_path, "w") as f:
+            f.write("part2")
+
+        with unittest.mock.patch.object(extractor, 'is_winrar_available', return_value=True), \
+             unittest.mock.patch('subprocess.run') as mock_run:
+            mock_run.return_value = unittest.mock.MagicMock(returncode=0, stdout="", stderr="")
+            res = extractor.extract_archive(
+                archive_path=part2_path,
+                extract_dir=empty_dir,
+                delete_after=False
+            )
+            self.assertTrue(res["success"])
+            called_args = mock_run.call_args[0][0]
+            self.assertIn(part1_path, called_args)
 
 
 if __name__ == "__main__":

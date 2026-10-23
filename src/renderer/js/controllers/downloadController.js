@@ -221,7 +221,10 @@ class DownloadController {
                 case 'connecting': return 'CONNECTING TO STREAM...';
                 case 'downloading': return `DOWNLOADING${pctStr}`;
                 case 'extracting': return 'EXTRACTING ARCHIVE...';
-                case 'completed': return 'INSTALLED / READY';
+                case 'completed':
+                    if (job.eta && job.eta.includes('Waiting for')) return 'WAITING FOR ALL PARTS';
+                    if (job.eta && job.eta.includes('Extraction Failed')) return 'EXTRACTION FAILED';
+                    return 'INSTALLED / READY';
                 case 'paused': return `PAUSED${pctStr}`;
                 case 'error': return 'DOWNLOAD ERROR';
                 case 'cancelled': return 'CANCELLED';
@@ -235,15 +238,32 @@ class DownloadController {
                 case 'resolving':
                 case 'connecting': return 'fa-solid fa-circle-notch fa-spin';
                 case 'extracting': return 'fa-solid fa-box-archive fa-bounce';
-                case 'completed': return 'fa-solid fa-circle-check';
+                case 'completed':
+                    if (job.eta && job.eta.includes('Waiting for')) return 'fa-solid fa-clock';
+                    if (job.eta && job.eta.includes('Extraction Failed')) return 'fa-solid fa-circle-exclamation';
+                    return 'fa-solid fa-circle-check';
                 default: return 'fa-solid fa-cloud-arrow-down';
+            }
+        };
+
+        const getIconColor = (status) => {
+            switch(status) {
+                case 'error': return 'color: var(--danger);';
+                case 'extracting': return 'color: var(--accent);';
+                case 'resolving':
+                case 'connecting': return 'color: var(--accent);';
+                case 'completed':
+                    if (job.eta && job.eta.includes('Waiting for')) return 'color: var(--accent);';
+                    if (job.eta && job.eta.includes('Extraction Failed')) return 'color: var(--danger);';
+                    return 'color: var(--success);';
+                default: return '';
             }
         };
 
         div.innerHTML = `
             <div class="download-card-header">
                 <div class="download-title-area">
-                    <i class="${getIconClass(job.status)} download-icon" style="${job.status === 'error' ? 'color: var(--danger);' : (job.status === 'completed' ? 'color: var(--success);' : '')}"></i>
+                    <i class="${getIconClass(job.status)} download-icon" style="${getIconColor(job.status)}"></i>
                     <div>
                         <h4 class="download-title">${title}</h4>
                         <span class="download-subtitle">${this.getSubtitleContent(job)}</span>
@@ -258,7 +278,7 @@ class DownloadController {
             </div>
             <div class="download-card-footer">
                 <span class="download-status-label status-text-${job.status}">${getStatusText(job.status, percent)}</span>
-                <span class="download-eta">${job.status === 'extracting' ? 'Unpacking to Games directory...' : (job.status === 'completed' ? 'Installed / Ready' : (job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : (job.status === 'resolving' ? 'Resolving host link' : ''))))}</span>
+                <span class="download-eta">${job.status === 'extracting' ? 'Unpacking to Games directory...' : (job.status === 'completed' ? (job.eta || 'Installed / Ready') : (job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : (job.status === 'resolving' ? 'Resolving host link' : ''))))}</span>
             </div>
         `;
         return div;
@@ -311,8 +331,11 @@ class DownloadController {
         if (statusLabel) {
             statusLabel.className = `download-status-label status-text-${job.status}`;
             if (job.status === 'extracting') statusLabel.textContent = 'EXTRACTING ARCHIVE...';
-            else if (job.status === 'completed') statusLabel.textContent = 'INSTALLED / READY';
-            else {
+            else if (job.status === 'completed') {
+                if (job.eta && job.eta.includes('Waiting for')) statusLabel.textContent = 'WAITING FOR ALL PARTS';
+                else if (job.eta && job.eta.includes('Extraction Failed')) statusLabel.textContent = 'EXTRACTION FAILED';
+                else statusLabel.textContent = 'INSTALLED / READY';
+            } else {
                 const pctStr = this.showPercent ? ` (${percent}%)` : '';
                 statusLabel.textContent = `${job.status.toUpperCase()}${pctStr}`;
             }
@@ -325,7 +348,7 @@ class DownloadController {
 
         const eta = card.querySelector('.download-eta');
         if (eta) {
-            eta.textContent = job.status === 'extracting' ? 'Unpacking to Games directory...' : (job.status === 'completed' ? 'Installed / Ready' : (job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : '')));
+            eta.textContent = job.status === 'extracting' ? 'Unpacking to Games directory...' : (job.status === 'completed' ? (job.eta || 'Installed / Ready') : (job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : '')));
         }
 
         if (card._lastRenderedStatus !== job.status) {
@@ -339,10 +362,28 @@ class DownloadController {
         const icon = card.querySelector('.download-icon');
         if (icon) {
             if (job.status === 'completed') {
-                icon.className = 'fa-solid fa-circle-check download-icon';
-                icon.style.color = 'var(--success)';
+                if (job.eta && job.eta.includes('Waiting for')) {
+                    icon.className = 'fa-solid fa-clock download-icon';
+                    icon.style.color = 'var(--accent)';
+                } else if (job.eta && job.eta.includes('Extraction Failed')) {
+                    icon.className = 'fa-solid fa-circle-exclamation download-icon';
+                    icon.style.color = 'var(--danger)';
+                } else {
+                    icon.className = 'fa-solid fa-circle-check download-icon';
+                    icon.style.color = 'var(--success)';
+                }
             } else if (job.status === 'extracting') {
                 icon.className = 'fa-solid fa-box-archive fa-bounce download-icon';
+                icon.style.color = 'var(--accent)';
+            } else if (job.status === 'error') {
+                icon.className = 'fa-solid fa-circle-exclamation download-icon';
+                icon.style.color = 'var(--danger)';
+            } else if (job.status === 'resolving' || job.status === 'connecting') {
+                icon.className = 'fa-solid fa-circle-notch fa-spin download-icon';
+                icon.style.color = 'var(--accent)';
+            } else {
+                icon.className = 'fa-solid fa-cloud-arrow-down download-icon';
+                icon.style.color = '';
             }
         }
     }

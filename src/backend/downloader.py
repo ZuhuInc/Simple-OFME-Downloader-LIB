@@ -163,6 +163,61 @@ class Downloader:
         with self._lock:
             return [job.to_dict() for job in self.jobs.values()]
 
+    def _is_multipart_job(self, job: DownloadJob) -> bool:
+        meta_type = str(job.meta.get("type") or "")
+        if meta_type.startswith("main_part"):
+            return True
+        if job.meta.get("total_parts", 1) > 1:
+            return True
+        if re.search(r'[\._\-\s]part0*[0-9]+', job.filename, re.IGNORECASE):
+            return True
+        return False
+
+    def _get_sibling_part_jobs_locked(self, job: DownloadJob) -> List[DownloadJob]:
+        """
+        Returns all sibling part jobs for the same multi-part game download.
+        Must be called under self._lock or will operate on a snapshot.
+        """
+        if not self._is_multipart_job(job):
+            return [job]
+
+        title = (job.meta.get("title") or "").strip().lower()
+        norm_title = re.sub(r'[^a-zA-Z0-9]', '', title)
+        game_id = job.meta.get("game_id")
+
+        siblings = []
+        for j in self.jobs.values():
+            if not self._is_multipart_job(j):
+                continue
+            if game_id and j.meta.get("game_id") == game_id:
+                siblings.append(j)
+                continue
+            j_title = (j.meta.get("title") or "").strip().lower()
+            j_norm = re.sub(r'[^a-zA-Z0-9]', '', j_title)
+            if norm_title and j_norm == norm_title:
+                siblings.append(j)
+
+        if not siblings:
+            siblings = [job]
+
+        def sort_key(sj: DownloadJob):
+            if "part_index" in sj.meta:
+                try:
+                    return int(sj.meta["part_index"])
+                except Exception:
+                    pass
+            sj_type = str(sj.meta.get("type") or "")
+            m_type = re.search(r'main_part_(\d+)', sj_type)
+            if m_type:
+                return int(m_type.group(1))
+            m_fn = re.search(r'[\._\-\s]part0*([0-9]+)', sj.filename, re.IGNORECASE)
+            if m_fn:
+                return int(m_fn.group(1))
+            return 999
+
+        siblings.sort(key=sort_key)
+        return siblings
+
     def _check_queue(self):
         with self._lock:
             running_count = sum(1 for j in self.jobs.values() if j.status in ("resolving", "connecting", "downloading", "extracting"))
@@ -367,13 +422,76 @@ class Downloader:
                         auto_extract = self.config.get("auto_extract", True) if self.config else True
                     is_archive = job.dest_file.lower().endswith((".rar", ".zip", ".7z"))
 
-                    if auto_extract and self.extractor and is_archive:
-                        job.status = "extracting"
+                    if not (auto_extract and self.extractor and is_archive):
+                        job.status = "completed"
                         job.progress = 100.0
                         job.speed_bytes = 0
-                        job.eta = "Extracting..."
-                        print(f"[Downloader] [{job.id}] Starting automated archive extraction for '{title}'...", flush=True)
+                        job.eta = "Done"
+                        print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
                         self._notify(job)
+                    else:
+                        is_multipart = self._is_multipart_job(job)
+                        sibling_jobs = [job]
+                        should_proceed_extraction = True
+
+                        if is_multipart:
+                            with self._lock:
+                                sibling_jobs = self._get_sibling_part_jobs_locked(job)
+                                if len(sibling_jobs) > 1:
+                                    # Check if another thread is already extracting this set
+                                    if any(sj.status == "extracting" for sj in sibling_jobs):
+                                        should_proceed_extraction = False
+                                    else:
+                                        failed_siblings = [
+                                            sj for sj in sibling_jobs
+                                            if sj.id != job.id and sj.status in ("error", "cancelled")
+                                        ]
+                                        if failed_siblings:
+                                            job.status = "completed"
+                                            job.progress = 100.0
+                                            job.speed_bytes = 0
+                                            job.eta = "Downloaded (Sibling part failed)"
+                                            job.error_msg = "Cannot extract: one or more parts failed to download."
+                                            print(f"[Downloader] [{job.id}] Sibling part failed. Extraction aborted for multi-part set.", flush=True)
+                                            self._notify(job)
+                                            should_proceed_extraction = False
+                                        else:
+                                            pending_siblings = [
+                                                sj for sj in sibling_jobs
+                                                if sj.id != job.id and (
+                                                    sj.status in ("queued", "resolving", "connecting", "downloading", "paused")
+                                                    or not os.path.exists(sj.dest_file)
+                                                )
+                                            ]
+                                            if pending_siblings:
+                                                job.status = "completed"
+                                                job.progress = 100.0
+                                                job.speed_bytes = 0
+                                                job.eta = f"Downloaded (Waiting for {len(pending_siblings)} part(s))"
+                                                print(f"[Downloader] [{job.id}] Part downloaded. Waiting for {len(pending_siblings)} other part(s) before extraction...", flush=True)
+                                                self._notify(job)
+                                                should_proceed_extraction = False
+                                            else:
+                                                # All parts are downloaded! Lock in extraction state for all siblings
+                                                for sj in sibling_jobs:
+                                                    sj.status = "extracting"
+                                                    sj.progress = 100.0
+                                                    sj.speed_bytes = 0
+                                                    sj.eta = "Extracting multi-part archive..."
+                                                    self._notify(sj)
+
+                        if not should_proceed_extraction:
+                            return
+
+                        if not is_multipart or len(sibling_jobs) <= 1:
+                            job.status = "extracting"
+                            job.progress = 100.0
+                            job.speed_bytes = 0
+                            job.eta = "Extracting..."
+                            print(f"[Downloader] [{job.id}] Starting automated archive extraction for '{title}'...", flush=True)
+                            self._notify(job)
+                        else:
+                            print(f"[Downloader] [{job.id}] All {len(sibling_jobs)} parts downloaded! Starting extraction for '{title}'...", flush=True)
 
                         # Determine if this is a fix or main game
                         job_type = job.meta.get("type", "main")
@@ -449,22 +567,82 @@ class Downloader:
                         def on_extract_progress(info):
                             pass
 
-                        extract_res = self.extractor.extract_archive(
-                            archive_path=job.dest_file,
-                            extract_dir=extract_dir,
-                            password=archive_pwd,
-                            delete_after=delete_after,
-                            game_title=title,
-                            is_fix=is_fix,
-                            progress_cb=on_extract_progress
-                        )
+                        is_fh2 = bool(job.meta.get("is_fh2") or (title and ("forza horizon 2" in title.lower() or "azimuth" in title.lower())))
 
-                        if extract_res.get("success"):
-                            job.status = "completed"
-                            job.eta = "Installed / Ready"
-                            target_game_dir = extract_res.get("game_dir") or extract_res.get("extract_dir")
-                            job.meta["extracted_dir"] = target_game_dir
-                            job.meta["exe_path"] = extract_res.get("exe_path")
+                        all_success = False
+                        last_res = {}
+
+                        if is_multipart and len(sibling_jobs) > 1:
+                            if is_fh2:
+                                # Extract each sibling archive sequentially
+                                all_success = True
+                                for sj in sibling_jobs:
+                                    sj.status = "extracting"
+                                    sj.eta = f"Extracting {sj.filename}..."
+                                    self._notify(sj)
+                                    res = self.extractor.extract_archive(
+                                        archive_path=sj.dest_file,
+                                        extract_dir=extract_dir,
+                                        password=archive_pwd,
+                                        delete_after=delete_after,
+                                        game_title=title,
+                                        is_fix=False,
+                                        progress_cb=on_extract_progress
+                                    )
+                                    last_res = res
+                                    if not res.get("success"):
+                                        all_success = False
+                                        break
+                            else:
+                                # Standard multi-part game: extract ONLY Part 1
+                                part1_job = sibling_jobs[0]
+                                print(f"[Downloader] [{job.id}] Extracting primary volume: {part1_job.dest_file} (handles all parts)", flush=True)
+                                res = self.extractor.extract_archive(
+                                    archive_path=part1_job.dest_file,
+                                    extract_dir=extract_dir,
+                                    password=archive_pwd,
+                                    delete_after=delete_after,
+                                    game_title=title,
+                                    is_fix=is_fix,
+                                    progress_cb=on_extract_progress
+                                )
+                                last_res = res
+                                all_success = bool(res.get("success"))
+
+                                # Multi-part cleanup: delete all remaining part archives if delete_after is enabled
+                                if all_success and delete_after:
+                                    for sj in sibling_jobs:
+                                        if os.path.exists(sj.dest_file):
+                                            try:
+                                                os.remove(sj.dest_file)
+                                                print(f"[Downloader] Cleaned up multi-part archive: {sj.dest_file}", flush=True)
+                                            except Exception as del_err:
+                                                print(f"[Downloader] Notice: Could not remove archive {sj.dest_file}: {del_err}", flush=True)
+                        else:
+                            # Single archive extraction
+                            res = self.extractor.extract_archive(
+                                archive_path=job.dest_file,
+                                extract_dir=extract_dir,
+                                password=archive_pwd,
+                                delete_after=delete_after,
+                                game_title=title,
+                                is_fix=is_fix,
+                                progress_cb=on_extract_progress
+                            )
+                            last_res = res
+                            all_success = bool(res.get("success"))
+
+                        if all_success:
+                            target_game_dir = last_res.get("game_dir") or last_res.get("extract_dir")
+                            exe_path = last_res.get("exe_path")
+                            for sj in sibling_jobs:
+                                sj.status = "completed"
+                                sj.progress = 100.0
+                                sj.speed_bytes = 0
+                                sj.eta = "Installed / Ready"
+                                sj.meta["extracted_dir"] = target_game_dir
+                                sj.meta["exe_path"] = exe_path
+                                self._notify(sj)
 
                             # Automatically record in installed games catalog
                             if self.config and hasattr(self.config, "data") and title:
@@ -474,27 +652,24 @@ class Downloader:
                                 existing_record["location"] = target_game_dir
                                 if job.meta.get("version"):
                                     existing_record["version"] = job.meta.get("version")
+                                if exe_path:
+                                    existing_record["exe_path"] = exe_path
                                 self.config.data[key] = existing_record
                                 self.config.save()
                                 print(f"[Downloader] [{job.id}] Game '{title}' marked as installed at: {target_game_dir}", flush=True)
 
                             print(f"[Downloader] [{job.id}] Extraction SUCCESS: {target_game_dir}", flush=True)
                             print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
-                            self._notify(job)
                         else:
-                            job.status = "completed"
-                            job.eta = "Done (Extraction Failed)"
-                            job.error_msg = f"Extraction notice: {extract_res.get('error')}"
-                            print(f"[Downloader] [{job.id}] Extraction error: {extract_res.get('error')}", flush=True)
+                            for sj in sibling_jobs:
+                                sj.status = "completed"
+                                sj.progress = 100.0
+                                sj.speed_bytes = 0
+                                sj.eta = "Done (Extraction Failed)"
+                                sj.error_msg = f"Extraction notice: {last_res.get('error')}"
+                                self._notify(sj)
+                            print(f"[Downloader] [{job.id}] Extraction error: {last_res.get('error')}", flush=True)
                             print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
-                            self._notify(job)
-                    else:
-                        job.status = "completed"
-                        job.progress = 100.0
-                        job.speed_bytes = 0
-                        job.eta = "Done"
-                        print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
-                        self._notify(job)
 
                 else:
                     job.status = "error"

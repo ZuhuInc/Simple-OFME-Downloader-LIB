@@ -1173,6 +1173,14 @@ select option,
     display: flex;
     gap: 24px;
     min-width: 0;
+    align-items: stretch;
+}
+
+.details-poster-pane {
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+    flex-shrink: 0;
 }
 
 .details-cover {
@@ -1182,6 +1190,16 @@ select option,
     border-radius: var(--radius-md);
     border: 1px solid var(--border-glass);
     flex-shrink: 0;
+}
+
+.details-poster-pane #detailsPlayBtn {
+    margin-top: auto;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    text-align: center;
+    padding: 11px 14px;
+    font-size: 13px;
 }
 
 .details-info-pane {

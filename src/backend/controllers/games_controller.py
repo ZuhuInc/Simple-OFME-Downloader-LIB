@@ -256,7 +256,6 @@ def create_games_blueprint(db_manager, config):
             for base in default_bases:
                 if base and title:
                     possible_locations.append(os.path.join(base, title))
-                    possible_locations.append(base)
 
             from ..extractor import Extractor
             for loc in possible_locations:
