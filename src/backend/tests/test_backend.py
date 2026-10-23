@@ -486,7 +486,11 @@ Fix:
         os.makedirs(empty_dir, exist_ok=True)
         self.assertEqual(extractor.get_blocking_processes(empty_dir), [])
 
-        # 3. extract_archive aborts if blocking processes detected
+        # 2b. Drive root process check safety guard
+        self.assertEqual(extractor.get_blocking_processes("C:\\"), [])
+        self.assertEqual(extractor.get_blocking_processes("D:\\"), [])
+
+        # 3. extract_archive aborts if blocking processes detected in game folder
         dummy_archive = os.path.join(self.temp_dir, "dummy_fix.zip")
         with open(dummy_archive, "w") as f:
             f.write("dummy")
@@ -499,6 +503,23 @@ Fix:
             )
             self.assertFalse(res["success"])
             self.assertIn("The game is currently running (Launcher.exe)", res["error"])
+
+        # 3b. New game install does not check blocking processes on general library root
+        new_game_archive = os.path.join(self.temp_dir, "new_game.zip")
+        with open(new_game_archive, "w") as f:
+            f.write("dummy")
+        with unittest.mock.patch.object(extractor, 'get_blocking_processes') as mock_check, \
+             unittest.mock.patch.object(extractor, 'is_winrar_available', return_value=True), \
+             unittest.mock.patch('subprocess.run') as mock_run:
+            mock_run.return_value = unittest.mock.MagicMock(returncode=0, stdout="", stderr="")
+            res = extractor.extract_archive(
+                archive_path=new_game_archive,
+                extract_dir=empty_dir,
+                game_title="Brand New Game",
+                is_fix=False,
+                delete_after=False
+            )
+            mock_check.assert_not_called()
 
         # 4. Multi-part part 2 auto-route to part 1
         part1_path = os.path.join(self.temp_dir, "Game_Part1.rar")
@@ -519,6 +540,53 @@ Fix:
             self.assertTrue(res["success"])
             called_args = mock_run.call_args[0][0]
             self.assertIn(part1_path, called_args)
+
+    def test_downloads_controller_extract_sync(self):
+        """Test that /api/extract syncs status and cleans error_msg on downloader jobs"""
+        from flask import Flask
+        from src.backend.controllers.downloads_controller import create_downloads_blueprint
+        from src.backend.downloader import Downloader
+
+        app = Flask(__name__)
+        config = Config(data_folder=self.temp_dir)
+        downloader = Downloader(download_path=self.temp_dir, config=config, extractor=Extractor())
+        mock_socketio = unittest.mock.MagicMock()
+        mock_extractor = unittest.mock.MagicMock()
+        mock_extractor.extract_archive.return_value = {
+            "success": True,
+            "game_dir": os.path.join(self.temp_dir, "Liar's Bar"),
+            "exe_path": os.path.join(self.temp_dir, "Liar's Bar", "Liar's Bar.exe")
+        }
+
+        app.register_blueprint(create_downloads_blueprint(downloader, mock_extractor, config, mock_socketio))
+        client = app.test_client()
+
+        # Simulate a failed job
+        job_id = downloader.add_job("https://example.com/liarsbar.rar", "Liars_Bar.rar", {"title": "Liar's Bar"})
+        job = downloader.jobs[job_id]
+        job.status = "completed"
+        job.eta = "Done (Extraction Failed)"
+        job.error_msg = "Extraction notice: The game is currently running (azimuth.exe)"
+
+        # Trigger manual extraction
+        resp = client.post('/api/extract', json={
+            "job_id": job_id,
+            "archive_path": job.dest_file,
+            "title": "Liar's Bar"
+        })
+        self.assertEqual(resp.status_code, 200)
+
+        # Wait briefly for thread to complete
+        import time
+        for _ in range(50):
+            if job.eta == "Installed / Ready":
+                break
+            time.sleep(0.05)
+
+        self.assertEqual(job.status, "completed")
+        self.assertEqual(job.eta, "Installed / Ready")
+        self.assertEqual(job.error_msg, "")
+        self.assertEqual(job.meta.get("extracted_dir"), os.path.join(self.temp_dir, "Liar's Bar"))
 
 
 if __name__ == "__main__":

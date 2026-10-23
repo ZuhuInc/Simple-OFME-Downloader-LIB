@@ -59,6 +59,7 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
     @bp.route('/extract', methods=['POST'])
     def extract_archive():
         data = request.get_json() or {}
+        job_id = data.get('job_id')
         archive_path = data.get('archive_path')
         title = data.get('title', '')
         custom_extract_dir = data.get('extract_dir')
@@ -67,6 +68,17 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
 
         if not archive_path:
             return jsonify({"error": "Missing archive_path"}), 400
+
+        # Match job(s) in downloader.jobs to update card status in UI
+        matching_jobs = []
+        if job_id and job_id in downloader.jobs:
+            matching_jobs.append(downloader.jobs[job_id])
+        norm_archive = os.path.normpath(archive_path) if archive_path else ""
+        for j in downloader.jobs.values():
+            if j not in matching_jobs:
+                j_norm = os.path.normpath(j.dest_file) if j.dest_file else ""
+                if (norm_archive and j_norm == norm_archive) or (title and j.meta.get('title') and j.meta.get('title').strip().lower() == title.strip().lower()):
+                    matching_jobs.append(j)
 
         # Determine if this is a fix or main game
         is_fix = ("fix" in os.path.basename(archive_path).lower()) or ("_fix." in archive_path.lower())
@@ -98,9 +110,16 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
             else:
                 extract_dir = default_base
 
+        # Notify initial extracting status
+        for mj in matching_jobs:
+            mj.status = "extracting"
+            mj.eta = f"Extracting {mj.filename}..."
+            mj.error_msg = ""
+            downloader._notify(mj)
+
         def do_extract():
             def on_progress(info):
-                socketio.emit("extraction_status", {**info, "title": title})
+                socketio.emit("extraction_status", {**info, "title": title, "job_id": job_id})
 
             on_progress({"status": "extracting", "file": archive_path, "message": f"Extracting {title or 'archive'}..."})
             res = extractor.extract_archive(
@@ -115,27 +134,50 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
 
             if res.get("success"):
                 game_dir = res.get("game_dir") or res.get("extract_dir")
+                exe_path = res.get("exe_path")
                 if title and hasattr(config, "data"):
                     key = title.upper()
                     record = config.data.get(key, {})
                     record["downloaded"] = True
                     record["location"] = game_dir
+                    if exe_path:
+                        record["exe_path"] = exe_path
                     config.data[key] = record
                     config.save()
+
+                for mj in matching_jobs:
+                    mj.status = "completed"
+                    mj.progress = 100.0
+                    mj.speed_bytes = 0
+                    mj.eta = "Installed / Ready"
+                    mj.error_msg = ""
+                    mj.meta["extracted_dir"] = game_dir
+                    if exe_path:
+                        mj.meta["exe_path"] = exe_path
+                    downloader._notify(mj)
 
                 socketio.emit("extraction_status", {
                     "status": "success",
                     "title": title,
                     "file": archive_path,
                     "dest": game_dir,
-                    "exe_path": res.get("exe_path")
+                    "exe_path": exe_path,
+                    "job_id": job_id
                 })
             else:
+                err_msg = res.get("error", "Unknown extraction error")
+                for mj in matching_jobs:
+                    mj.status = "completed"
+                    mj.eta = "Done (Extraction Failed)"
+                    mj.error_msg = f"Extraction notice: {err_msg}"
+                    downloader._notify(mj)
+
                 socketio.emit("extraction_status", {
                     "status": "error",
                     "title": title,
                     "file": archive_path,
-                    "error": res.get("error", "Unknown extraction error")
+                    "error": err_msg,
+                    "job_id": job_id
                 })
 
         threading.Thread(target=do_extract, daemon=True).start()

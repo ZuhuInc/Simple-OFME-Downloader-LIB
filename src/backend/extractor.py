@@ -74,6 +74,9 @@ class Extractor:
 
         try:
             target_abs = os.path.abspath(target_dir).lower()
+            norm_parent = os.path.dirname(target_abs)
+            if norm_parent == target_abs or re.match(r'^[a-z]:\\?$', target_abs):
+                return []
             target_prefix = target_abs if target_abs.endswith(os.sep) else (target_abs + os.sep)
             blocking = []
             for proc in psutil.process_iter(['name', 'exe']):
@@ -139,14 +142,30 @@ class Extractor:
                     "extract_dir": extract_dir
                 }
 
-        # Check if the game or any process inside the target folder is currently running
-        target_check_dir = extract_dir
-        if not is_fix and game_title:
+        # Check if the game or any process inside the specific game folder is currently running.
+        # NEVER check a broad library root (like D:\Games or extract_dir when installing a new game).
+        target_check_dir = None
+        if is_fix:
+            if extract_dir and os.path.exists(extract_dir):
+                target_check_dir = extract_dir
+        elif game_title and extract_dir and os.path.exists(extract_dir):
             candidate_game_dir = os.path.join(extract_dir, game_title)
-            if os.path.exists(candidate_game_dir):
+            if os.path.exists(candidate_game_dir) and os.path.isdir(candidate_game_dir):
                 target_check_dir = candidate_game_dir
+            else:
+                norm_title = re.sub(r'[^a-zA-Z0-9]', '', game_title).lower()
+                try:
+                    for entry in os.listdir(extract_dir):
+                        full_entry = os.path.join(extract_dir, entry)
+                        if os.path.isdir(full_entry):
+                            entry_norm = re.sub(r'[^a-zA-Z0-9]', '', entry).lower()
+                            if entry_norm and (entry_norm == norm_title or entry.lower() == game_title.lower()):
+                                target_check_dir = full_entry
+                                break
+                except Exception:
+                    pass
 
-        blocking_procs = self.get_blocking_processes(target_check_dir)
+        blocking_procs = self.get_blocking_processes(target_check_dir) if target_check_dir else []
         if blocking_procs:
             proc_list = ", ".join(blocking_procs)
             err = f"The game is currently running ({proc_list}). Please close the game before extracting."

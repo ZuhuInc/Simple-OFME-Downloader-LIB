@@ -78,15 +78,56 @@ class DownloadController {
     }
 
     handleExtractionUpdate(data) {
+        if (!data) return;
+
+        // Locate any matching jobs by job_id, archive/dest_file, or title
+        const matchingJobs = [];
+        if (data.job_id && this.jobs.has(data.job_id)) {
+            matchingJobs.push(this.jobs.get(data.job_id));
+        }
+        for (const j of this.jobs.values()) {
+            if (matchingJobs.includes(j)) continue;
+            const matchFile = data.file && (j.dest_file === data.file || j.filename === data.file || (j.dest_file && j.dest_file.endsWith(data.file)));
+            const matchTitle = data.title && j.meta?.title && j.meta.title.toLowerCase() === data.title.toLowerCase();
+            if (matchFile || matchTitle) {
+                matchingJobs.push(j);
+            }
+        }
+
         if (data.status === 'extracting') {
             window.uiController.showToast(`Extracting: ${data.title || data.file || 'archive'}...`, 'info');
+            matchingJobs.forEach(j => {
+                j.status = 'extracting';
+                j.eta = 'Unpacking to Games directory...';
+                j.error_msg = '';
+                this.updateJobCard(j);
+            });
         } else if (data.status === 'success' || data.status === 'extracted') {
-            window.uiController.showToast(`Extraction complete! Ready to play in ${data.dest || data.game_dir || 'Games'}`, 'success');
+            const destFolder = data.dest || data.game_dir;
+            window.uiController.showToast(`Extraction complete! Ready to play in ${destFolder || 'Games'}`, 'success');
+            matchingJobs.forEach(j => {
+                j.status = 'completed';
+                j.progress = 100.0;
+                j.speed_bytes = 0;
+                j.eta = 'Installed / Ready';
+                j.error_msg = '';
+                if (destFolder) {
+                    j.meta = j.meta || {};
+                    j.meta.extracted_dir = destFolder;
+                }
+                this.updateJobCard(j);
+            });
             if (window.libraryController) {
                 window.libraryController.loadGames();
             }
         } else if (data.status === 'error') {
-            window.uiController.showToast(`Extraction error: ${data.error}`, 'danger');
+            window.uiController.showToast(`Extraction notice: ${data.error}`, 'danger');
+            matchingJobs.forEach(j => {
+                j.status = 'completed';
+                j.eta = 'Done (Extraction Failed)';
+                j.error_msg = `Extraction notice: ${data.error}`;
+                this.updateJobCard(j);
+            });
         }
     }
 
@@ -351,8 +392,11 @@ class DownloadController {
             eta.textContent = job.status === 'extracting' ? 'Unpacking to Games directory...' : (job.status === 'completed' ? (job.eta || 'Installed / Ready') : (job.eta ? 'ETA: ' + job.eta : (job.error_msg ? 'Failed' : '')));
         }
 
-        if (card._lastRenderedStatus !== job.status) {
+        const targetFolder = job.meta?.extracted_dir || job.dest_file;
+        if (card._lastRenderedStatus !== job.status || card._lastExtractedDir !== targetFolder || card._lastEta !== job.eta) {
             card._lastRenderedStatus = job.status;
+            card._lastExtractedDir = targetFolder;
+            card._lastEta = job.eta;
             const actions = card.querySelector('.download-actions');
             if (actions) {
                 actions.innerHTML = this.renderActionsHtml(job);
@@ -432,13 +476,24 @@ class DownloadController {
         const job = this.jobs.get(jobId);
         if (!job || !job.dest_file) return;
 
+        // Immediately update card to extracting state
+        job.status = 'extracting';
+        job.eta = 'Unpacking to Games directory...';
+        job.error_msg = '';
+        this.updateJobCard(job);
+
         window.uiController.showToast('Starting extraction...', 'info');
         try {
             await window.apiClient.extractArchive({
+                job_id: jobId,
                 archive_path: job.dest_file,
                 title: job.meta?.title
             });
         } catch (err) {
+            job.status = 'completed';
+            job.eta = 'Done (Extraction Failed)';
+            job.error_msg = `Extraction trigger failed: ${err.message}`;
+            this.updateJobCard(job);
             window.uiController.showToast(`Extraction trigger failed: ${err.message}`, 'danger');
         }
     }
