@@ -416,12 +416,26 @@ class Downloader:
                             else:
                                 extract_dir = default_base
 
+                        # Multi-archive encapsulation for games requiring a unified folder (e.g. Forza Horizon 2 with Azimuth)
+                        if title and ("forza horizon 2" in title.lower() or "azimuth" in title.lower()):
+                            norm_ed = os.path.normpath(extract_dir).lower()
+                            if not (norm_ed.endswith("forza horizon 2") or norm_ed.endswith("forzahorizon2")):
+                                extract_dir = os.path.join(extract_dir, title)
+
                         origin_url_lower = str(job.meta.get("origin_url") or "").lower()
                         archive_pwd = job.meta.get("archive_password")
                         if not archive_pwd:
                             if "cracked-games.org" in origin_url_lower:
                                 archive_pwd = "cracked-games.org"
                             elif "steamrip.com" in origin_url_lower:
+                                archive_pwd = ""
+                            elif (
+                                "archive.org" in origin_url_lower
+                                or "archive.org" in str(job.url).lower()
+                                or "dropbox" in origin_url_lower
+                                or "dropbox" in str(job.url).lower()
+                                or (title and "forza horizon 2" in title.lower())
+                            ):
                                 archive_pwd = ""
                             else:
                                 archive_pwd = self.config.get("rar_password", "online-fix.me") if self.config else "online-fix.me"

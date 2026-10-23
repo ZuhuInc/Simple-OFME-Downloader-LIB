@@ -7,6 +7,9 @@ Includes critical safety protections for game removals and folder operations.
 import os
 import re
 import shutil
+import subprocess
+import sys
+import webbrowser
 from flask import Blueprint, jsonify, request
 
 
@@ -194,5 +197,120 @@ def create_games_blueprint(db_manager, config):
         except Exception as e:
             print(f"[GamesController] Scrape info error: {e}")
             return jsonify({"success": False, "error": str(e)}), 500
+
+    @bp.route('/launch', methods=['POST'])
+    def launch_game():
+        data = request.get_json(silent=True) or {}
+        game_id = data.get('id', '')
+        title = data.get('title', '')
+        direct_only = data.get('direct_only', False)
+
+        norm_title = re.sub(r'[^a-zA-Z0-9]', '', title.lower())
+        norm_id = re.sub(r'[^a-zA-Z0-9]', '', game_id.lower())
+
+        found_key = None
+        for k in list(config.data.keys()):
+            k_norm = re.sub(r'[^a-zA-Z0-9]', '', k.lower())
+            if k.upper() == title.upper() or k_norm in (norm_title, norm_id):
+                found_key = k
+                break
+
+        game_data = config.data.get(found_key, {}) if found_key else {}
+
+        # 1. Check if launched via Steam
+        steam_url = data.get('steam_url') or game_data.get('steam_url')
+        if steam_url and not direct_only:
+            try:
+                if sys.platform == 'win32' and hasattr(os, 'startfile'):
+                    os.startfile(steam_url)
+                else:
+                    webbrowser.open(steam_url)
+                return jsonify({
+                    "success": True,
+                    "method": "steam",
+                    "steam_url": steam_url,
+                    "message": f"Launching {title or found_key} on Steam..."
+                })
+            except Exception as e:
+                return jsonify({"success": False, "error": f"Failed to launch on Steam: {e}"}), 500
+
+        # 2. Locate executable
+        target_exe = data.get('exe_path') or game_data.get('exe_path')
+        if not target_exe or not os.path.exists(target_exe):
+            location = data.get('location') or game_data.get('location')
+
+            possible_locations = []
+            if location:
+                possible_locations.append(location)
+                if title:
+                    possible_locations.append(os.path.join(location, title))
+
+            default_bases = [
+                config.get("extract_path"),
+                config.get("default_download_path"),
+                config.get("download_path"),
+                r"D:\GAMES2",
+                r"D:\Games",
+                r"C:\Games"
+            ]
+            for base in default_bases:
+                if base and title:
+                    possible_locations.append(os.path.join(base, title))
+                    possible_locations.append(base)
+
+            from ..extractor import Extractor
+            for loc in possible_locations:
+                if loc and os.path.exists(loc):
+                    cand_exe = Extractor._find_game_exe(loc)
+                    if cand_exe and os.path.exists(cand_exe):
+                        target_exe = cand_exe
+                        break
+
+        if not target_exe or not os.path.exists(target_exe):
+            return jsonify({
+                "success": False,
+                "error": f"Could not find game executable for '{title}'. Please check the installation folder in settings."
+            }), 404
+
+        # Cache found exe_path in config.data
+        if found_key:
+            config.data[found_key]['exe_path'] = target_exe
+            config.save()
+
+        # 3. Launch the game executable with its working directory set
+        exe_dir = os.path.dirname(target_exe)
+        try:
+            flags = 0
+            if sys.platform == 'win32':
+                flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+
+            proc = subprocess.Popen(
+                [target_exe],
+                cwd=exe_dir,
+                creationflags=flags,
+                close_fds=True
+            )
+            print(f"[Games] Executable launched: {target_exe} (PID: {proc.pid}) in {exe_dir}", flush=True)
+            return jsonify({
+                "success": True,
+                "method": "executable",
+                "exe_path": target_exe,
+                "pid": proc.pid,
+                "message": f"Successfully launched {os.path.basename(target_exe)}!"
+            })
+        except Exception as proc_err:
+            print(f"[Games] Popen failed for {target_exe}, attempting startfile fallback: {proc_err}", flush=True)
+            if sys.platform == 'win32' and hasattr(os, 'startfile'):
+                try:
+                    os.startfile(target_exe)
+                    return jsonify({
+                        "success": True,
+                        "method": "startfile",
+                        "exe_path": target_exe,
+                        "message": f"Launched {os.path.basename(target_exe)} via Windows!"
+                    })
+                except Exception as sf_err:
+                    return jsonify({"success": False, "error": f"Failed to launch executable: {sf_err}"}), 500
+            return jsonify({"success": False, "error": f"Failed to launch executable: {proc_err}"}), 500
 
     return bp

@@ -807,6 +807,36 @@ select option,
     gap: 4px;
 }
 
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+}
+
+.card-title-row .card-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-steam-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #66c0f4;
+    font-size: 13px;
+    opacity: 0.8;
+    flex-shrink: 0;
+    margin-left: 4px;
+    transition: var(--transition);
+}
+
+.game-card:hover .card-steam-badge {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(102, 192, 244, 0.6));
+}
+
 .card-title {
     font-size: 13px;
     font-weight: 600;
@@ -858,6 +888,35 @@ select option,
     border-color: var(--accent-hover);
     box-shadow: 0 0 15px var(--accent-glow);
     transform: translateY(-1px);
+}
+
+.btn-play {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+
+.btn-play:hover {
+    background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+    transform: translateY(-1px);
+    color: #ffffff;
+}
+
+.btn-play.steam-play {
+    background: linear-gradient(135deg, #1b2838 0%, #2a475e 100%);
+    color: #66c0f4;
+    border: 1px solid rgba(102, 192, 244, 0.45);
+    box-shadow: 0 4px 14px rgba(42, 71, 94, 0.45);
+}
+
+.btn-play.steam-play:hover {
+    background: linear-gradient(135deg, #2a475e 0%, #386082 100%);
+    border-color: #66c0f4;
+    box-shadow: 0 6px 20px rgba(102, 192, 244, 0.5);
+    color: #ffffff;
 }
 
 .btn-secondary {
@@ -1982,6 +2041,47 @@ input[type="number"] {
     background: rgba(212, 168, 83, 0.4) !important;
     border-color: var(--accent) !important;
     box-shadow: 0 0 12px rgba(212, 168, 83, 0.3);
+}
+
+.card-overlay-actions .card-play-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.card-overlay-actions .card-play-btn:hover {
+    background: linear-gradient(135deg, #34d399, #059669) !important;
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+.card-overlay-actions .card-play-btn.steam-play {
+    background: linear-gradient(135deg, #1b2838, #2a475e);
+    color: #66c0f4;
+    border: 1px solid rgba(102, 192, 244, 0.45);
+    box-shadow: 0 4px 12px rgba(42, 71, 94, 0.45);
+}
+
+.card-overlay-actions .card-play-btn.steam-play:hover {
+    background: linear-gradient(135deg, #2a475e, #386082) !important;
+    border-color: #66c0f4 !important;
+    box-shadow: 0 6px 18px rgba(102, 192, 244, 0.55);
+    color: #ffffff;
+}
+
+.card-overlay-actions .card-details-btn {
+    background: var(--accent);
+    color: #111;
+    border: none;
+    font-weight: 700;
+}
+
+.card-overlay-actions .card-details-btn:hover {
+    background: var(--accent-hover) !important;
+    box-shadow: 0 0 14px var(--accent-glow);
+    color: #111 !important;
 }
 
 

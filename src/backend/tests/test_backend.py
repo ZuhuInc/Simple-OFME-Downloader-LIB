@@ -356,6 +356,99 @@ Fix:
         self.assertIn(job_mirror["status"], ("queued", "resolving", "connecting", "downloading"))
         self.assertEqual(job_mirror["url"], "https://pixeldrain.com/api/file/alt?download")
 
+    def test_resolver_dropbox(self):
+        url = "https://www.dropbox.com/scl/fi/test/azimuth-windows.zip?rlkey=xyz&dl=0"
+        resolved_url, filename, cookies = LinkResolver.resolve_url(url)
+        self.assertIn("dl=1", resolved_url)
+        self.assertEqual(filename, "azimuth-windows.zip")
+        self.assertIsNone(cookies)
+
+    def test_azimuth_config_and_exe_detection(self):
+        game_root = os.path.join(self.temp_dir, "FH2_Test")
+        os.makedirs(game_root, exist_ok=True)
+
+        # Create dummy azimuth.exe and durango exe
+        azimuth_path = os.path.join(game_root, "azimuth.exe")
+        with open(azimuth_path, "wb") as f:
+            f.write(b"AZIMUTH")
+
+        durango_dir = os.path.join(game_root, "Anthem_1.0.0.64_x64__8wekyb3d8bbwe", "Mount")
+        os.makedirs(durango_dir, exist_ok=True)
+        durango_path = os.path.join(durango_dir, "forza_durango_release_final.exe")
+        with open(durango_path, "wb") as f:
+            f.write(b"DURANGO" * 1000)
+
+        dlc_dir = os.path.join(game_root, "Forza Horizon 2 Storm Island (1.0.0.36)", "StormIsland_1.0.0.36_neutral__8wekyb3d8bbwe")
+        os.makedirs(dlc_dir, exist_ok=True)
+
+        # Verify _find_game_exe picks azimuth.exe and ignores durango
+        found_exe = Extractor._find_game_exe(game_root)
+        self.assertEqual(found_exe, azimuth_path)
+
+        # Verify _ensure_azimuth_config creates valid ini
+        Extractor._ensure_azimuth_config(game_root)
+        ini_file = os.path.join(game_root, "data", "azimuth.ini")
+        self.assertTrue(os.path.exists(ini_file))
+        with open(ini_file, "r", encoding="utf-16") as f:
+            ini_txt = f.read()
+        self.assertIn("[launcher]", ini_txt)
+        self.assertIn("game=1a96545b", ini_txt)
+        self.assertIn("[title-1a96545b]", ini_txt)
+        self.assertIn("Anthem_1.0.0.64_x64__8wekyb3d8bbwe", ini_txt)
+        self.assertIn("StormIsland_1.0.0.36_neutral__8wekyb3d8bbwe", ini_txt)
+        self.assertIn("player_name=Fanta OFME", ini_txt)
+
+    def test_launch_game_endpoint(self):
+        from flask import Flask
+        from ..controllers.games_controller import create_games_blueprint
+        import unittest.mock
+
+        cfg = Config(data_folder=self.temp_dir)
+        db = DatabaseManager(cache_dir=self.temp_dir, default_url="", config=cfg)
+
+        app = Flask(__name__)
+        app.register_blueprint(create_games_blueprint(db, cfg))
+        client = app.test_client()
+
+        # 1. Missing executable returns 404
+        res = client.post('/api/games/launch', json={"title": "NonExistentGame"})
+        self.assertEqual(res.status_code, 404)
+        self.assertFalse(res.get_json()["success"])
+
+        # 2. Steam URL launch
+        with unittest.mock.patch('os.startfile', create=True) as mock_startfile:
+            res_steam = client.post('/api/games/launch', json={
+                "title": "PEAK",
+                "steam_url": "steam://rungameid/123456"
+            })
+            self.assertEqual(res_steam.status_code, 200)
+            self.assertTrue(res_steam.get_json()["success"])
+            self.assertEqual(res_steam.get_json()["method"], "steam")
+            mock_startfile.assert_called_with("steam://rungameid/123456")
+
+        # 3. Direct executable launch with subprocess.Popen mock
+        dummy_exe = os.path.join(self.temp_dir, "Game.exe")
+        with open(dummy_exe, "w") as f:
+            f.write("dummy")
+
+        with unittest.mock.patch('subprocess.Popen') as mock_popen:
+            mock_proc = unittest.mock.MagicMock()
+            mock_proc.pid = 9999
+            mock_popen.return_value = mock_proc
+
+            res_exe = client.post('/api/games/launch', json={
+                "title": "TestGame",
+                "exe_path": dummy_exe
+            })
+            self.assertEqual(res_exe.status_code, 200)
+            data = res_exe.get_json()
+            self.assertTrue(data["success"])
+            self.assertEqual(data["method"], "executable")
+            self.assertEqual(data["pid"], 9999)
+            mock_popen.assert_called_once()
+            self.assertEqual(mock_popen.call_args[0][0], [dummy_exe])
+            self.assertEqual(mock_popen.call_args[1]["cwd"], self.temp_dir)
+
 
 if __name__ == "__main__":
     unittest.main()

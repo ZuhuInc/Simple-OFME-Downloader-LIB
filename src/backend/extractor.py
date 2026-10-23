@@ -98,26 +98,57 @@ class Extractor:
         success = False
         error_msg = ""
 
-        passwords_to_try = [password]
-        for alt in ["cracked-games.org", "online-fix.me", ""]:
-            if alt not in passwords_to_try:
-                passwords_to_try.append(alt)
+        # Determine passwords to try
+        if password == "":
+            passwords_to_try = [""]
+        else:
+            passwords_to_try = [password]
+            for alt in ["online-fix.me", "cracked-games.org", ""]:
+                if alt not in passwords_to_try:
+                    passwords_to_try.append(alt)
 
-        # Method 1: WinRAR
-        if self.is_winrar_available():
+        # Method 1: Python zipfile for .zip archives (native, instant, zero GUI dialogs)
+        if archive_path.lower().endswith(".zip"):
+            try:
+                print(f"[Extractor] Running Python ZipFile extraction for {archive_name}...", flush=True)
+                with zipfile.ZipFile(archive_path, "r") as zf:
+                    is_encrypted = any(zinfo.flag_bits & 0x1 for zinfo in zf.infolist())
+                    if not is_encrypted:
+                        zf.extractall(extract_dir)
+                        success = True
+                        error_msg = ""
+                    else:
+                        for p in passwords_to_try:
+                            if not p:
+                                continue
+                            try:
+                                zf.extractall(extract_dir, pwd=p.encode("utf-8"))
+                                success = True
+                                error_msg = ""
+                                break
+                            except Exception:
+                                pass
+            except Exception as e:
+                error_msg = f"Zip extraction error: {e}"
+
+        # Method 2: WinRAR (silent background mode with GUI dialogs suppressed)
+        if not success and self.is_winrar_available():
             for p in passwords_to_try:
+                # -p- explicitly disables WinRAR's interactive password prompt dialog
+                pwd_arg = f"-p{p}" if p else "-p-"
                 cmd = [
                     self.winrar_path,
                     "x",                # Extract with full paths
                     "-ibck",            # Background mode
-                    f"-p{p}",           # Password
+                    "-inul",            # Suppress all GUI error & dialog popups
+                    pwd_arg,            # Password or -p- (DO NOT QUERY PASSWORD)
                     "-o+",              # Overwrite existing files
                     "-y",               # Assume Yes on all queries
                     archive_path,
                     extract_dir + os.sep
                 ]
                 try:
-                    print(f"[Extractor] Running WinRAR: {' '.join(cmd[:4])} -> {extract_dir}", flush=True)
+                    print(f"[Extractor] Running WinRAR: {' '.join(cmd[:5])} -> {extract_dir}", flush=True)
                     result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
                     if result.returncode in [0, 1]:
                         success = True
@@ -128,14 +159,15 @@ class Extractor:
                 except Exception as e:
                     error_msg = f"WinRAR execution error: {e}"
 
-        # Method 2: 7-Zip fallback
+        # Method 3: 7-Zip fallback
         if not success and self.is_sevenzip_available():
             for p in passwords_to_try:
+                pwd_arg = f"-p{p}" if p else "-p-"
                 cmd = [
                     self.sevenzip_path,
                     "x",
                     "-y",
-                    f"-p{p}",
+                    pwd_arg,
                     f"-o{extract_dir}",
                     archive_path
                 ]
@@ -151,12 +183,11 @@ class Extractor:
                 except Exception as e:
                     error_msg = f"7-Zip execution error: {e}"
 
-        # Method 3: Python zipfile fallback for .zip files
-        if not success and archive_path.lower().endswith(".zip"):
+        # Method 4: Python zipfile secondary fallback
+        if not success and archive_path.lower().endswith(".zip") and not error_msg:
             try:
-                print(f"[Extractor] Running Python ZipFile extraction for {archive_name}...", flush=True)
                 with zipfile.ZipFile(archive_path, "r") as zf:
-                    zf.extractall(extract_dir, pwd=password.encode("utf-8") if password else None)
+                    zf.extractall(extract_dir)
                 success = True
                 error_msg = ""
             except Exception as e:
@@ -193,8 +224,20 @@ class Extractor:
                 if len(real_dirs) == 1:
                     game_dir = real_dirs[0]
 
-        # Scan for game executable
-        exe_path = self._find_game_exe(game_dir) or self._find_game_exe(extract_dir)
+        # Check for Azimuth compatibility layer (e.g. Forza Horizon 2)
+        az_root = None
+        if os.path.exists(os.path.join(game_dir, "azimuth.exe")):
+            az_root = game_dir
+        elif os.path.exists(os.path.join(extract_dir, "azimuth.exe")):
+            az_root = extract_dir
+
+        if az_root:
+            game_dir = az_root
+            exe_path = os.path.join(az_root, "azimuth.exe")
+            self._ensure_azimuth_config(az_root)
+        else:
+            # Scan for game executable
+            exe_path = self._find_game_exe(game_dir) or self._find_game_exe(extract_dir)
 
         # Automatic cleanup of raw archive file after extraction
         if delete_after and os.path.exists(archive_path):
@@ -229,21 +272,121 @@ class Extractor:
         }
 
     @staticmethod
+    def _ensure_azimuth_config(az_root: str) -> None:
+        """
+        Automatically sets up data/azimuth.ini for Forza Horizon 2 with Storm Island DLC
+        so the game launches with 0 manual user configuration needed.
+        """
+        try:
+            data_dir = os.path.join(az_root, "data")
+            os.makedirs(data_dir, exist_ok=True)
+            ini_path = os.path.join(data_dir, "azimuth.ini")
+
+            # Find Anthem game folder
+            anthem_rel = "Anthem_1.0.0.64_x64__8wekyb3d8bbwe"
+            for item in os.listdir(az_root):
+                item_full = os.path.join(az_root, item)
+                if os.path.isdir(item_full) and (item.lower().startswith("anthem") or os.path.exists(os.path.join(item_full, "Mount"))):
+                    anthem_rel = item
+                    break
+
+            # Find Storm Island DLC folder
+            storm_rel = r"Forza Horizon 2 Storm Island (1.0.0.36)\StormIsland_1.0.0.36_neutral__8wekyb3d8bbwe"
+            found_dlc = False
+            for root, dirs, _ in os.walk(az_root):
+                for d in dirs:
+                    if d.lower().startswith("stormisland"):
+                        full_dlc_path = os.path.join(root, d)
+                        storm_rel = os.path.relpath(full_dlc_path, az_root)
+                        found_dlc = True
+                        break
+                if found_dlc:
+                    break
+
+            player_name = "Fanta OFME"
+
+            # Check if azimuth.ini already has valid [title-1a96545b]
+            if os.path.exists(ini_path):
+                try:
+                    with open(ini_path, "r", encoding="utf-16", errors="ignore") as f:
+                        existing_text = f.read()
+                    if "[title-1a96545b]" in existing_text:
+                        return
+                except Exception:
+                    pass
+
+            ini_content = (
+                "[launcher]\n"
+                "game=1a96545b\n"
+                "resolution=1080\n"
+                "aspect=16:9\n"
+                "antialiasing=msaax4\n"
+                "graphics=default\n"
+                "shadows=default\n"
+                "reflections=default\n"
+                "car_detail=default\n"
+                "particles=default\n"
+                "motion_blur=default\n"
+                "texture_filtering=default\n"
+                "audio=stereo\n"
+                "frame_rate=60\n"
+                "frame_pacing=fixed\n"
+                "vsync=on\n"
+                "display=fullscreen\n"
+                "hdr=off\n"
+                "hdr_peak=\n"
+                "hdr_paper_white=200\n"
+                "hdr_black=0\n"
+                "language=\n"
+                "speech=\n"
+                f"player_name={player_name}\n"
+                "settings_version=1\n"
+                "[title-1a96545b]\n"
+                f"folder={anthem_rel}\n"
+                f"content={storm_rel}\n"
+                "name=Forza Horizon 2\n"
+            )
+
+            with open(ini_path, "w", encoding="utf-16") as f:
+                f.write(ini_content)
+            print(f"[Extractor] Generated azimuth.ini for Forza Horizon 2 at: {ini_path}", flush=True)
+        except Exception as e:
+            print(f"[Extractor] Notice setting up azimuth.ini: {e}", flush=True)
+
+    @staticmethod
     def _find_game_exe(game_dir: str) -> Optional[str]:
         if not os.path.exists(game_dir) or not os.path.isdir(game_dir):
             return None
 
+        # Direct Azimuth launcher check
+        azimuth_exe = os.path.join(game_dir, "azimuth.exe")
+        if os.path.isfile(azimuth_exe):
+            return azimuth_exe
+
         candidates = []
-        ignored_names = {"unitycrashhandler64.exe", "unitycrashhandler32.exe", "dxwebsetup.exe", "unins000.exe", "uninstall.exe"}
+        ignored_names = {
+            "unitycrashhandler64.exe", "unitycrashhandler32.exe", "dxwebsetup.exe",
+            "unins000.exe", "uninstall.exe", "forza_durango_release_final.exe"
+        }
 
         for root, dirs, files in os.walk(game_dir):
             dirs[:] = [d for d in dirs if not d.startswith("_") and "redist" not in d.lower()]
             for f in files:
-                if f.lower().endswith(".exe") and f.lower() not in ignored_names and not f.lower().startswith("vcredist"):
+                f_lower = f.lower()
+                if (
+                    f_lower.endswith(".exe")
+                    and f_lower not in ignored_names
+                    and not f_lower.startswith("vcredist")
+                    and "_durango_" not in f_lower
+                ):
                     full = os.path.join(root, f)
                     candidates.append(full)
 
         if candidates:
+            # If azimuth.exe is located inside any subfolder, prioritize it!
+            for c in candidates:
+                if os.path.basename(c).lower() == "azimuth.exe":
+                    return c
             candidates.sort(key=lambda p: os.path.getsize(p) if os.path.exists(p) else 0, reverse=True)
             return candidates[0]
 

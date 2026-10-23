@@ -258,7 +258,7 @@ class Config:
                 from src.backend import __version__
                 return __version__
             except ImportError:
-                return os.environ.get("FANTA_APP_VERSION", "2.0.7")
+                return os.environ.get("FANTA_APP_VERSION", "2.0.8")
 
     def get_local_db_path(self) -> str:
         custom_path = self.get("local_db_path")

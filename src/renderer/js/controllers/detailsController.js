@@ -29,7 +29,9 @@ class DetailsController {
         this.downloadFixBtn = document.getElementById('detailsDownloadFixBtn');
         this.openMirrorBtn = document.getElementById('detailsOpenMirrorBtn');
         this.addSteamBtn = document.getElementById('detailsAddSteamBtn');
-        this.launchBtn = document.getElementById('detailsLaunchBtn');
+        this.playBtn = document.getElementById('detailsPlayBtn');
+        this.playIcon = document.getElementById('detailsPlayIcon');
+        this.playBtnText = document.getElementById('detailsPlayBtnText');
         this.removeGameBtn = document.getElementById('detailsRemoveGameBtn');
 
         // Bypass Elements
@@ -143,8 +145,8 @@ class DetailsController {
             this.addSteamBtn.addEventListener('click', () => this.addToSteam());
         }
 
-        if (this.launchBtn) {
-            this.launchBtn.addEventListener('click', () => this.launchGame());
+        if (this.playBtn) {
+            this.playBtn.addEventListener('click', () => this.launchGame());
         }
 
         if (this.removeGameBtn) {
@@ -238,11 +240,30 @@ class DetailsController {
             }
         }
 
-        // Steam button state: If already added to Steam (has steam_url), show "Play on Steam"
+        // Setup Play Game / Play on Steam button
+        const isInstalled = Boolean(game.status === 1 || game.status === 2 || game.is_downloaded || game.location);
+        if (this.playBtn) {
+            this.playBtn.style.display = isInstalled ? 'inline-flex' : 'none';
+            if (isInstalled) {
+                if (game.steam_url) {
+                    this.playBtn.classList.add('steam-play');
+                    if (this.playIcon) this.playIcon.className = 'fa-brands fa-steam';
+                    if (this.playBtnText) this.playBtnText.textContent = 'Play on Steam';
+                    this.playBtn.title = 'Launch via Steam shortcut';
+                } else {
+                    this.playBtn.classList.remove('steam-play');
+                    if (this.playIcon) this.playIcon.className = 'fa-solid fa-play';
+                    if (this.playBtnText) this.playBtnText.textContent = 'Play Game';
+                    this.playBtn.title = 'Launch game executable';
+                }
+            }
+        }
+
+        // Steam button state: If already added to Steam (has steam_url), show "Launch Direct" option
         if (this.addSteamBtn) {
             if (game.steam_url) {
-                this.addSteamBtn.innerHTML = '<i class="fa-brands fa-steam"></i> Play on Steam';
-                this.addSteamBtn.title = 'Launch via Steam shortcut';
+                this.addSteamBtn.innerHTML = '<i class="fa-solid fa-play"></i> Launch Direct';
+                this.addSteamBtn.title = 'Launch game executable directly without Steam';
             } else {
                 this.addSteamBtn.innerHTML = '<i class="fa-brands fa-steam"></i> Add to Steam';
                 this.addSteamBtn.title = 'Create Steam non-game shortcut';
@@ -520,16 +541,36 @@ class DetailsController {
         if (type === 'main' && Array.isArray(activeParts) && activeParts.length > 1) {
             try {
                 window.uiController.showToast(`Queueing ${activeParts.length} parts from ${activeHost} for ${this.currentGame.title}...`, 'info');
+                const isFH2 = this.currentGame.title && this.currentGame.title.toLowerCase().includes('forza horizon 2');
+                const effectiveExtractDir = (isFH2 && targetPath && !targetPath.toLowerCase().endsWith('forza horizon 2'))
+                    ? `${targetPath}\\${this.currentGame.title}`
+                    : targetPath;
+
                 for (let i = 0; i < activeParts.length; i++) {
                     const partUrl = activeParts[i];
-                    const filename = `${this.currentGame.title}_Part${i + 1}.rar`;
+                    
+                    // Detect file extension from URL
+                    let ext = '.rar';
+                    const cleanUrl = (partUrl || '').split('?')[0].toLowerCase();
+                    if (cleanUrl.endsWith('.zip')) ext = '.zip';
+                    else if (cleanUrl.endsWith('.7z')) ext = '.7z';
+                    else if (cleanUrl.endsWith('.iso')) ext = '.iso';
+
+                    let partLabel = `Part${i + 1}`;
+                    if (isFH2) {
+                        if (i === 0) partLabel = 'Game';
+                        else if (i === 1) partLabel = 'DLC_StormIsland';
+                        else if (i === 2) partLabel = 'Azimuth_Launcher';
+                    }
+
+                    const filename = `${this.currentGame.title}_${partLabel}${ext}`;
                     await window.apiClient.addDownload(partUrl, filename, {
                         game_id: this.currentGame.id,
                         title: this.currentGame.title,
                         version: this.currentGame.version,
                         type: `main_part_${i + 1}`,
                         host: activeHost,
-                        extract_dir: targetPath,
+                        extract_dir: effectiveExtractDir,
                         auto_extract: autoExtract,
                         auto_delete_archive: autoDelete
                     });
@@ -552,7 +593,13 @@ class DetailsController {
 
         try {
             window.uiController.showToast(`Queueing download from ${activeHost} for ${this.currentGame.title}...`, 'info');
-            const filename = `${this.currentGame.title}_${type === 'fix' ? 'Fix' : 'Game'}.rar`;
+            let singleExt = '.rar';
+            const cleanTargetUrl = (targetUrl || '').split('?')[0].toLowerCase();
+            if (cleanTargetUrl.endsWith('.zip')) singleExt = '.zip';
+            else if (cleanTargetUrl.endsWith('.7z')) singleExt = '.7z';
+            else if (cleanTargetUrl.endsWith('.iso')) singleExt = '.iso';
+
+            const filename = `${this.currentGame.title}_${type === 'fix' ? 'Fix' : 'Game'}${singleExt}`;
             const res = await window.apiClient.addDownload(targetUrl, filename, {
                 game_id: this.currentGame.id,
                 title: this.currentGame.title,
@@ -784,32 +831,49 @@ class DetailsController {
     async addToSteam() {
         if (!this.currentGame) return;
         if (this.currentGame.steam_url) {
-            window.uiController.showToast(`Launching ${this.currentGame.title} on Steam...`, 'info');
-            try {
-                if (window.api && window.api.openExternal) {
-                    const ok = await window.api.openExternal(this.currentGame.steam_url);
-                    if (ok) return;
-                }
-            } catch (e) {
-                console.warn('[DetailsController] openExternal failed:', e);
-            }
-
-            try {
-                if (window.apiClient && window.apiClient.openExternalUrl) {
-                    await window.apiClient.openExternalUrl(this.currentGame.steam_url);
-                }
-            } catch (e) {
-                console.error('[DetailsController] API launch fallback error:', e);
-                window.uiController.showToast(`Could not launch ${this.currentGame.title} on Steam`, 'danger');
-            }
+            // Already added to Steam; button functions as "Launch Direct"
+            this.launchGame(this.currentGame, true);
         } else {
             window.steamController.openAddShortcutDialog(this.currentGame);
         }
     }
 
-    async launchGame() {
-        if (!this.currentGame) return;
-        window.uiController.showToast(`Launching ${this.currentGame.title}...`, 'info');
+    async launchGame(game = this.currentGame, directOnly = false) {
+        if (!game) return;
+        const title = game.title || 'Game';
+
+        if (!directOnly && game.steam_url) {
+            window.uiController?.showToast(`Launching ${title} on Steam...`, 'info');
+            try {
+                if (window.api && window.api.openExternal) {
+                    const ok = await window.api.openExternal(game.steam_url);
+                    if (ok) return;
+                }
+            } catch (e) {
+                console.warn('[DetailsController] openExternal failed, falling back to API:', e);
+            }
+        } else {
+            window.uiController?.showToast(`Launching ${title}...`, 'info');
+        }
+
+        try {
+            const res = await window.apiClient.launchGame({
+                id: game.id,
+                title: title,
+                location: game.location,
+                steam_url: directOnly ? null : game.steam_url,
+                direct_only: directOnly
+            });
+
+            if (res && res.success) {
+                window.uiController?.showToast(res.message || `Launched "${title}" successfully!`, 'success');
+            } else {
+                window.uiController?.showToast(res?.error || `Could not launch "${title}".`, 'danger');
+            }
+        } catch (err) {
+            console.error('[DetailsController] Launch failed:', err);
+            window.uiController?.showToast(`Launch failed: ${err.message || err}`, 'danger');
+        }
     }
 
     removeGame() {

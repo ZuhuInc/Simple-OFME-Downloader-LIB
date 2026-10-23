@@ -1282,14 +1282,15 @@
         "category": "General"
     },
     "Cyberpunk 2077": {
-        "version": "2.31",
-        "host": "GoFile",
-        "approx_size": "100GB",
+        "version": "2.5",
+        "host": "BuzzHeavier",
+        "approx_size": "73.1GB",
         "description": "Cyberpunk 2077 is an open-world, action-adventure RPG set in the dark future of Night City — a dangerous megalopolis obsessed with power, glamor, and ceaseless body modification.",
         "thumbnail": "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/CyberPunk2077.jpg",
         "origin_url": "https://steamrip.com/cryberpunk-2k77-d7/",
         "parts": [
-            "https://gofile.io/d/5Pfu7Y"
+            "https://bzzhr.to/6vb434rck1gm",
+            "https://bzzhr.to/i1vc25zpcf17"
         ],
         "fix_url": "",
         "category": "General"
@@ -2565,5 +2566,28 @@
         ],
         "fix_url": "https://gofile.io/d/VgugNuSM",
         "category": "General"
+    },
+    "Forza Horizon 2": {
+        "version": "1.0.0.64",
+        "host": "Archive.org",
+        "approx_size": "44.6 GB",
+        "description": "Forza Horizon 2 is an open-world racing game set across Southern Europe. Run the Xbox One Anthem build natively on PC using the Azimuth compatibility layer at 60 FPS / 1080p, featuring full support for the Storm Island expansion.",
+        "thumbnail": "https://cdn2.steamgriddb.com/thumb/983a389763a10769e5fecfcd184c5f0d.jpg",
+        "origin_url": "https://almost-there-games.itch.io/azimuth",
+        "parts": [
+            "https://archive.org/download/xboxonedumpz/%28Forza%20Horizon%202%29%20Anthem_1.0.0.64_x64__8wekyb3d8bbwe.rar",
+            "https://archive.org/download/forza-horizon-2-anthem-1.0.0.64-x-64-8wekyb-3d-8bbwe/Forza%20Horizon%202%20Storm%20Island%20%281.0.0.36%29.zip",
+            "https://www.dropbox.com/scl/fi/ndwiz9w0fmaj2hbjk9375/azimuth-windows.zip?rlkey=skv82hazqnii3ehnyws7q1jwe&st=y69ckkxa&dl=1"
+        ],
+        "category": "Racing",
+        "mirrors": {
+            "Storage Cluster": {
+                "parts": [
+                    "https://ia800606.us.archive.org/23/items/xboxonedumpz/(Forza%20Horizon%202)%20Anthem_1.0.0.64_x64__8wekyb3d8bbwe.rar",
+                    "https://archive.org/download/forza-horizon-2-anthem-1.0.0.64-x-64-8wekyb-3d-8bbwe/Forza%20Horizon%202%20Storm%20Island%20%281.0.0.36%29.zip",
+                    "https://www.dropbox.com/scl/fi/ndwiz9w0fmaj2hbjk9375/azimuth-windows.zip?rlkey=skv82hazqnii3ehnyws7q1jwe&st=y69ckkxa&dl=1"
+                ]
+            }
+        }
     }
 }

@@ -222,15 +222,30 @@ class LibraryController {
             // Fallback poster if local image not found
             const thumbSrc = game.thumbnail || 'assets/OFME-DWND-ICO.ico';
 
+            const isInstalled = Boolean(game.status === 1 || game.status === 2 || game.is_downloaded || game.location);
             const isEditMode = Boolean(window.settingsController?.isEditMode());
-            const overlayBtnHtml = isEditMode
-                ? `
-                    <div class="card-overlay-actions">
-                        <button type="button" class="card-view-btn card-details-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</button>
-                        <button type="button" class="card-view-btn card-edit-btn"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
-                    </div>
-                  `
-                : `<button type="button" class="card-view-btn card-details-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</button>`;
+
+            const playBtnHtml = isInstalled ? `
+                <button type="button" class="card-view-btn card-play-btn ${game.steam_url ? 'steam-play' : ''}" title="${game.steam_url ? 'Play on Steam' : 'Play Game'}">
+                    <i class="${game.steam_url ? 'fa-brands fa-steam' : 'fa-solid fa-play'}"></i> ${game.steam_url ? 'Play on Steam' : 'Play Game'}
+                </button>
+            ` : '';
+
+            const detailsBtnHtml = `
+                <button type="button" class="card-view-btn card-details-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Details</button>
+            `;
+
+            const editBtnHtml = isEditMode ? `
+                <button type="button" class="card-view-btn card-edit-btn"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+            ` : '';
+
+            const overlayBtnHtml = `
+                <div class="card-overlay-actions">
+                    ${playBtnHtml}
+                    ${detailsBtnHtml}
+                    ${editBtnHtml}
+                </div>
+            `;
 
             card.innerHTML = `
                 <div class="card-cover-wrapper">
@@ -241,13 +256,24 @@ class LibraryController {
                     </div>
                 </div>
                 <div class="card-info">
-                    <h3 class="card-title" title="${game.title}">${game.title}</h3>
+                    <div class="card-title-row">
+                        <h3 class="card-title" title="${game.title}">${game.title}</h3>
+                        ${game.steam_url ? `<span class="card-steam-badge" title="Added to Steam"><i class="fa-brands fa-steam"></i></span>` : ''}
+                    </div>
                     <div class="card-meta">
                         <span class="card-host" title="Source: ${game.source || 'Unknown'} | Host: ${game.host || 'Direct'}"><i class="fa-solid fa-server"></i> ${game.source ? `<span style="color: var(--accent); font-weight: 600;">${game.source}</span> &bull; ` : ''}${game.host || 'Direct'}</span>
                         <span class="card-version">v${game.version || '1.0'}</span>
                     </div>
                 </div>
             `;
+
+            const playBtn = card.querySelector('.card-play-btn');
+            if (playBtn) {
+                playBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    window.detailsController.launchGame(game);
+                });
+            }
 
             const detailsBtn = card.querySelector('.card-details-btn');
             if (detailsBtn) {
@@ -266,11 +292,7 @@ class LibraryController {
             }
 
             card.addEventListener('click', () => {
-                if (window.settingsController?.isEditMode()) {
-                    window.addGameController.openForEdit(game);
-                } else {
-                    window.detailsController.openGame(game);
-                }
+                window.detailsController.openGame(game);
             });
 
             this.gridEl.appendChild(card);

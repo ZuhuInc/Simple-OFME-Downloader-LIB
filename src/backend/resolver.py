@@ -369,6 +369,68 @@ class LinkResolver:
                 try: progress_callback(msg)
                 except Exception: pass
 
+        # 0a. Dropbox direct stream resolver
+        if "dropbox.com/" in url:
+            log(f"Resolving Dropbox URL: {url}")
+            direct_url = url
+            if "dl=0" in direct_url:
+                direct_url = direct_url.replace("dl=0", "dl=1")
+            elif "dl=1" not in direct_url:
+                direct_url = direct_url + ("&dl=1" if "?" in direct_url else "?dl=1")
+
+            file_name = None
+            try:
+                parsed = urllib.parse.urlparse(direct_url)
+                base_name = os.path.basename(parsed.path)
+                if base_name and any(base_name.lower().endswith(ext) for ext in [".zip", ".rar", ".7z", ".bin", ".iso"]):
+                    file_name = base_name
+            except Exception:
+                pass
+            log(f"Dropbox link resolved to direct stream: {direct_url}")
+            return direct_url, file_name or "dropbox_archive.zip", None
+
+        # 0b. Archive.org direct download & storage cluster resolver
+        if "archive.org/download/" in url:
+            log(f"Resolving Archive.org URL: {url}")
+            direct_url = url
+            file_name = None
+            try:
+                parsed = urllib.parse.urlparse(url)
+                base_name = os.path.basename(parsed.path)
+                if base_name:
+                    file_name = urllib.parse.unquote(base_name)
+            except Exception:
+                pass
+
+            # Test CDN health; if HTTP 500 or error, resolve directly via Archive.org metadata API to primary storage node
+            needs_fallback = False
+            try:
+                test_head = requests.head(url, headers={"User-Agent": "Mozilla/5.0"}, allow_redirects=True, timeout=5)
+                if test_head.status_code >= 400:
+                    needs_fallback = True
+                else:
+                    direct_url = test_head.url
+            except Exception:
+                needs_fallback = True
+
+            if needs_fallback:
+                try:
+                    m = re.search(r'archive\.org/download/([^/]+)/(.+)', url)
+                    if m:
+                        item_id, file_path = m.group(1), m.group(2)
+                        meta_r = requests.get(f"https://archive.org/metadata/{item_id}", timeout=6)
+                        if meta_r.status_code == 200:
+                            mdata = meta_r.json()
+                            server = mdata.get("server") or mdata.get("d1") or mdata.get("d2")
+                            dir_path = mdata.get("dir")
+                            if server and dir_path:
+                                direct_url = f"https://{server}{dir_path}/{file_path}"
+                                log(f"Archive.org CDN bypass: rerouted to primary storage cluster: {direct_url}")
+                except Exception as arc_err:
+                    log(f"Archive.org metadata bypass notice: {arc_err}")
+
+            return direct_url, file_name, None
+
         # 1. PixelDrain resolver
         if "pixeldrain.com/u/" in url or "pixeldrain.com/api/file/" in url:
             file_id = url.split("/u/")[-1].split("/api/file/")[-1].split("?")[0].split("/")[0]
