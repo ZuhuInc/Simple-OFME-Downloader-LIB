@@ -247,11 +247,7 @@ class CloudSavesController {
                 }
                 if (connectBtn) connectBtn.style.display = 'none';
                 if (disconnectBtn) disconnectBtn.style.display = 'inline-flex';
-                if (setupCredsBtn) {
-                    setupCredsBtn.style.display = 'inline-flex';
-                    setupCredsBtn.className = 'btn btn-sm btn-secondary';
-                    setupCredsBtn.innerHTML = '<i class="fa-solid fa-gear"></i> API Settings';
-                }
+                if (setupCredsBtn) setupCredsBtn.style.display = 'none';
             } else if (!data.has_credentials) {
                 if (statusText) {
                     statusText.innerHTML = `
@@ -272,22 +268,18 @@ class CloudSavesController {
                 if (statusText) {
                     statusText.innerHTML = `
                         <span style="color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-circle-question"></i> Not Connected (API Ready)
+                            <i class="fa-solid fa-circle-question"></i> Not Connected
                         </span>
                     `;
                 }
-                // API info found: Sign In button is now available
+                // API credentials ready: Show Sign In with Google directly
                 if (connectBtn) {
                     connectBtn.style.display = 'inline-flex';
                     connectBtn.className = 'btn btn-sm btn-primary';
                     connectBtn.innerHTML = '<i class="fa-brands fa-google"></i> Sign In with Google';
                 }
                 if (disconnectBtn) disconnectBtn.style.display = 'none';
-                if (setupCredsBtn) {
-                    setupCredsBtn.style.display = 'inline-flex';
-                    setupCredsBtn.className = 'btn btn-sm btn-secondary';
-                    setupCredsBtn.innerHTML = '<i class="fa-solid fa-gear"></i> Setup API';
-                }
+                if (setupCredsBtn) setupCredsBtn.style.display = 'none';
             }
         } catch (err) {
             console.error('[CloudSavesController] loadStatus error:', err);
@@ -480,6 +472,17 @@ class CloudSavesController {
             const res = await window.apiClient.backupCloudSave({ title });
             if (res && res.success) {
                 window.uiController.showToast(`Backup complete for ${title}!`, 'success');
+                // Instant live UI update
+                const game = this.games.find(g => g.title === title || g.title.toLowerCase() === title.toLowerCase());
+                if (game) {
+                    game.cloud_exists = true;
+                    game.cloud_size_bytes = game.local_size_bytes;
+                    game.cloud_mtime = res.mtime || game.local_mtime;
+                    game.cloud_mtime_str = game.local_mtime_str;
+                    game.sync_state = 'in_sync';
+                    game.sync_state_label = 'In Sync';
+                    this.renderGames();
+                }
                 await this.loadGames();
             } else {
                 window.uiController.showToast(`Backup failed: ${res.error || 'Unknown error'}`, 'danger');
@@ -496,6 +499,14 @@ class CloudSavesController {
             const res = await window.apiClient.restoreCloudSave({ title });
             if (res && res.success) {
                 window.uiController.showToast(`Save restored for ${title}!`, 'success');
+                // Instant live UI update
+                const game = this.games.find(g => g.title === title || g.title.toLowerCase() === title.toLowerCase());
+                if (game) {
+                    game.local_exists = true;
+                    game.sync_state = 'in_sync';
+                    game.sync_state_label = 'In Sync';
+                    this.renderGames();
+                }
                 await this.loadGames();
             } else {
                 window.uiController.showToast(`Restore failed: ${res.error || 'Unknown error'}`, 'danger');

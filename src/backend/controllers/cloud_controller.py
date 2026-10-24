@@ -75,11 +75,200 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
     @bp.route('/auth_url', methods=['GET'])
     def get_auth_url():
         needs_setup = not cloud_sync.has_gdrive_credentials()
-        url = cloud_sync.get_oauth_auth_url()
+        # Serve local GIS popup directly on the authorized origin
+        login_url = "http://localhost:5004/api/cloud/login"
         return jsonify({
             "success": True,
-            "auth_url": url,
+            "auth_url": login_url,
             "needs_setup": needs_setup
+        })
+
+    @bp.route('/login', methods=['GET'])
+    def serve_login_popup():
+        cid = (cloud_sync.settings.get("gdrive_client_id") or "63637058417-uqpmtfihh81ddo16rqng9gh5aue612be.apps.googleusercontent.com").strip()
+        html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Google Drive - Fanta OFME</title>
+    <style>
+        body {{
+            background: #0e1117;
+            color: #e6edf3;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }}
+        .card {{
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 14px;
+            padding: 36px;
+            text-align: center;
+            max-width: 440px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+        }}
+        .icon-box {{
+            width: 54px;
+            height: 54px;
+            border-radius: 12px;
+            background: rgba(88, 166, 255, 0.12);
+            border: 1px solid rgba(88, 166, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin: 0 auto 18px;
+        }}
+        h2 {{ margin: 0 0 8px 0; font-size: 20px; color: #fff; }}
+        p {{ color: #8b949e; font-size: 13px; line-height: 1.5; margin: 0 0 24px 0; }}
+        .btn {{
+            background: #58a6ff;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        .btn:hover {{ background: #4792ea; }}
+        .status {{ margin-top: 16px; font-size: 12px; font-family: monospace; }}
+        .success {{ color: #2ea043; }}
+        .error {{ color: #f85149; }}
+    </style>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-box">☁️</div>
+        <h2>Sign In to Google Drive</h2>
+        <p>Authorize Fanta OFME to safely backup and synchronize your game saves to your private Google Drive folder.</p>
+        <button id="authBtn" class="btn" onclick="startAuth()">
+            Sign In with Google
+        </button>
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        const CLIENT_ID = "{cid}";
+        const SCOPES = "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email";
+        let tokenClient = null;
+
+        window.addEventListener('load', () => {{
+            initGIS();
+        }});
+
+        function initGIS() {{
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {{
+                setTimeout(initGIS, 100);
+                return;
+            }}
+            tokenClient = google.accounts.oauth2.initTokenClient({{
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: async (tokenResponse) => {{
+                    if (tokenResponse.error) {{
+                        document.getElementById('status').className = 'status error';
+                        document.getElementById('status').textContent = 'Error: ' + tokenResponse.error;
+                        return;
+                    }}
+                    document.getElementById('status').className = 'status success';
+                    document.getElementById('status').textContent = 'Saving authorization...';
+
+                    try {{
+                        const res = await fetch('/api/cloud/save-token', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{
+                                access_token: tokenResponse.access_token,
+                                expires_in: tokenResponse.expires_in
+                            }})
+                        }});
+                        const data = await res.json();
+                        if (data.success) {{
+                            document.querySelector('.card').innerHTML = `
+                                <div class="icon-box" style="background: rgba(46,160,67,0.15); border-color: rgba(46,160,67,0.4); color: #2ea043;">✓</div>
+                                <h2 style="color: #2ea043;">Connected!</h2>
+                                <p>Signed in as <strong>${{data.email}}</strong>.<br>Your saves will sync to <code>Fanta OFME Cloud Saves</code>.</p>
+                                <p style="font-size: 12px; color: #6e7681;">You can close this tab and return to the Fanta OFME app.</p>
+                            `;
+                            setTimeout(() => {{ window.close(); }}, 2500);
+                        }} else {{
+                            throw new Error(data.error || 'Failed to save token');
+                        }}
+                    }} catch (err) {{
+                        document.getElementById('status').className = 'status error';
+                        document.getElementById('status').textContent = 'Error: ' + err.message;
+                    }}
+                }}
+            }});
+
+            // Auto-trigger popup
+            startAuth();
+        }}
+
+        function startAuth() {{
+            if (tokenClient) {{
+                tokenClient.requestAccessToken({{ prompt: '' }});
+            }}
+        }}
+    </script>
+</body>
+</html>"""
+        return render_template_string(html)
+
+    @bp.route('/save-token', methods=['POST'])
+    def save_direct_token():
+        import requests as py_requests
+        import time as py_time
+        data = request.get_json() or {}
+        access_token = data.get("access_token")
+        if not access_token:
+            return jsonify({"success": False, "error": "access_token is required"}), 400
+
+        # Query userinfo to get email
+        email = "Connected Google Account"
+        try:
+            u_resp = py_requests.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=10
+            )
+            if u_resp.status_code == 200:
+                email = u_resp.json().get("email", email)
+        except Exception as e:
+            print(f"[CloudController] Error fetching user info: {e}")
+
+        expires_in = int(data.get("expires_in") or 3600)
+        token_data = {
+            "access_token": access_token,
+            "expires_in": expires_in,
+            "created_at": py_time.time(),
+            "email": email
+        }
+        cloud_sync.settings["google_tokens"] = token_data
+        cloud_sync.settings["provider"] = "gdrive_api"
+        cloud_sync.save_settings()
+
+        # Pre-verify / create folder in Drive
+        try:
+            cloud_sync._get_or_create_gdrive_folder()
+        except Exception as fe:
+            print(f"[CloudController] Folder init notice: {fe}")
+
+        return jsonify({
+            "success": True,
+            "email": email,
+            "provider": "gdrive_api"
         })
 
     @bp.route('/oauth_callback', methods=['GET'])

@@ -84,6 +84,7 @@ try:
 except Exception as e:
     print(f"[Bridge] Initial DB fetch skipped: {e}")
 
+
 if __name__ == '__main__':
     port = int(os.environ.get('FANTA_BACKEND_PORT', '5004'))
     print(f"[Bridge] Starting Fanta OFME Backend Bridge on 127.0.0.1:{port}")

@@ -22,8 +22,15 @@ from typing import Dict, Any, List, Optional, Tuple
 import requests
 
 
-# Default Desktop OAuth 2.0 Credentials (can be overridden in config)
-DEFAULT_GDRIVE_CLIENT_ID = os.environ.get("FANTA_GDRIVE_CLIENT_ID", "")
+# Default Web OAuth 2.0 Credentials (can be overridden in config)
+DEFAULT_GDRIVE_CLIENT_ID = os.environ.get(
+    "FANTA_GDRIVE_CLIENT_ID",
+    "63637058417-uqpmtfihh81ddo16rqng9gh5aue612be.apps.googleusercontent.com"
+)
+DEFAULT_GDRIVE_API_KEY = os.environ.get(
+    "FANTA_GDRIVE_API_KEY",
+    "AIzaSyDZ_fTrJ2q0bkh0AiLlLkQPqXwAnYE_n84"
+)
 DEFAULT_GDRIVE_CLIENT_SECRET = os.environ.get("FANTA_GDRIVE_CLIENT_SECRET", "")
 GDRIVE_FOLDER_NAME = "Fanta OFME Cloud Saves"
 
@@ -373,6 +380,8 @@ class CloudSyncManager:
             return access_token
 
         if not refresh_token:
+            if created_at and (time.time() >= created_at + expires_in):
+                return None
             return access_token
 
         # Refresh token
@@ -400,7 +409,16 @@ class CloudSyncManager:
         return access_token
 
     def is_gdrive_connected(self) -> bool:
-        return bool(self.settings.get("google_tokens", {}).get("access_token"))
+        tokens = self.settings.get("google_tokens", {})
+        if not tokens or not tokens.get("access_token"):
+            return False
+        if tokens.get("refresh_token"):
+            return True
+        created_at = tokens.get("created_at", 0)
+        expires_in = tokens.get("expires_in", 3600)
+        if created_at and (time.time() >= created_at + expires_in):
+            return False
+        return True
 
     def has_gdrive_credentials(self) -> bool:
         cid = (self.settings.get("gdrive_client_id") or DEFAULT_GDRIVE_CLIENT_ID or "").strip()
@@ -414,6 +432,10 @@ class CloudSyncManager:
 
     def _get_or_create_gdrive_folder(self) -> Optional[str]:
         """Finds or creates 'Fanta OFME Cloud Saves' folder in user's Google Drive."""
+        cached_id = self.settings.get("gdrive_folder_id")
+        if cached_id:
+            return cached_id
+
         token = self._get_valid_access_token()
         if not token:
             return None
@@ -425,24 +447,32 @@ class CloudSyncManager:
                 "https://www.googleapis.com/drive/v3/files",
                 headers=headers,
                 params={"q": query, "spaces": "drive", "fields": "files(id, name)"},
-                timeout=15
+                timeout=25
             )
             if resp.status_code == 200:
                 files = resp.json().get("files", [])
                 if files:
-                    return files[0]["id"]
+                    folder_id = files[0]["id"]
+                    self.settings["gdrive_folder_id"] = folder_id
+                    self.save_settings()
+                    return folder_id
 
             # Create folder if not found
             create_resp = requests.post(
                 "https://www.googleapis.com/drive/v3/files",
                 headers={**headers, "Content-Type": "application/json"},
                 json={"name": GDRIVE_FOLDER_NAME, "mimeType": "application/vnd.google-apps.folder"},
-                timeout=15
+                timeout=25
             )
             if create_resp.status_code in (200, 201):
-                return create_resp.json().get("id")
+                folder_id = create_resp.json().get("id")
+                self.settings["gdrive_folder_id"] = folder_id
+                self.save_settings()
+                return folder_id
         except Exception as e:
             print(f"[CloudSync] Error getting/creating root Google Drive folder: {e}", flush=True)
+            if cached_id:
+                return cached_id
         return None
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -473,7 +503,7 @@ class CloudSyncManager:
                                             mtime = m_data.get("mtime", mtime)
                                     except Exception:
                                         pass
-                                index[game_folder] = {
+                                item_data = {
                                     "exists": True,
                                     "provider": "local_folder",
                                     "size_bytes": st.st_size,
@@ -481,6 +511,11 @@ class CloudSyncManager:
                                     "mtime_str": datetime.fromtimestamp(mtime).strftime("%b %d, %Y • %I:%M %p"),
                                     "path": zip_path
                                 }
+                                index[game_folder] = item_data
+                                index[game_folder.lower()] = item_data
+                                norm_key = re.sub(r'[^a-zA-Z0-9]', '', game_folder).lower()
+                                if norm_key:
+                                    index[norm_key] = item_data
                 except Exception as e:
                     print(f"[CloudSync] Error scanning local cloud directory: {e}", flush=True)
 
@@ -496,7 +531,7 @@ class CloudSyncManager:
                             "https://www.googleapis.com/drive/v3/files",
                             headers=headers,
                             params={"q": query, "pageSize": 1000, "fields": "files(id, name, size, modifiedTime, description)"},
-                            timeout=20
+                            timeout=25
                         )
                         if resp.status_code == 200:
                             files = resp.json().get("files", [])
@@ -519,7 +554,7 @@ class CloudSyncManager:
                                             mtime = dt.timestamp()
                                         except Exception:
                                             mtime = time.time()
-                                    index[safe_name] = {
+                                    item_data = {
                                         "exists": True,
                                         "file_id": f["id"],
                                         "provider": "gdrive_api",
@@ -527,6 +562,11 @@ class CloudSyncManager:
                                         "mtime": mtime,
                                         "mtime_str": datetime.fromtimestamp(mtime).strftime("%b %d, %Y • %I:%M %p")
                                     }
+                                    index[safe_name] = item_data
+                                    index[safe_name.lower()] = item_data
+                                    norm_key = re.sub(r'[^a-zA-Z0-9]', '', safe_name).lower()
+                                    if norm_key:
+                                        index[norm_key] = item_data
                     except Exception as e:
                         print(f"[CloudSync] Error indexing Google Drive files: {e}", flush=True)
 
@@ -536,10 +576,15 @@ class CloudSyncManager:
         """Inspects cloud save for given game under the active provider."""
         provider = self.get_provider()
         safe_name = re.sub(r'[^a-zA-Z0-9_\-\s]', '', title).strip()
+        norm_key = re.sub(r'[^a-zA-Z0-9]', '', title).lower()
 
         if cloud_index is not None:
             if safe_name in cloud_index:
                 return cloud_index[safe_name]
+            if safe_name.lower() in cloud_index:
+                return cloud_index[safe_name.lower()]
+            if norm_key in cloud_index:
+                return cloud_index[norm_key]
             fallback_status = "None"
             if provider == "gdrive_api" and not self.is_gdrive_connected():
                 fallback_status = "Not Connected"

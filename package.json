@@ -1,6 +1,6 @@
 {
   "name": "fanta-ofme-dwnld",
-  "version": "2.0.9",
+  "version": "2.1.0",
   "description": "Fanta OFME Downloader - Online-Fix Game Manager & Downloader",
   "main": "./src/main/main.js",
   "author": "ZuhuInc",

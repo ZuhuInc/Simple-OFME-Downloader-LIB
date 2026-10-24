@@ -667,7 +667,22 @@ Fix:
         # GET /auth_url
         resp = client.get('/api/cloud/auth_url')
         self.assertEqual(resp.status_code, 200)
-        self.assertIn("accounts.google.com", resp.get_json().get("auth_url", ""))
+        auth_url = resp.get_json().get("auth_url", "")
+        self.assertTrue("accounts.google.com" in auth_url or "api/cloud/login" in auth_url)
+
+        # GET /login
+        resp = client.get('/api/cloud/login')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("accounts.google.com/gsi/client", resp.get_data(as_text=True))
+
+        # POST /save-token
+        with unittest.mock.patch('requests.get') as mock_uget:
+            mock_uget.return_value.status_code = 200
+            mock_uget.return_value.json.return_value = {"email": "testuser@gmail.com"}
+            resp = client.post('/api/cloud/save-token', json={"access_token": "ya29.testtoken", "expires_in": 3600})
+            self.assertEqual(resp.status_code, 200)
+            self.assertTrue(cloud_sync.is_gdrive_connected())
+            self.assertEqual(resp.get_json().get("email"), "testuser@gmail.com")
 
         # GET /games (with db_mock.games as dict)
         resp = client.get('/api/cloud/games')
