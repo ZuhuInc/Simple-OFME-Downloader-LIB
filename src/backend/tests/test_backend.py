@@ -588,8 +588,121 @@ Fix:
         self.assertEqual(job.error_msg, "")
         self.assertEqual(job.meta.get("extracted_dir"), os.path.join(self.temp_dir, "Liar's Bar"))
 
+    def test_cloud_sync_lifecycle(self):
+        """Test CloudSyncManager detection, zipping, restoring, and metadata comparison"""
+        from src.backend.cloud_sync import CloudSyncManager
+
+        cloud_dir = os.path.join(self.temp_dir, "CloudSaves")
+        mgr = CloudSyncManager(data_folder=self.temp_dir)
+        mgr.settings["provider"] = "local_folder"
+        mgr.settings["local_cloud_path"] = cloud_dir
+        mgr.settings["auto_sync"] = True
+        mgr.save_settings()
+
+        # 1. Test settings persistence
+        mgr2 = CloudSyncManager(data_folder=self.temp_dir)
+        self.assertEqual(mgr2.get_provider(), "local_folder")
+        self.assertTrue(mgr2.is_auto_sync_enabled())
+        self.assertEqual(mgr2.settings.get("local_cloud_path"), cloud_dir)
+
+        # 2. Test save folder detection with custom folder
+        fake_save_dir = os.path.join(self.temp_dir, "FakeGameSaves")
+        os.makedirs(fake_save_dir, exist_ok=True)
+        with open(os.path.join(fake_save_dir, "save.dat"), "w") as f:
+            f.write("save content 123")
+
+        mgr.settings["custom_save_paths"]["TestGame"] = fake_save_dir
+        detected_path, detect_type = mgr.detect_save_path("TestGame")
+        self.assertEqual(detected_path, fake_save_dir)
+        self.assertEqual(detect_type, "Custom")
+
+        # 3. Test backup
+        backup_res = mgr.backup_game("TestGame")
+        self.assertTrue(backup_res["success"])
+        expected_zip = os.path.join(cloud_dir, "TestGame", "TestGame_save.zip")
+        self.assertTrue(os.path.exists(expected_zip))
+
+        # 4. Test sync status
+        status = mgr.get_game_sync_status("TestGame")
+        self.assertTrue(status["local_exists"])
+        self.assertTrue(status["cloud_exists"])
+        self.assertEqual(status["sync_state"], "in_sync")
+
+        # 5. Test restore with safe rollback
+        os.remove(os.path.join(fake_save_dir, "save.dat"))
+        self.assertFalse(os.path.exists(os.path.join(fake_save_dir, "save.dat")))
+        restore_res = mgr.restore_game("TestGame")
+        self.assertTrue(restore_res["success"])
+        self.assertTrue(os.path.exists(os.path.join(fake_save_dir, "save.dat")))
+
+    def test_cloud_controller_endpoints(self):
+        """Test Flask /api/cloud blueprint endpoints"""
+        from flask import Flask
+        from src.backend.cloud_sync import CloudSyncManager
+        from src.backend.controllers.cloud_controller import create_cloud_blueprint
+
+        app = Flask(__name__)
+        config = Config(data_folder=self.temp_dir)
+        config.data["PEAK"] = {"downloaded": True, "location": os.path.join(self.temp_dir, "PEAK")}
+        cloud_sync = CloudSyncManager(data_folder=self.temp_dir, config=config)
+        db_mock = unittest.mock.MagicMock()
+        db_mock.games = {}
+
+        app.register_blueprint(create_cloud_blueprint(cloud_sync, config, db_mock))
+        client = app.test_client()
+
+        # GET /status
+        resp = client.get('/api/cloud/status')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertIn("provider", data)
+        self.assertIn("auto_sync", data)
+
+        # POST /configure
+        resp = client.post('/api/cloud/configure', json={"auto_sync": True, "provider": "local_folder"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(cloud_sync.is_auto_sync_enabled())
+        self.assertEqual(cloud_sync.get_provider(), "local_folder")
+
+        # GET /auth_url
+        resp = client.get('/api/cloud/auth_url')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("accounts.google.com", resp.get_json().get("auth_url", ""))
+
+        # GET /games (with db_mock.games as dict)
+        resp = client.get('/api/cloud/games')
+        self.assertEqual(resp.status_code, 200)
+        games_list = resp.get_json().get("games", [])
+        self.assertTrue(any(g.get("title") == "PEAK" for g in games_list))
+
+        # Test db_mock.games as a list of GameEntry objects (verifies fix for AttributeError 'list' has no attribute 'values')
+        class FakeGame:
+            def __init__(self, title, thumb=""):
+                self.title = title
+                self.thumbnail = thumb
+        db_mock.games = [FakeGame("PEAK", "thumb.jpg"), FakeGame("Liar's Bar", "liar.jpg")]
+        resp = client.get('/api/cloud/games')
+        self.assertEqual(resp.status_code, 200)
+        games_list = resp.get_json().get("games", [])
+        self.assertTrue(any(g.get("title") == "Liar's Bar" for g in games_list))
+
+        # POST /credentials
+        creds_payload = {
+            "credentials_json": {
+                "installed": {
+                    "client_id": "test_client_id_123.apps.googleusercontent.com",
+                    "client_secret": "test_secret_456"
+                }
+            }
+        }
+        resp = client.post('/api/cloud/credentials', json=creds_payload)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(cloud_sync.has_gdrive_credentials())
+        self.assertEqual(cloud_sync.settings.get("gdrive_client_id"), "test_client_id_123.apps.googleusercontent.com")
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 

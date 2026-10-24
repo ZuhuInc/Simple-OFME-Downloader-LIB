@@ -152,6 +152,17 @@ class ApiClient {
     clearBypassList() { return this.request('/api/version-check/bypass/clear', { method: 'POST' }); }
     clearScrapeCache() { return this.request('/api/version-check/cache/clear', { method: 'POST' }); }
     batchUpdateGames(payload) { return this.request('/api/version-check/batch-update', { method: 'POST', body: payload }); }
+
+    // Cloud & Saves
+    getCloudStatus() { return this.request('/api/cloud/status'); }
+    configureCloud(payload) { return this.request('/api/cloud/configure', { method: 'POST', body: payload }); }
+    saveCloudCredentials(payload) { return this.request('/api/cloud/credentials', { method: 'POST', body: payload }); }
+    getCloudAuthUrl() { return this.request('/api/cloud/auth_url'); }
+    disconnectCloud() { return this.request('/api/cloud/disconnect', { method: 'POST' }); }
+    getCloudGames() { return this.request('/api/cloud/games'); }
+    backupCloudSave(payload) { return this.request('/api/cloud/backup', { method: 'POST', body: payload }); }
+    restoreCloudSave(payload) { return this.request('/api/cloud/restore', { method: 'POST', body: payload }); }
+    setCloudSavePath(payload) { return this.request('/api/cloud/set_save_path', { method: 'POST', body: payload }); }
 }
 
 window.apiClient = new ApiClient();

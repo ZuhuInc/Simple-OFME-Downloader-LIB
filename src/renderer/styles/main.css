@@ -1088,7 +1088,8 @@ select option,
     transition: opacity 0.2s ease;
 }
 
-.modal-overlay.active {
+.modal-overlay.active,
+.modal-overlay.visible {
     display: flex;
     opacity: 1;
 }
@@ -2101,6 +2102,176 @@ input[type="number"] {
     box-shadow: 0 0 14px var(--accent-glow);
     color: #111 !important;
 }
+
+/* ─── CLOUD SAVES & BACKUP ─── */
+.cloud-provider-card:hover {
+    border-color: rgba(212, 168, 83, 0.3) !important;
+    transform: translateY(-1px);
+}
+
+.cloud-provider-card.active {
+    box-shadow: 0 4px 20px rgba(212, 168, 83, 0.08);
+}
+
+.cloud-game-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.cloud-game-card:hover {
+    border-color: rgba(212, 168, 83, 0.25);
+    background: var(--bg-glass-hover);
+}
+
+.cloud-game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.cloud-game-thumb {
+    width: 44px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border-glass);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    flex-shrink: 0;
+}
+
+.cloud-game-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cloud-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cloud-path-truncate {
+    max-width: 380px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.cloud-comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 36px 1fr;
+    gap: 12px;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cloud-comp-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid transparent;
+}
+
+.cloud-comp-box.highlight-box {
+    background: rgba(212, 168, 83, 0.06);
+    border-color: rgba(212, 168, 83, 0.3);
+}
+
+.cloud-comp-box.highlight-box-warning {
+    background: rgba(245, 166, 35, 0.06);
+    border-color: rgba(245, 166, 35, 0.3);
+}
+
+.cloud-comp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cloud-comp-body {
+    font-size: 12px;
+}
+
+.cloud-direction-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ─── CLOUD SYNC BADGES ─── */
+.cloud-sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.badge-sync {
+    background: rgba(62, 207, 142, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(62, 207, 142, 0.3);
+}
+
+.badge-local-newer {
+    background: rgba(212, 168, 83, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(212, 168, 83, 0.35);
+}
+
+.badge-cloud-newer {
+    background: rgba(245, 166, 35, 0.15);
+    color: var(--warning);
+    border: 1px solid rgba(245, 166, 35, 0.35);
+}
+
+.badge-unbacked {
+    background: rgba(77, 163, 255, 0.15);
+    color: var(--info);
+    border: 1px solid rgba(77, 163, 255, 0.35);
+}
+
+.badge-cloud-only {
+    background: rgba(147, 112, 219, 0.15);
+    color: #b197fc;
+    border: 1px solid rgba(147, 112, 219, 0.35);
+}
+
+.badge-no-saves {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 
 
 

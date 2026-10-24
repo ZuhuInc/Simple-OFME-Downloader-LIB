@@ -40,6 +40,8 @@ class UIController {
             window.settingsController.loadSettings();
         } else if (tabId === 'steamTab' && window.steamController) {
             window.steamController.loadSteamInfo();
+        } else if (tabId === 'cloudSavesTab' && window.cloudSavesController) {
+            window.cloudSavesController.loadAll();
         }
     }
 

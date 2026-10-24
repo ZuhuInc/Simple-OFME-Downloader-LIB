@@ -62,6 +62,11 @@
                     <i class="fa-solid fa-gear"></i>
                     <span>Settings & Logs</span>
                 </div>
+                <!-- Cloud & Saves Tab (Hidden for now until release) -->
+                <div class="sidebar-nav-item" data-tab="cloudSavesTab" style="display: none;">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Cloud & Saves</span>
+                </div>
             </nav>
 
             <div class="sidebar-footer">
@@ -746,6 +751,165 @@
                 </div>
             </section>
 
+            <!-- ☁️ TAB 6: CLOUD SAVES & BACKUP -->
+            <section id="cloudSavesTab" class="tab-content-panel">
+                <!-- Header Banner -->
+                <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <div>
+                        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #fff; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-cloud-arrow-up" style="color: var(--accent);"></i> Cloud Saves & Backup Manager
+                        </h2>
+                        <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Backup, restore, and seamlessly synchronize your game saves across PCs via Google Drive or local cloud storage.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="refreshCloudGamesBtn" class="btn btn-secondary" style="font-size: 13px; padding: 8px 16px;">
+                            <i class="fa-solid fa-rotate"></i> Refresh Saves
+                        </button>
+                        <button id="backupAllGamesBtn" class="btn btn-primary" style="font-size: 13px; padding: 8px 18px;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Backup All Games
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Provider & Sync Settings Grid -->
+                <div class="cloud-settings-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                    <!-- Card 1: Cloud Storage Provider Selector -->
+                    <div class="glass-card" style="display: flex; flex-direction: column; gap: 14px;">
+                        <div>
+                            <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-hard-drive" style="color: var(--accent);"></i> Cloud Storage Provider
+                            </h3>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Choose whether to connect directly to Google Drive via online API or use a local cloud sync folder.</p>
+                        </div>
+
+                        <!-- Provider Option 1: Google Drive API (Recommended) -->
+                        <div class="cloud-provider-card active" id="providerCardGDrive" style="cursor: pointer; padding: 14px; border-radius: var(--radius-sm); border: 1px solid rgba(212, 168, 83, 0.4); background: rgba(212, 168, 83, 0.06); transition: var(--transition);">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #4da3ff;">
+                                        <i class="fa-brands fa-google-drive"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                            Google Drive Online (Direct API)
+                                            <span class="status-pill" style="font-size: 9px; padding: 1px 6px; background: rgba(212, 168, 83, 0.2); color: var(--accent);">Recommended</span>
+                                        </div>
+                                        <span style="font-size: 11px; color: var(--text-muted);">Direct cloud sync • No Google Drive desktop software required</span>
+                                    </div>
+                                </div>
+                                <input type="radio" name="cloudProviderRadio" id="radioProviderGDrive" value="gdrive_api" checked style="accent-color: var(--accent); margin-top: 4px;">
+                            </div>
+
+                            <div id="gdriveAuthSection" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div id="gdriveStatusText" style="font-size: 12px; color: var(--text-secondary);">
+                                    <span style="color: var(--text-muted);"><i class="fa-solid fa-circle-question"></i> Not Connected</span>
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button id="setupGDriveCredsBtn" class="btn btn-sm btn-primary" style="font-size: 11px; padding: 5px 12px;" title="Configure Google Cloud OAuth Client ID & Secret">
+                                        <i class="fa-solid fa-key"></i> Setup API Credentials
+                                    </button>
+                                    <button id="connectGDriveBtn" class="btn btn-sm btn-primary" style="font-size: 12px; padding: 5px 14px; display: none;">
+                                        <i class="fa-brands fa-google"></i> Sign In with Google
+                                    </button>
+                                    <button id="disconnectGDriveBtn" class="btn btn-sm btn-secondary" style="font-size: 12px; display: none;">
+                                        Disconnect
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Provider Option 2: Local Cloud Folder ("My Drive" / Google Drive Desktop / OneDrive) -->
+                        <div class="cloud-provider-card" id="providerCardLocal" style="cursor: pointer; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); background: rgba(0, 0, 0, 0.2); transition: var(--transition);">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent);">
+                                        <i class="fa-solid fa-folder-tree"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 600; color: #fff;">Local Cloud Folder ("My Drive" / OneDrive)</div>
+                                        <span style="font-size: 11px; color: var(--text-muted);">Syncs via installed Google Drive or OneDrive Desktop client</span>
+                                    </div>
+                                </div>
+                                <input type="radio" name="cloudProviderRadio" id="radioProviderLocal" value="local_folder" style="accent-color: var(--accent); margin-top: 4px;">
+                            </div>
+
+                            <div id="localFolderSection" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-glass);">
+                                <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 6px;">Sync Directory Path:</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="localCloudPathInput" class="form-input form-input-path" placeholder="G:\My Drive\Fanta OFME Cloud Saves" style="font-size: 11px; font-family: var(--font-mono); flex: 1;">
+                                    <button id="browseLocalCloudPathBtn" class="btn btn-secondary btn-sm" title="Browse local folder"><i class="fa-solid fa-folder-open"></i></button>
+                                    <button id="detectMyDriveBtn" class="btn btn-secondary btn-sm" title="Auto-detect My Drive / OneDrive" style="font-size: 11px;">Auto Detect</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Synchronization & Safety Settings -->
+                    <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; gap: 14px;">
+                        <div>
+                            <h3 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-arrows-rotate" style="color: var(--accent);"></i> Automatic Sync & Safety
+                            </h3>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Automate cross-PC save synchronization and preserve safety rollbacks.</p>
+                        </div>
+
+                        <div class="settings-group" style="gap: 12px;">
+                            <div class="form-row" style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+                                <div class="form-label-area">
+                                    <span class="form-label" style="font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fa-solid fa-bolt" style="color: var(--accent);"></i> Seamless Automatic Sync
+                                    </span>
+                                    <span class="form-desc" style="font-size: 11px;">Auto-uploads save on game close • Checks and updates newer cloud save on game launch</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cloudAutoSyncToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.6; padding: 4px 6px;">
+                                <div><strong style="color: var(--text-secondary);">When Automatic Sync is ON:</strong> Saves upload seamlessly whenever you exit a game, and newer saves from your other PC are restored before launching.</div>
+                                <div style="margin-top: 4px;"><strong style="color: var(--text-secondary);">When Automatic Sync is OFF:</strong> All backups and restores are manual (via the Backup & Restore buttons below).</div>
+                                <div style="margin-top: 4px;"><strong style="color: var(--success);"><i class="fa-solid fa-shield-halved"></i> Safety Guarantee:</strong> A timestamped safety rollback snapshot is automatically kept in your Documents folder whenever a save is restored, ensuring you never lose data.</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; padding-top: 8px;">
+                            <button id="saveCloudSettingsBtn" class="btn btn-primary btn-sm" style="padding: 6px 18px;">
+                                <i class="fa-solid fa-check"></i> Save Preferences
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Games Saves Section -->
+                <div class="glass-card" style="margin-top: 4px;">
+                    <!-- Filter and Search Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px; flex: 1; max-width: 450px;">
+                            <div class="search-box-wrapper" style="width: 100%;">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="cloudGameSearchInput" class="search-input" placeholder="Filter games by title or save status...">
+                            </div>
+                        </div>
+
+                        <!-- Filter Status Pills -->
+                        <div class="filter-pills-group">
+                            <div class="filter-pill active" data-cloud-filter="all">ALL</div>
+                            <div class="filter-pill" data-cloud-filter="in_sync">IN SYNC</div>
+                            <div class="filter-pill" data-cloud-filter="local_newer">LOCAL NEWER</div>
+                            <div class="filter-pill" data-cloud-filter="cloud_newer">CLOUD NEWER</div>
+                            <div class="filter-pill" data-cloud-filter="local_only">NEEDS BACKUP</div>
+                        </div>
+                    </div>
+
+                    <!-- Games Save Table / List -->
+                    <div class="cloud-games-list-container" id="cloudGamesList" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Dynamically filled with game cards -->
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -1334,6 +1498,108 @@
         </div>
     </div>
 
+    <!-- 📁 CUSTOM SAVE PATH MODAL -->
+    <div id="customSavePathModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 520px;">
+            <div class="modal-top-actions">
+                <button id="closeSavePathModalBtn" class="modal-top-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;">Custom Save Location</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Specify or browse to the exact folder containing save files for <strong id="customSaveGameTitle" style="color: var(--accent);">Game Title</strong>.</p>
+            </div>
+            <div class="form-row" style="flex-direction: column; gap: 8px; margin-bottom: 16px;">
+                <label class="form-label">Save Folder Path:</label>
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    <input type="text" id="customSavePathInput" class="form-input form-input-path" placeholder="C:\Users\...\AppData\Local\..." style="flex: 1; font-family: var(--font-mono); font-size: 12px;">
+                    <button type="button" id="browseCustomSavePathBtn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-folder-open"></i> Browse</button>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" id="cancelSavePathBtn" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="saveCustomSavePathBtn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Path</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ☁️ GOOGLE DRIVE API CREDENTIALS SETUP MODAL -->
+    <div id="gdriveSetupModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 580px;">
+            <div class="modal-top-actions">
+                <button id="closeGDriveSetupModalBtn" class="modal-top-btn close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px;">
+                <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(77, 163, 255, 0.12); border: 1px solid rgba(77, 163, 255, 0.3); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #4da3ff; flex-shrink: 0;">
+                    <i class="fa-brands fa-google-drive"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0 0 4px 0;">Google Drive API Setup</h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.5;">Direct online sync uses the official Google Drive REST API. Enter your Google Cloud OAuth Client ID &amp; Secret below, or import your downloaded <code style="color: var(--accent);">credentials.json</code> file.</p>
+                </div>
+            </div>
+
+            <!-- Alternative notice: Local Cloud Folder -->
+            <div style="background: rgba(212, 168, 83, 0.08); border: 1px solid rgba(212, 168, 83, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
+                    <strong style="color: var(--accent);"><i class="fa-solid fa-lightbulb"></i> Prefer zero setup?</strong><br>
+                    Select the <strong>Local Cloud Folder ("My Drive" / OneDrive)</strong> option instead. It works instantly with your installed sync folder with no API keys needed!
+                </div>
+                <button type="button" id="switchToLocalFolderBtn" class="btn btn-secondary btn-sm" style="font-size: 11px; white-space: nowrap; padding: 6px 12px;">
+                    Use Local Folder
+                </button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px;">
+                <!-- Import JSON button & hidden file input -->
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label class="form-label" style="margin: 0; font-size: 12px;">OAuth 2.0 Credentials:</label>
+                    <div>
+                        <input type="file" id="gdriveCredsFileInput" accept=".json" style="display: none;">
+                        <button type="button" id="importGDriveJsonBtn" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 12px;">
+                            <i class="fa-solid fa-file-import"></i> Import credentials.json
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Client ID input -->
+                <div>
+                    <label class="form-label" style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: block;">Client ID (Required):</label>
+                    <input type="text" id="gdriveClientIdInput" class="form-input" placeholder="e.g. 123456789-abcdef.apps.googleusercontent.com" style="font-family: var(--font-mono); font-size: 11px; width: 100%;">
+                </div>
+
+                <!-- Client Secret input -->
+                <div>
+                    <label class="form-label" style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: block;">Client Secret (Optional for PKCE / Desktop):</label>
+                    <input type="password" id="gdriveClientSecretInput" class="form-input" placeholder="e.g. GOCSPX-xxxxxxxxxxxxxxxx" style="font-family: var(--font-mono); font-size: 11px; width: 100%;">
+                </div>
+            </div>
+
+            <!-- Step by step instructions accordion/box -->
+            <details style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-glass); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px; color: var(--text-muted);">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-secondary); user-select: none;">
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent);"></i> How to get free Google Cloud Credentials (2 minutes)
+                </summary>
+                <ol style="margin: 10px 0 0 16px; padding: 0; line-height: 1.8;">
+                    <li>Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" id="openGCloudConsoleLink" style="color: var(--accent); text-decoration: underline;">Google Cloud Console Credentials</a> in your browser.</li>
+                    <li>Under <em>Branding / OAuth consent screen</em>, choose <strong>External</strong> and enter your App Name and Email.</li>
+                    <li>In the left menu, click <strong>Audience</strong> &rarr; scroll to <strong>Test users</strong> &rarr; click <strong>+ Add Users</strong> and enter your Google email (e.g. <code>officialzuhu@gmail.com</code>).</li>
+                    <li>Go to <em>Credentials &gt; + Create Credentials &gt; OAuth client ID</em>.</li>
+                    <li>Select Application type: <strong>Desktop app</strong>, enter any name, and click <strong>Create</strong>.</li>
+                    <li>Click <strong>Download JSON</strong> (or copy your Client ID &amp; Secret) and click <strong>Import credentials.json</strong> above!</li>
+                    <li>In <em>APIs &amp; Services &gt; Library</em>, ensure <strong>Google Drive API</strong> is enabled.</li>
+                </ol>
+            </details>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-glass); padding-top: 14px;">
+                <button type="button" id="cancelGDriveSetupBtn" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="saveGDriveCredsBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Save &amp; Connect
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notifications Container -->
     <div id="toastContainer" class="toast-container"></div>
 
@@ -1346,6 +1612,7 @@
     <script src="js/controllers/versionCheckerController.js"></script>
     <script src="js/controllers/steamController.js"></script>
     <script src="js/controllers/settingsController.js"></script>
+    <script src="js/controllers/cloudSavesController.js"></script>
     <script src="js/controllers/addGameController.js"></script>
     <script src="js/controllers/uiController.js"></script>
     <script src="app.js"></script>

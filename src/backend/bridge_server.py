@@ -21,12 +21,14 @@ from backend.downloader import Downloader
 from backend.extractor import Extractor
 from backend.version_checker import VersionChecker
 from backend.steam import SteamManager
+from backend.cloud_sync import CloudSyncManager
 from backend.controllers import (
     create_games_blueprint,
     create_downloads_blueprint,
     create_steam_blueprint,
     create_version_checker_blueprint,
-    create_settings_blueprint
+    create_settings_blueprint,
+    create_cloud_blueprint
 )
 
 app = Flask(__name__)
@@ -44,6 +46,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Initialize Core Services
 config = Config()
+cloud_sync = CloudSyncManager(data_folder=config.data_folder, config=config)
 db_manager = DatabaseManager(cache_dir=config.cache_folder, default_url=config.get("db_url"), config=config)
 extractor = Extractor(winrar_path=config.get("winrar_path"))
 downloader = Downloader(
@@ -68,11 +71,12 @@ def on_download_progress(job_data):
 downloader.set_callback(on_download_progress)
 
 # Register Controller Blueprints
-app.register_blueprint(create_games_blueprint(db_manager, config))
+app.register_blueprint(create_games_blueprint(db_manager, config, cloud_sync=cloud_sync))
 app.register_blueprint(create_downloads_blueprint(downloader, extractor, config, socketio))
 app.register_blueprint(create_steam_blueprint(steam_manager, config, db_manager))
 app.register_blueprint(create_version_checker_blueprint(version_checker, db_manager, config, socketio))
 app.register_blueprint(create_settings_blueprint(config, extractor, steam_manager, db_manager, downloader, version_checker))
+app.register_blueprint(create_cloud_blueprint(cloud_sync, config, db_manager))
 
 # Initial database pre-fetch on startup
 try:

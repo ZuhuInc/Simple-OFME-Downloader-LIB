@@ -13,7 +13,7 @@ import webbrowser
 from flask import Blueprint, jsonify, request
 
 
-def create_games_blueprint(db_manager, config):
+def create_games_blueprint(db_manager, config, cloud_sync=None):
     bp = Blueprint('games', __name__, url_prefix='/api/games')
 
     @bp.route('', methods=['GET'])
@@ -279,6 +279,13 @@ def create_games_blueprint(db_manager, config):
         # 3. Launch the game executable with its working directory set
         exe_dir = os.path.dirname(target_exe)
         try:
+            # Check and restore newer cloud save before launching if auto-sync is enabled
+            if cloud_sync and cloud_sync.is_auto_sync_enabled():
+                try:
+                    cloud_sync.check_and_restore_newer_cloud_save(title)
+                except Exception as sync_err:
+                    print(f"[CloudSync] Launch check warning: {sync_err}", flush=True)
+
             flags = 0
             if sys.platform == 'win32':
                 flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
@@ -290,6 +297,20 @@ def create_games_blueprint(db_manager, config):
                 close_fds=True
             )
             print(f"[Games] Executable launched: {target_exe} (PID: {proc.pid}) in {exe_dir}", flush=True)
+
+            # Auto-sync save when game exits if auto-sync is enabled
+            if cloud_sync and cloud_sync.is_auto_sync_enabled():
+                import threading
+                def monitor_and_sync(proc_handle, game_title):
+                    try:
+                        proc_handle.wait()
+                        print(f"[CloudSync] Game '{game_title}' process exited. Auto-backing up save...", flush=True)
+                        res = cloud_sync.backup_game(game_title)
+                        print(f"[CloudSync] Auto-backup result: {res}", flush=True)
+                    except Exception as e:
+                        print(f"[CloudSync] Auto-backup on exit error: {e}", flush=True)
+                threading.Thread(target=monitor_and_sync, args=(proc, title), daemon=True).start()
+
             return jsonify({
                 "success": True,
                 "method": "executable",

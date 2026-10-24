@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.versionCheckerController) window.versionCheckerController.init();
     if (window.steamController) window.steamController.init();
     if (window.settingsController) window.settingsController.init();
+    if (window.cloudSavesController) window.cloudSavesController.init();
     if (window.addGameController) window.addGameController.init();
 
     // Initialize 1:1 Custom Glass Dropdowns
