@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - Fanta OFME Downloader</title>
+    <meta name="description" content="Terms of Service for Fanta OFME Downloader.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0b0d13;
+            --surface: #12151e;
+            --border: #232838;
+            --accent: #d4a853;
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.65;
+            overflow-x: hidden;
+        }
+
+        nav {
+            border-bottom: 1px solid var(--border);
+            background: rgba(11, 13, 19, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1080px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .brand img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--accent);
+        }
+
+        .nav-divider {
+            display: inline-block;
+            width: 1px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.15);
+            margin: 0 2px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.2s;
+            cursor: pointer;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn:hover {
+            border-color: #384158;
+        }
+
+        .container {
+            max-width: 820px;
+            margin: 48px auto 72px;
+            padding: 0 24px;
+        }
+
+        .header {
+            margin-bottom: 36px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .last-updated {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2 i {
+            color: var(--accent);
+            font-size: 16px;
+        }
+
+        p, ul {
+            color: var(--text-secondary);
+            font-size: 14.5px;
+            margin-bottom: 14px;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        strong {
+            color: var(--text);
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 36px 24px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.15s;
+        }
+
+        footer a:hover {
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="brand" id="navBrand">
+                <img src="assets/logo.png" alt="Fanta OFME Logo">
+                <span>Fanta OFME</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html#features" id="navFeatures">Features</a>
+                <a href="index.html#cloud-saves" id="navCloud">Cloud Saves</a>
+                <span class="nav-divider" aria-hidden="true"></span>
+                <a href="privacy.html" id="navPrivacy">Privacy Policy</a>
+                <a href="terms.html" class="active" id="navTerms">Terms of Service</a>
+                <a href="https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB" target="_blank" rel="noopener" class="btn" id="navGithub">
+                    <i class="fa-brands fa-github"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1 id="pageTitle">Terms of Service</h1>
+            <p class="last-updated">Last Updated: October 2026 • Open Source Project</p>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-solid fa-circle-check"></i> 1. Acceptance of Terms</h2>
+            <p>By downloading, installing, or using <strong>Fanta OFME Downloader</strong>, you agree to be bound by these Terms of Service. If you do not agree to these terms, do not install or use the software.</p>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-solid fa-code"></i> 2. Open Source License</h2>
+            <p>Fanta OFME Downloader is open-source software provided under the <strong>MIT License</strong>.</p>
+            <p>You are free to view, audit, fork, and compile the software from source code hosted on GitHub.</p>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-brands fa-google-drive"></i> 3. Third-Party Services (Google Drive)</h2>
+            <p>Fanta OFME Downloader provides optional integration with Google Drive via Google's official APIs to synchronize game save data. Your use of Google Drive is also governed by Google's Terms of Service and Privacy Policy. Fanta OFME Downloader is not affiliated with, endorsed by, or sponsored by Google LLC.</p>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-solid fa-triangle-exclamation"></i> 4. Disclaimer of Warranty & Limitation of Liability</h2>
+            <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-solid fa-envelope"></i> 5. Contact</h2>
+            <p>For inquiries or issues regarding these terms, contact <a href="mailto:officialzuhu@gmail.com" style="color: var(--accent);">officialzuhu@gmail.com</a>.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Fanta OFME Downloader • Open Source (MIT License)</p>
+        <p style="margin-top: 10px;">
+            <a href="index.html" id="footerHome">Home</a> • 
+            <a href="privacy.html" id="footerPrivacy">Privacy Policy</a> • 
+            <a href="terms.html" id="footerTerms">Terms of Service</a> • 
+            <a href="https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB" target="_blank" rel="noopener" id="footerGithub">GitHub Repository</a>
+        </p>
+    </footer>
+
+</body>
+</html>
