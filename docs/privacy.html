@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Fanta OFME Downloader</title>
+    <meta name="description" content="Privacy Policy for Fanta OFME Downloader and Google Drive Cloud Saves integration.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0b0d13;
+            --surface: #12151e;
+            --border: #232838;
+            --accent: #d4a853;
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --success: #3ecf8e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.65;
+            overflow-x: hidden;
+        }
+
+        nav {
+            border-bottom: 1px solid var(--border);
+            background: rgba(11, 13, 19, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1080px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .brand img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--accent);
+        }
+
+        .nav-divider {
+            display: inline-block;
+            width: 1px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.15);
+            margin: 0 2px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.2s;
+            cursor: pointer;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn:hover {
+            border-color: #384158;
+        }
+
+        .container {
+            max-width: 820px;
+            margin: 48px auto 72px;
+            padding: 0 24px;
+        }
+
+        .header {
+            margin-bottom: 36px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .last-updated {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2 i {
+            color: var(--accent);
+            font-size: 16px;
+        }
+
+        p, ul, ol {
+            color: var(--text-secondary);
+            font-size: 14.5px;
+            margin-bottom: 14px;
+        }
+
+        ul, ol {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        strong {
+            color: var(--text);
+        }
+
+        code {
+            background: rgba(255, 255, 255, 0.08);
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .callout-box {
+            background: rgba(62, 207, 142, 0.06);
+            border: 1px solid rgba(62, 207, 142, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .callout-box h3 {
+            color: var(--success);
+            font-size: 15px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 36px 24px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.15s;
+        }
+
+        footer a:hover {
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="brand" id="navBrand">
+                <img src="assets/logo.png" alt="Fanta OFME Logo">
+                <span>Fanta OFME</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html#features" id="navFeatures">Features</a>
+                <a href="index.html#cloud-saves" id="navCloud">Cloud Saves</a>
+                <span class="nav-divider" aria-hidden="true"></span>
+                <a href="privacy.html" class="active" id="navPrivacy">Privacy Policy</a>
+                <a href="terms.html" id="navTerms">Terms of Service</a>
+                <a href="https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB" target="_blank" rel="noopener" class="btn" id="navGithub">
+                    <i class="fa-brands fa-github"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1 id="pageTitle">Privacy Policy</h1>
+            <p class="last-updated">Last Updated: October 2026 • Open Source Project</p>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-solid fa-handshake-angle"></i> 1. Overview & Commitment</h2>
+            <p><strong>Fanta OFME Downloader</strong> is an open-source, non-commercial desktop application developed by ZuhuInc. We are strictly committed to user privacy. We do not operate tracking services, we do not sell or harvest user data, and we do not run third-party advertisement networks.</p>
+            <p>This Privacy Policy explains how information is handled when you use Fanta OFME Downloader, with specific details on our <strong>Google Drive Cloud Saves & Sync</strong> feature.</p>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-brands fa-google-drive"></i> 2. Google API Data & Permissions (drive.file)</h2>
+            <p>When you connect your Google account to enable cloud game save synchronization, Fanta OFME Downloader requests the following minimal Google OAuth scope:</p>
+            <ul>
+                <li><code>https://www.googleapis.com/auth/drive.file</code> — <em>Per-file access to files created or opened by Fanta OFME Downloader</em></li>
+                <li><code>https://www.googleapis.com/auth/userinfo.email</code> — <em>Used exclusively to display your account name inside the app UI so you know which account is active</em></li>
+            </ul>
+
+            <div class="callout-box">
+                <h3><i class="fa-solid fa-circle-check"></i> Strict Limited Access Guarantee</h3>
+                <p style="margin: 0; color: var(--text); font-size: 14px;">
+                    Because we exclusively use the <strong><code>drive.file</code></strong> scope, Fanta OFME Downloader can <strong>ONLY</strong> access the game backup zip files and folders that the app itself creates (under the folder <code>Fanta OFME Cloud Saves</code>). The app has <strong>ZERO access</strong> to your personal Google Drive documents, photos, sheets, emails, or existing Drive files.
+                </p>
+            </div>
+
+            <p><strong>How Google Drive Data is Used:</strong></p>
+            <ol>
+                <li><strong>Creating Backup Archives:</strong> Compresses your local save folder for a chosen game into a zip archive and uploads it to your personal Google Drive inside a dedicated folder named <code>Fanta OFME Cloud Saves</code>.</li>
+                <li><strong>Restoring Saves:</strong> Downloads the backup zip archive you created back to your local computer and restores it into your game save directory.</li>
+                <li><strong>Checking Save Timestamps:</strong> Compares the timestamp of your cloud backup against your local game files to alert you if a newer cross-PC save is available.</li>
+            </ol>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-solid fa-server"></i> 3. No Third-Party Servers or Data Transfers</h2>
+            <p>Fanta OFME Downloader communicates directly between your personal computer and Google's official API servers (<code>googleapis.com</code>).</p>
+            <ul>
+                <li><strong>No Intermediate Servers:</strong> Your game save files, credentials, and OAuth tokens never pass through or get stored on any server owned or controlled by ZuhuInc or any third party.</li>
+                <li><strong>Local Storage Only:</strong> OAuth tokens and user preferences are stored strictly on your local machine in your private user profile directory (e.g. <code>CloudSync.json</code>).</li>
+                <li><strong>Zero Telemetry:</strong> We do not log, track, or analyze your game saves, playtime, or download habits.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-solid fa-trash-can"></i> 4. Data Control & Revoking Access</h2>
+            <p>You have complete control over your data at all times:</p>
+            <ul>
+                <li><strong>Disconnect Account:</strong> You can disconnect your Google account at any time in the app under the <em>Cloud & Saves</em> tab by clicking <strong>Disconnect</strong>. This immediately purges all stored tokens from your computer.</li>
+                <li><strong>Delete Cloud Saves:</strong> You can open your Google Drive at any time and permanently delete the <code>Fanta OFME Cloud Saves</code> folder or any individual game zip archives.</li>
+                <li><strong>Revoke Google Permissions:</strong> You can revoke access at any time via your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: underline;">Google Account Security Dashboard</a>.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2><i class="fa-solid fa-envelope"></i> 5. Contact & Open Source Verification</h2>
+            <p>Because Fanta OFME Downloader is open source, you can inspect the full source code and verify all network calls on GitHub:</p>
+            <p><a href="https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 600;">https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB</a></p>
+            <p>If you have any questions or feedback regarding this Privacy Policy, please contact:</p>
+            <p><strong>Maintainer:</strong> Zuhu<br>
+            <strong>Support Email:</strong> <a href="mailto:officialzuhu@gmail.com" style="color: var(--accent);">officialzuhu@gmail.com</a></p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Fanta OFME Downloader • Open Source (MIT License)</p>
+        <p style="margin-top: 10px;">
+            <a href="index.html" id="footerHome">Home</a> • 
+            <a href="privacy.html" id="footerPrivacy">Privacy Policy</a> • 
+            <a href="terms.html" id="footerTerms">Terms of Service</a> • 
+            <a href="https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB" target="_blank" rel="noopener" id="footerGithub">GitHub Repository</a>
+        </p>
+    </footer>
+
+</body>
+</html>
