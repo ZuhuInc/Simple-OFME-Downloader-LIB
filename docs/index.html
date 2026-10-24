@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fanta OFME Downloader - Open Source Game Manager</title>
+    <meta name="description" content="Open-source game manager featuring direct high-speed downloads, auto-extraction, Steam shortcut injection, and Google Drive cloud saves.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0b0d13;
+            --surface: #12151e;
+            --surface-hover: #171b26;
+            --border: #232838;
+            --accent: #d4a853;
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        nav {
+            border-bottom: 1px solid var(--border);
+            background: rgba(11, 13, 19, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1080px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .brand img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .nav-divider {
+            display: inline-block;
+            width: 1px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.15);
+            margin: 0 2px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #0b0d13;
+        }
+
+        .btn-primary:hover {
+            background: #e5ba64;
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-hover);
+            border-color: #384158;
+        }
+
+        .hero {
+            max-width: 860px;
+            margin: 64px auto 48px;
+            padding: 0 24px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(32px, 5vw, 50px);
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+
+        .hero h1 span {
+            color: var(--accent);
+        }
+
+        .hero p {
+            font-size: clamp(15px, 1.8vw, 18px);
+            color: var(--text-secondary);
+            max-width: 680px;
+            margin: 0 auto 32px;
+        }
+
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .features-grid {
+            max-width: 1080px;
+            margin: 40px auto 72px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: #3a435a;
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: rgba(212, 168, 83, 0.1);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .feature-card h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .cloud-banner {
+            max-width: 1080px;
+            margin: 0 auto 80px;
+            padding: 0 24px;
+        }
+
+        .cloud-banner-inner {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 36px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .cloud-banner-text {
+            max-width: 580px;
+        }
+
+        .cloud-banner-text h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .cloud-banner-text p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .cloud-logo-img {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 36px 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.15s;
+        }
+
+        footer a:hover {
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .cloud-banner-inner {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="brand" id="navBrand">
+                <img src="assets/logo.png" alt="Fanta OFME Logo">
+                <span>Fanta OFME</span>
+            </a>
+            <div class="nav-links">
+                <a href="#features" id="navFeatures">Features</a>
+                <a href="#cloud-saves" id="navCloud">Cloud Saves</a>
+                <span class="nav-divider" aria-hidden="true"></span>
+                <a href="privacy.html" id="navPrivacy">Privacy Policy</a>
+                <a href="terms.html" id="navTerms">Terms of Service</a>
+                <a href="https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" id="navGithub">
+                    <i class="fa-brands fa-github"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1 id="heroHeading">
+            Fanta OFME Downloader & <span>Cloud Sync</span>
+        </h1>
+        <p>
+            An open-source desktop game manager with direct multi-threaded downloads, automated archive extraction, Steam library shortcut injection, and private Google Drive cloud saves.
+        </p>
+        <div class="hero-actions">
+            <a href="https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases/latest" target="_blank" rel="noopener" class="btn btn-primary" id="downloadBtn">
+                <i class="fa-solid fa-download"></i> Download Latest Release
+            </a>
+            <a href="https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB" target="_blank" rel="noopener" class="btn btn-secondary" id="viewSourceBtn">
+                <i class="fa-solid fa-code"></i> View Source Code
+            </a>
+        </div>
+    </section>
+
+    <section class="features-grid" id="features">
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-gauge-high"></i></div>
+            <h3>Turbo Downloader</h3>
+            <p>Accelerated multi-threaded downloads with automatic link resolution for GoFile, PixelDrain, BuzzHeavier, and FileDitch.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-box-open"></i></div>
+            <h3>Automated Extraction</h3>
+            <p>Built-in 7-Zip and WinRAR pipeline that unpacks archives automatically with password handling and post-extract cleanup.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fa-brands fa-steam"></i></div>
+            <h3>Steam Library Injection</h3>
+            <p>Add installed games directly as non-Steam shortcuts with custom banners and playtime tracking in one click.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fa-brands fa-google-drive"></i></div>
+            <h3>Google Drive Cloud Saves</h3>
+            <p>One-click private save sync. Back up your game progress, synchronize saves across computers, and restore whenever needed.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-bell"></i></div>
+            <h3>Version Checker & Alerts</h3>
+            <p>Scrapes for game updates in real-time, displays update indicators, and sends Discord webhook notifications.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <h3>Open Source & Zero Telemetry</h3>
+            <p>Licensed under MIT. All data remains exclusively on your computer and your personal Google Drive. No analytics or tracking.</p>
+        </div>
+    </section>
+
+    <section class="cloud-banner" id="cloud-saves">
+        <div class="cloud-banner-inner">
+            <div class="cloud-banner-text">
+                <h2>Private & Secure Cloud Saves</h2>
+                <p>
+                    Fanta OFME Downloader uses Google's restricted <code>drive.file</code> scope. It only accesses files inside the dedicated <code>Fanta OFME Cloud Saves</code> folder on your personal Google Drive. The app cannot read or touch any of your other documents or personal files.
+                </p>
+                <a href="privacy.html" class="btn btn-secondary btn-sm" id="cloudPrivacyBtn">
+                    Read Privacy Policy <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+            <div>
+                <img src="assets/logo.png" alt="Fanta OFME Logo" class="cloud-logo-img">
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Fanta OFME Downloader • Open Source (MIT License)</p>
+        <p style="margin-top: 10px;">
+            <a href="index.html" id="footerHome">Home</a> • 
+            <a href="privacy.html" id="footerPrivacy">Privacy Policy</a> • 
+            <a href="terms.html" id="footerTerms">Terms of Service</a> • 
+            <a href="https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB" target="_blank" rel="noopener" id="footerGithub">GitHub Repository</a>
+        </p>
+    </footer>
+
+</body>
+</html>
