@@ -371,20 +371,19 @@
         "category": "General"
     },
     "Grounded 2": {
-        "version": "0.5.0.2.3054196",
+        "version": "0.6.0.3",
         "host": "GoFile",
         "approx_size": "40GB",
         "description": "Shrunk again, but the world is much larger. In this open-world, single-player or co-op survival adventure, craft weapons and armor, build your base, and traverse the playground on your buggy. But something else is out there—and it hasn’t forgotten you.",
         "thumbnail": "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/Grounded2.jpg",
         "origin_url": "https://online-fix.me/games/officialservers/17827-grounded-2-po-seti.html",
         "parts": [
-            "https://gofile.io/d/0aOf50",
-            "https://gofile.io/d/xdJkfV",
-            "https://gofile.io/d/CDQQhD",
-            "https://gofile.io/d/Frg5o6",
-            "https://gofile.io/d/Q7PXti"
+            "https://gofile.io/d/xo2hkTAO",
+            "https://gofile.io/d/uM0NKVyC",
+            "https://gofile.io/d/0i2xlH0I",
+            "https://gofile.io/d/ynxaijuW"
         ],
-        "fix_url": "https://gofile.io/d/GnxEdI",
+        "fix_url": "https://gofile.io/d/WL7ZTnqu",
         "category": "General"
     },
     "Abiotic Factor": {
