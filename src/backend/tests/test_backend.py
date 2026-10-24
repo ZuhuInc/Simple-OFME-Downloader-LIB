@@ -700,6 +700,61 @@ Fix:
         self.assertTrue(cloud_sync.has_gdrive_credentials())
         self.assertEqual(cloud_sync.settings.get("gdrive_client_id"), "test_client_id_123.apps.googleusercontent.com")
 
+    def test_batch_update_outdated_games(self):
+        """Test POST /api/version-check/batch-update endpoint and host assignment fix"""
+        from flask import Flask
+        from src.backend.controllers.version_checker_controller import create_version_checker_blueprint
+
+        app = Flask(__name__)
+        config = Config(data_folder=self.temp_dir)
+        db_mock = unittest.mock.MagicMock()
+        db_mock.games = []
+        db_mock.add_or_update_game = unittest.mock.MagicMock()
+        vc_mock = unittest.mock.MagicMock()
+        vc_mock.clean_version_string = lambda v: str(v).lstrip('v')
+        socketio_mock = unittest.mock.MagicMock()
+
+        app.register_blueprint(create_version_checker_blueprint(vc_mock, db_mock, config, socketio_mock))
+        client = app.test_client()
+
+        with unittest.mock.patch('src.backend.scraper_service.OnlineFixScraper.scrape_game_page') as mock_scrape:
+            mock_scrape.return_value = {
+                "success": True,
+                "title": "Grounded 2",
+                "version": "0.6.0.3",
+                "host": "GoFile",
+                "parts": ["https://gofile.io/d/test1"],
+                "fix_url": "https://gofile.io/d/fix",
+                "approx_size": "15GB",
+                "description": "Survival game",
+                "thumbnail": "https://example.com/thumb.png"
+            }
+
+            payload = {
+                "games": [
+                    {
+                        "title": "Grounded 2",
+                        "origin_url": "https://online-fix.me/games/adventure/123-grounded-2.html",
+                        "latest_version": "v0.6.0.3"
+                    }
+                ],
+                "preferred_host": "GoFile"
+            }
+
+            resp = client.post('/api/version-check/batch-update', json=payload)
+            self.assertEqual(resp.status_code, 200)
+            data = resp.get_json()
+            self.assertTrue(data.get("success"))
+            self.assertEqual(data.get("updated_count"), 1)
+            self.assertIn("Grounded 2", data.get("updated_games", []))
+
+            # Verify that add_or_update_game was called with valid catalog_entry including host
+            db_mock.add_or_update_game.assert_called_once()
+            called_entry = db_mock.add_or_update_game.call_args[0][0]
+            self.assertEqual(called_entry["title"], "Grounded 2")
+            self.assertEqual(called_entry["version"], "0.6.0.3")
+            self.assertEqual(called_entry["host"], "GoFile")
+
 
 if __name__ == "__main__":
     unittest.main()

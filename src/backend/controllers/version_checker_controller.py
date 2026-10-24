@@ -384,75 +384,84 @@ def create_version_checker_blueprint(version_checker, db_manager, config, socket
             except Exception as se:
                 print(f"[BatchUpdate] Socket emit error: {se}")
 
-            # Locate game in database for canonical naming and existing assets
-            db_game = None
-            origin_url_clean = origin_url.rstrip('/').lower() if origin_url else ''
-            for g in getattr(db_manager, 'games', []):
-                if g.title.lower() == title.lower():
-                    db_game = g
-                    break
-                if origin_url_clean and g.origin_url and g.origin_url.strip().rstrip('/').lower() == origin_url_clean:
-                    db_game = g
-                    break
-
-            canonical_title = db_game.title if db_game else title
-
-            # Scrape fresh data from online page
-            scraped_result = {}
-            if origin_url:
-                try:
-                    scraped_result = scraper.scrape_game_page(origin_url, preferred_host=preferred_host)
-                except Exception as e:
-                    print(f"[BatchUpdate] Error scraping {origin_url}: {e}")
-
-            parts = []
-            if isinstance(scraped_result, dict) and scraped_result.get('parts'):
-                parts = [p.strip() for p in scraped_result['parts'] if p and str(p).strip().startswith('http')]
-            if not parts and db_game and db_game.parts:
-                parts = list(db_game.parts)
-
-            fix_url = (scraped_result.get('fix_url') if isinstance(scraped_result, dict) else '') or (db_game.fix_url if db_game else '')
-            # Size: ensure scraped 'N/A' or missing size does not overwrite valid existing size
-            raw_scraped_size = str(scraped_result.get('approx_size', '')).strip() if isinstance(scraped_result, dict) else ''
-            existing_size = str(db_game.approx_size if db_game else '').strip()
-            if raw_scraped_size and raw_scraped_size.lower() not in ('none', 'null', 'unknown', 'n/a'):
-                approx_size = raw_scraped_size
-            elif existing_size and existing_size.lower() not in ('none', 'null', 'unknown', 'n/a'):
-                approx_size = existing_size
-            else:
-                approx_size = "Unknown"
-
-            description = (scraped_result.get('description') if isinstance(scraped_result, dict) else None) or (db_game.description if db_game else "No description available.")
-
-            # Thumbnail: Always prioritize existing catalog thumbnail over SteamRIP / Cracked-Games
-            existing_thumb = str(db_game.thumbnail if db_game else '').strip()
-            scraped_thumb = str(scraped_result.get('thumbnail', '')).strip() if isinstance(scraped_result, dict) else ''
-            thumbnail = existing_thumb or scraped_thumb or ""
-            category = (db_game.category if (db_game and db_game.category) else "General")
-
-            raw_ver = latest_version or (scraped_result.get('version') if isinstance(scraped_result, dict) else None) or (db_game.version if db_game else "1.0")
-            clean_ver = version_checker.clean_version_string(str(raw_ver)) or "1.0"
-
-            catalog_entry = {
-                "title": canonical_title,
-                "version": clean_ver,
-                "host": host,
-                "parts": parts,
-                "fix_url": fix_url,
-                "approx_size": approx_size,
-                "description": description,
-                "thumbnail": thumbnail,
-                "origin_url": origin_url or (db_game.origin_url if db_game else ""),
-                "category": category
-            }
-
-            # Update catalog in Data.json & in-memory catalog
             try:
-                db_manager.add_or_update_game(catalog_entry, installed_data=config.data)
-                success_count += 1
-                updated_list.append(canonical_title)
-            except Exception as de:
-                print(f"[BatchUpdate] Failed updating '{canonical_title}' in catalog: {de}")
+                # Locate game in database for canonical naming and existing assets
+                db_game = None
+                origin_url_clean = origin_url.rstrip('/').lower() if origin_url else ''
+                for g in getattr(db_manager, 'games', []):
+                    if g.title.lower() == title.lower():
+                        db_game = g
+                        break
+                    if origin_url_clean and g.origin_url and g.origin_url.strip().rstrip('/').lower() == origin_url_clean:
+                        db_game = g
+                        break
+
+                canonical_title = db_game.title if db_game else title
+
+                # Scrape fresh data from online page
+                scraped_result = {}
+                if origin_url:
+                    try:
+                        scraped_result = scraper.scrape_game_page(origin_url, preferred_host=preferred_host)
+                    except Exception as e:
+                        print(f"[BatchUpdate] Error scraping {origin_url}: {e}")
+
+                parts = []
+                if isinstance(scraped_result, dict) and scraped_result.get('parts'):
+                    parts = [p.strip() for p in scraped_result['parts'] if p and str(p).strip().startswith('http')]
+                if not parts and db_game and db_game.parts:
+                    parts = list(db_game.parts)
+
+                fix_url = (scraped_result.get('fix_url') if isinstance(scraped_result, dict) else '') or (db_game.fix_url if db_game else '')
+                # Size: ensure scraped 'N/A' or missing size does not overwrite valid existing size
+                raw_scraped_size = str(scraped_result.get('approx_size', '')).strip() if isinstance(scraped_result, dict) else ''
+                existing_size = str(db_game.approx_size if db_game else '').strip()
+                if raw_scraped_size and raw_scraped_size.lower() not in ('none', 'null', 'unknown', 'n/a'):
+                    approx_size = raw_scraped_size
+                elif existing_size and existing_size.lower() not in ('none', 'null', 'unknown', 'n/a'):
+                    approx_size = existing_size
+                else:
+                    approx_size = "Unknown"
+
+                description = (scraped_result.get('description') if isinstance(scraped_result, dict) else None) or (db_game.description if db_game else "No description available.")
+
+                # Thumbnail: Always prioritize existing catalog thumbnail over SteamRIP / Cracked-Games
+                existing_thumb = str(db_game.thumbnail if db_game else '').strip()
+                scraped_thumb = str(scraped_result.get('thumbnail', '')).strip() if isinstance(scraped_result, dict) else ''
+                thumbnail = existing_thumb or scraped_thumb or ""
+                category = (db_game.category if (db_game and db_game.category) else "General")
+
+                raw_ver = latest_version or (scraped_result.get('version') if isinstance(scraped_result, dict) else None) or (db_game.version if db_game else "1.0")
+                clean_ver = version_checker.clean_version_string(str(raw_ver)) or "1.0"
+
+                host = (scraped_result.get('host') if isinstance(scraped_result, dict) else None) \
+                    or item.get('host') \
+                    or (getattr(db_game, 'host', None) if db_game else None) \
+                    or preferred_host \
+                    or 'GoFile'
+
+                catalog_entry = {
+                    "title": canonical_title,
+                    "version": clean_ver,
+                    "host": host,
+                    "parts": parts,
+                    "fix_url": fix_url,
+                    "approx_size": approx_size,
+                    "description": description,
+                    "thumbnail": thumbnail,
+                    "origin_url": origin_url or (db_game.origin_url if db_game else ""),
+                    "category": category
+                }
+
+                # Update catalog in Data.json & in-memory catalog
+                try:
+                    db_manager.add_or_update_game(catalog_entry, installed_data=config.data)
+                    success_count += 1
+                    updated_list.append(canonical_title)
+                except Exception as de:
+                    print(f"[BatchUpdate] Failed updating '{canonical_title}' in catalog: {de}")
+            except Exception as ge:
+                print(f"[BatchUpdate] Unexpected error updating '{title}': {ge}")
 
         # Final completion event
         try:
