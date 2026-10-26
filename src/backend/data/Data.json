@@ -2653,5 +2653,47 @@
         ],
         "fix_url": "https://gofile.io/d/KHf0XjAu",
         "category": "General"
+    },
+    "The Last Caretaker": {
+        "version": ".0.8.0.612251",
+        "host": "GoFile",
+        "approx_size": "15.3GB",
+        "description": "You are the last caretaker; a reawakenedmachinetasked with saving the future of the human race. You will explore a vast ocean world featuring a deep crafting system with limited resources, allowing you to forge your path and build the tools to save humanity.Laundering Simulator",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/1783560/f30786fc01cd937698392cc70936ecdb8b67efd9/library_capsule_2x.jpg?t=1762453894",
+        "origin_url": "https://steamrip.com/the-last-caretaker-free-download/",
+        "parts": [
+            "https://gofile.io/d/xYxCKD"
+        ],
+        "fix_url": "",
+        "category": "General",
+        "mirrors": {
+            "BuzzHeavier": {
+                "parts": [
+                    "https://bzzhr.to/36kla11rt19k"
+                ],
+                "fix_url": ""
+            }
+        }
+    },
+    "Happy’s Humble Burger Cult": {
+        "version": "24379760",
+        "host": "GoFile",
+        "approx_size": "8GB",
+        "description": "You and your crew are hired to participate in an experiment run by the Paragon Corporation. It sounds like a standard fast-food gig: grill burgers, fry sides, pour drinks, work the register, hit your quota, and keep the customers happy.",
+        "thumbnail": "https://steamrip.com/wp-content/uploads/2026/07/Happy_s_Humble_Burger_Cult_featured_steamrip.jpg",
+        "origin_url": "https://steamrip.com/happys-humble-burger-cult-free-download/",
+        "parts": [
+            "https://gofile.io/d/BCIK1X"
+        ],
+        "fix_url": "",
+        "category": "General",
+        "mirrors": {
+            "BuzzHeavier": {
+                "parts": [
+                    "https://bzzhr.to/rqy5ty9ejcs4"
+                ],
+                "fix_url": ""
+            }
+        }
     }
 }
