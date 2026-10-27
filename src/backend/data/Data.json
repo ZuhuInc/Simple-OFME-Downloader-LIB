@@ -2695,5 +2695,19 @@
                 "fix_url": ""
             }
         }
+    },
+    "Fears to Fathom Scratch Creek Online": {
+        "version": "11062026",
+        "host": "GoFile",
+        "approx_size": "14 GB",
+        "description": "After noticing bone-chilling similarities to an episode of Fears to Fathom, Tessa and Marcus decide to share their own experience. Scratch Creek is an exclusively online co-op experience.",
+        "thumbnail": "https://cdn2.steamgriddb.com/thumb/cb91bb92b3726967c5aa50cdd80f3050.png",
+        "origin_url": "https://online-fix.me/games/adventures/18141-fears-to-fathom-scratch-creek-online.html",
+        "parts": [
+            "https://gofile.io/d/dgwFcJ",
+            "https://gofile.io/d/OUrE4D"
+        ],
+        "fix_url": "https://gofile.io/d/KvbXsq",
+        "category": "General"
     }
 }
