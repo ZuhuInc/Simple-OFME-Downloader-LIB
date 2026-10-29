@@ -2680,7 +2680,7 @@
         "host": "GoFile",
         "approx_size": "8GB",
         "description": "You and your crew are hired to participate in an experiment run by the Paragon Corporation. It sounds like a standard fast-food gig: grill burgers, fry sides, pour drinks, work the register, hit your quota, and keep the customers happy.",
-        "thumbnail": "https://steamrip.com/wp-content/uploads/2026/07/Happy_s_Humble_Burger_Cult_featured_steamrip.jpg",
+        "thumbnail": "https://i.imgur.com/XwsZzt9.png",
         "origin_url": "https://steamrip.com/happys-humble-burger-cult-free-download/",
         "parts": [
             "https://gofile.io/d/BCIK1X"
@@ -2708,6 +2708,19 @@
             "https://gofile.io/d/OUrE4D"
         ],
         "fix_url": "https://gofile.io/d/KvbXsq",
+        "category": "General"
+    },
+    "Probably Stolen – Cyberpunk Shopkeeper Sim": {
+        "version": "1.0.0.2",
+        "host": "MegaDB",
+        "approx_size": "2.08GB",
+        "description": "In a towering space station split by wealth and corruption, your business runs onmerchandisewith flexible origins. You’re a formerscavengerwho secured a storefront thanks to a generous loan and questionable timing. Now rent is rising, factions are watching, and most of your best margins live in legal gray zones.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4348910/5cb0a6457762778c2c3bcaaa06768bb77cc791a8/library_capsule_2x.jpg?t=1793192084",
+        "origin_url": "https://steamrip.com/probably-stolen-cyberpunk-shopkeeper-sim-free-download/",
+        "parts": [
+            "https://bzzhr.to/07mmr5c0u0oj"
+        ],
+        "fix_url": "",
         "category": "General"
     }
 }
