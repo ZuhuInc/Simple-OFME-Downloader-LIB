@@ -2808,5 +2808,26 @@
         ],
         "fix_url": "",
         "category": "General"
+    },
+    "Orcs Must Die! Deathtrap": {
+        "version": "1.1.4",
+        "host": "GoFile",
+        "approx_size": "9.9GB",
+        "description": "Step into the role of a powerful War Mage, defend the rift from thegrotesquemob, and embrace the chaos of orc annihilation. The castle doors are thrown wide open to exciting new features, including:",
+        "thumbnail": "https://steamrip.com/wp-content/uploads/2025/01/orcs-must-die-deathtrap-preinstalled-steamrip.jpg",
+        "origin_url": "https://steamrip.com/orcs-must-die-deathtrap-free-download/",
+        "parts": [
+            "https://gofile.io/d/EiC3Ak"
+        ],
+        "fix_url": "",
+        "category": "General",
+        "mirrors": {
+            "BuzzHeavier": {
+                "parts": [
+                    "https://bzzhr.to/ulq2z8vxbp1t"
+                ],
+                "fix_url": ""
+            }
+        }
     }
 }
