@@ -2568,7 +2568,7 @@
     },
     "Forza Horizon 2": {
         "version": "1.0.0.64",
-        "host": "Archive.org",
+        "host": "GoFile",
         "approx_size": "44.6 GB",
         "description": "Forza Horizon 2 is an open-world racing game set across Southern Europe. Run the Xbox One Anthem build natively on PC using the Azimuth compatibility layer at 60 FPS / 1080p, featuring full support for the Storm Island expansion.",
         "thumbnail": "https://cdn2.steamgriddb.com/thumb/983a389763a10769e5fecfcd184c5f0d.jpg",
@@ -2576,16 +2576,18 @@
         "parts": [
             "https://archive.org/download/xboxonedumpz/%28Forza%20Horizon%202%29%20Anthem_1.0.0.64_x64__8wekyb3d8bbwe.rar",
             "https://archive.org/download/forza-horizon-2-anthem-1.0.0.64-x-64-8wekyb-3d-8bbwe/Forza%20Horizon%202%20Storm%20Island%20%281.0.0.36%29.zip",
-            "https://www.dropbox.com/scl/fi/ndwiz9w0fmaj2hbjk9375/azimuth-windows.zip?rlkey=skv82hazqnii3ehnyws7q1jwe&st=y69ckkxa&dl=1"
+            "https://www.dropbox.com/scl/fi/ndwiz9w0fmaj2hbjk9375/azimuth-windows.zip?rlkey=skv82hazqnii3ehnyws7q1jwe&st=vhqiuiqb&dl=1"
         ],
+        "fix_url": "",
         "category": "Racing",
         "mirrors": {
             "Storage Cluster": {
                 "parts": [
                     "https://ia800606.us.archive.org/23/items/xboxonedumpz/(Forza%20Horizon%202)%20Anthem_1.0.0.64_x64__8wekyb3d8bbwe.rar",
                     "https://archive.org/download/forza-horizon-2-anthem-1.0.0.64-x-64-8wekyb-3d-8bbwe/Forza%20Horizon%202%20Storm%20Island%20%281.0.0.36%29.zip",
-                    "https://www.dropbox.com/scl/fi/ndwiz9w0fmaj2hbjk9375/azimuth-windows.zip?rlkey=skv82hazqnii3ehnyws7q1jwe&st=y69ckkxa&dl=1"
-                ]
+                    "https://www.dropbox.com/scl/fi/ndwiz9w0fmaj2hbjk9375/azimuth-windows.zip?rlkey=skv82hazqnii3ehnyws7q1jwe&st=vhqiuiqb&dl=1"
+                ],
+                "fix_url": ""
             }
         }
     },
@@ -2719,6 +2721,90 @@
         "origin_url": "https://steamrip.com/probably-stolen-cyberpunk-shopkeeper-sim-free-download/",
         "parts": [
             "https://bzzhr.to/07mmr5c0u0oj"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "We Were Here Tomorrow": {
+        "version": "1.1.2",
+        "host": "GoFile",
+        "approx_size": "25GB",
+        "description": "You and your partner awaken inside a mysterious Norček facility with little recollection of how you got there. Communicate, cooperate, and unravel the secrets in this asymmetrical co-op adventure. Only together will you decide the fate of Tomorrow…",
+        "thumbnail": "https://store-images.s-microsoft.com/image/apps.59475.13556498983821705.03f02384-6c7b-463c-892f-be35d14e9e01.e8cc7522-5728-46a0-8077-87297db3f8ec",
+        "origin_url": "https://online-fix.me/games/adventures/18287-we-were-here-tomorrow-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/YpS6uL5H",
+            "https://gofile.io/d/cUJK2pgp",
+            "https://gofile.io/d/dtIXGAXY"
+        ],
+        "fix_url": "https://gofile.io/d/smzlvtXZ",
+        "category": "General",
+        "mirrors": {
+            "PixelDrain": {
+                "parts": [
+                    "https://pixeldrain.com/u/cUuaUrtT",
+                    "https://pixeldrain.com/u/4KvuNKUB",
+                    "https://pixeldrain.com/u/hzBh6HzV"
+                ],
+                "fix_url": "https://pixeldrain.com/u/3ydMqGhq"
+            }
+        }
+    },
+    "Crimson Moon": {
+        "version": "1.0.0.160034",
+        "host": "GoFile",
+        "approx_size": "50GB",
+        "description": "You are Nephilim: a human-angel hybrid forged to defend humanity with supernatural powers. Fight solo or with a friend to annihilate demons and challenge brutal bosses in relentless melée combat. Rise, violent one. The prophecy is yours to fulfill.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4317690/5463900d4e93cd97a6de8a52731d9bda4ea1d4eb/library_capsule_2x.jpg?t=1788195158",
+        "origin_url": "https://online-fix.me/games/adventures/18218-crimson-moon-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/xT7SQYqc",
+            "https://gofile.io/d/5ox3juG5",
+            "https://gofile.io/d/df1us5T6",
+            "https://gofile.io/d/g9no6W35",
+            "https://gofile.io/d/ddWCrrXI",
+            "https://gofile.io/d/1cZa536i",
+            "https://gofile.io/d/o8X38EKG"
+        ],
+        "fix_url": "https://gofile.io/d/RqfnF7rO",
+        "category": "General",
+        "mirrors": {
+            "PixelDrain": {
+                "parts": [
+                    "https://pixeldrain.com/u/SCr1Y1bM",
+                    "https://pixeldrain.com/u/rkjXfiQR",
+                    "https://pixeldrain.com/u/rwf87W2Z",
+                    "https://pixeldrain.com/u/k38XP2bt",
+                    "https://pixeldrain.com/u/J6PYcUGe",
+                    "https://pixeldrain.com/u/EuEssDBw",
+                    "https://pixeldrain.com/u/7mTTEd3j"
+                ],
+                "fix_url": "https://pixeldrain.com/u/fB3Ygcjx"
+            }
+        }
+    },
+    "Call of Duty: Modern Warfare 4": {
+        "version": "info",
+        "host": "GoFile",
+        "approx_size": "72.2 GB",
+        "description": "Pre-purchase any digital edition and receive: - Inner Circuit Weapon Blueprint - Unlock the Inner Circuit Weapon Blueprint in Call of Duty®: Modern Warfare® 4 at launch* - Items for immediate use in Call of Duty®: Black Ops 7 and Call of Duty®: Warzone™**. Also available in Modern Warfare® 4 at launch:",
+        "thumbnail": "https://cdn2.steamgriddb.com/thumb/e2f7edb9b36aaae9f1fff80c0cb3d42d.jpg",
+        "origin_url": "https://cracked-games.org/download-call-of-duty-modern-warfare-4-free-download",
+        "parts": [
+            "https://gofile.io/d/EGE6wYYD"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "Invincible Presents: Atom Eve": {
+        "version": "12880727",
+        "host": "GoFile",
+        "approx_size": "2.1 GB",
+        "description": "Download Invincible Presents: Atom Eve for free. Become Atom Eve and take control of your own path as one of the most powerful superheroes in the Invincible universe! Unravel a my...",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/2060870/library_600x900_2x.jpg?t=1729702090",
+        "origin_url": "https://cracked-games.org/invincible-presents-atom-eve-free-download",
+        "parts": [
+            "https://gofile.io/d/X4a7ub4G"
         ],
         "fix_url": "",
         "category": "General"
