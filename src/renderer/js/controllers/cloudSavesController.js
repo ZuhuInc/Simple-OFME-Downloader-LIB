@@ -22,12 +22,14 @@ class CloudSavesController {
         // Provider card selection
         const cardGDrive = document.getElementById('providerCardGDrive');
         const cardLocal = document.getElementById('providerCardLocal');
+        const cardSelfHosted = document.getElementById('providerCardSelfHosted');
         const radioGDrive = document.getElementById('radioProviderGDrive');
         const radioLocal = document.getElementById('radioProviderLocal');
+        const radioSelfHosted = document.getElementById('radioProviderSelfHosted');
 
         if (cardGDrive && radioGDrive) {
             cardGDrive.addEventListener('click', (e) => {
-                if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                if (e.target.tagName !== 'BUTTON' && !e.target.closest('button') && e.target.tagName !== 'INPUT') {
                     radioGDrive.checked = true;
                     this.updateProviderCardStyles();
                 }
@@ -37,12 +39,40 @@ class CloudSavesController {
 
         if (cardLocal && radioLocal) {
             cardLocal.addEventListener('click', (e) => {
-                if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                if (e.target.tagName !== 'BUTTON' && !e.target.closest('button') && e.target.tagName !== 'INPUT') {
                     radioLocal.checked = true;
                     this.updateProviderCardStyles();
                 }
             });
             radioLocal.addEventListener('change', () => this.updateProviderCardStyles());
+        }
+
+        if (cardSelfHosted && radioSelfHosted) {
+            cardSelfHosted.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON' && !e.target.closest('button') && e.target.tagName !== 'A' && !e.target.closest('a')) {
+                    radioSelfHosted.checked = true;
+                    this.updateProviderCardStyles();
+                }
+            });
+            radioSelfHosted.addEventListener('change', () => this.updateProviderCardStyles());
+        }
+
+        const testSelfHostedBtn = document.getElementById('testSelfHostedBtn');
+        if (testSelfHostedBtn) {
+            testSelfHostedBtn.addEventListener('click', () => this.testSelfHostedConnection());
+        }
+
+        const selfHostedRepoLink = document.getElementById('openSelfHostedRepoLink');
+        if (selfHostedRepoLink) {
+            selfHostedRepoLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                const repoUrl = 'https://github.com/ReTr0777/Fanta-OFME-Cloud';
+                if (window.api && window.api.openExternal) {
+                    window.api.openExternal(repoUrl);
+                } else {
+                    window.open(repoUrl, '_blank');
+                }
+            });
         }
 
         // Google Drive Auth & Setup Buttons
@@ -178,19 +208,30 @@ class CloudSavesController {
 
     updateProviderCardStyles() {
         const radioGDrive = document.getElementById('radioProviderGDrive');
+        const radioLocal = document.getElementById('radioProviderLocal');
+        const radioSelfHosted = document.getElementById('radioProviderSelfHosted');
         const cardGDrive = document.getElementById('providerCardGDrive');
         const cardLocal = document.getElementById('providerCardLocal');
+        const cardSelfHosted = document.getElementById('providerCardSelfHosted');
 
-        const isGDrive = radioGDrive ? radioGDrive.checked : true;
+        const isLocal = Boolean(radioLocal && radioLocal.checked);
+        const isSelfHosted = Boolean(radioSelfHosted && radioSelfHosted.checked);
+        const isGDrive = !isLocal && !isSelfHosted;
+
         if (cardGDrive) {
             cardGDrive.classList.toggle('active', isGDrive);
             cardGDrive.style.borderColor = isGDrive ? 'rgba(212, 168, 83, 0.4)' : 'var(--border-glass)';
             cardGDrive.style.background = isGDrive ? 'rgba(212, 168, 83, 0.06)' : 'rgba(0, 0, 0, 0.2)';
         }
         if (cardLocal) {
-            cardLocal.classList.toggle('active', !isGDrive);
-            cardLocal.style.borderColor = !isGDrive ? 'rgba(212, 168, 83, 0.4)' : 'var(--border-glass)';
-            cardLocal.style.background = !isGDrive ? 'rgba(212, 168, 83, 0.06)' : 'rgba(0, 0, 0, 0.2)';
+            cardLocal.classList.toggle('active', isLocal);
+            cardLocal.style.borderColor = isLocal ? 'rgba(212, 168, 83, 0.4)' : 'var(--border-glass)';
+            cardLocal.style.background = isLocal ? 'rgba(212, 168, 83, 0.06)' : 'rgba(0, 0, 0, 0.2)';
+        }
+        if (cardSelfHosted) {
+            cardSelfHosted.classList.toggle('active', isSelfHosted);
+            cardSelfHosted.style.borderColor = isSelfHosted ? 'rgba(212, 168, 83, 0.4)' : 'var(--border-glass)';
+            cardSelfHosted.style.background = isSelfHosted ? 'rgba(212, 168, 83, 0.06)' : 'rgba(0, 0, 0, 0.2)';
         }
     }
 
@@ -212,8 +253,11 @@ class CloudSavesController {
             // Provider selection
             const radioGDrive = document.getElementById('radioProviderGDrive');
             const radioLocal = document.getElementById('radioProviderLocal');
+            const radioSelfHosted = document.getElementById('radioProviderSelfHosted');
             if (data.provider === 'local_folder') {
                 if (radioLocal) radioLocal.checked = true;
+            } else if (data.provider === 'self_hosted') {
+                if (radioSelfHosted) radioSelfHosted.checked = true;
             } else {
                 if (radioGDrive) radioGDrive.checked = true;
             }
@@ -229,6 +273,32 @@ class CloudSavesController {
             const localPathInput = document.getElementById('localCloudPathInput');
             if (localPathInput) {
                 localPathInput.value = data.local_cloud_path || data.default_local_path || '';
+            }
+
+            // Self-Hosted URL & API Key
+            const selfHostedUrlInput = document.getElementById('selfHostedUrlInput');
+            const selfHostedApiKeyInput = document.getElementById('selfHostedApiKeyInput');
+            const selfHostedStatusText = document.getElementById('selfHostedStatusText');
+            if (selfHostedUrlInput) {
+                selfHostedUrlInput.value = data.self_hosted_url || '';
+            }
+            if (selfHostedApiKeyInput) {
+                selfHostedApiKeyInput.value = data.self_hosted_api_key || '';
+            }
+            if (selfHostedStatusText) {
+                if (data.self_hosted_configured) {
+                    selfHostedStatusText.innerHTML = `
+                        <span style="color: var(--accent); font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-server"></i> Configured (${this.escapeHtml(data.self_hosted_url)})
+                        </span>
+                    `;
+                } else {
+                    selfHostedStatusText.innerHTML = `
+                        <span style="color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-circle-question"></i> Not Configured
+                        </span>
+                    `;
+                }
             }
 
             // Google Drive status display
@@ -413,6 +483,12 @@ class CloudSavesController {
                         <button class="btn btn-sm btn-secondary" title="Restore save from cloud (creates local rollback first)" ${g.cloud_exists ? '' : 'disabled'} onclick="window.cloudSavesController.restoreGame('${this.escapeHtml(g.title)}')">
                             <i class="fa-solid fa-cloud-arrow-down"></i> Restore Save
                         </button>
+
+                        ${g.cloud_exists ? `
+                            <button class="btn-icon" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.25);" title="Delete Cloud Backup" onclick="window.cloudSavesController.deleteCloudSave('${this.escapeHtml(g.title)}')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
 
@@ -597,17 +673,112 @@ class CloudSavesController {
         }
     }
 
+    async deleteCloudSave(title) {
+        if (!title) return;
+        window.uiController.showToast(`Deleting cloud backup for '${title}'...`, 'info');
+        try {
+            const res = await window.apiClient.deleteCloudSave({ title });
+            if (res && res.success) {
+                window.uiController.showToast(res.message || `Deleted cloud backup for ${title}!`, 'success');
+                await this.loadGames();
+            } else {
+                window.uiController.showToast(`Delete failed: ${res.error || 'Unknown error'}`, 'danger');
+            }
+        } catch (err) {
+            window.uiController.showToast(`Delete error: ${err.message}`, 'danger');
+        }
+    }
+
+    async testSelfHostedConnection() {
+        const urlInput = document.getElementById('selfHostedUrlInput');
+        const apiKeyInput = document.getElementById('selfHostedApiKeyInput');
+        const statusText = document.getElementById('selfHostedStatusText');
+        const testBtn = document.getElementById('testSelfHostedBtn');
+
+        const url = urlInput ? urlInput.value.trim() : '';
+        const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+
+        if (!url) {
+            window.uiController.showToast('Please enter your Self-Hosted Server URL first.', 'warning');
+            return;
+        }
+
+        if (testBtn) {
+            testBtn.disabled = true;
+            testBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Testing...';
+        }
+        if (statusText) {
+            statusText.innerHTML = `<span style="color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Connecting to server...</span>`;
+        }
+
+        try {
+            const res = await window.apiClient.testSelfHostedCloud({ url, api_key: apiKey });
+            if (res && res.success) {
+                const latency = res.latency_ms !== undefined ? ` • ${res.latency_ms}ms` : '';
+                const srvName = res.server_name || 'Fanta-OFME-Cloud';
+                if (statusText) {
+                    statusText.innerHTML = `
+                        <span style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-circle-check"></i> Connected to ${this.escapeHtml(srvName)} (v${this.escapeHtml(res.version || '1.0')}${latency})
+                        </span>
+                    `;
+                }
+                window.uiController.showToast(`Connected to ${srvName}${latency}!`, 'success');
+            } else {
+                const errMsg = (res && res.error) ? res.error : 'Connection failed';
+                if (statusText) {
+                    statusText.innerHTML = `
+                        <span style="color: var(--danger); font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-circle-exclamation"></i> ${this.escapeHtml(errMsg)}
+                        </span>
+                    `;
+                }
+                window.uiController.showToast(errMsg, 'danger');
+            }
+        } catch (err) {
+            if (statusText) {
+                statusText.innerHTML = `
+                    <span style="color: var(--danger); font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-circle-exclamation"></i> ${this.escapeHtml(err.message)}
+                    </span>
+                `;
+            }
+            window.uiController.showToast(`Connection test failed: ${err.message}`, 'danger');
+        } finally {
+            if (testBtn) {
+                testBtn.disabled = false;
+                testBtn.innerHTML = '<i class="fa-solid fa-plug-circle-check"></i> Test Connection';
+            }
+        }
+    }
+
     async savePreferences() {
-        const radioGDrive = document.getElementById('radioProviderGDrive');
-        const provider = (radioGDrive && radioGDrive.checked) ? 'gdrive_api' : 'local_folder';
+        const radioLocal = document.getElementById('radioProviderLocal');
+        const radioSelfHosted = document.getElementById('radioProviderSelfHosted');
+        let provider = 'gdrive_api';
+        if (radioLocal && radioLocal.checked) {
+            provider = 'local_folder';
+        } else if (radioSelfHosted && radioSelfHosted.checked) {
+            provider = 'self_hosted';
+        }
+
         const autoSync = document.getElementById('cloudAutoSyncToggle')?.checked || false;
         const localCloudPath = document.getElementById('localCloudPathInput')?.value?.trim() || '';
+        const selfHostedUrl = document.getElementById('selfHostedUrlInput')?.value?.trim() || '';
+        const selfHostedApiKey = document.getElementById('selfHostedApiKeyInput')?.value?.trim() || '';
+
+        if (provider === 'self_hosted' && !selfHostedUrl) {
+            window.uiController.showToast('Please enter a Server URL for your Self-Hosted Cloud Server.', 'warning');
+            return;
+        }
 
         try {
             await window.apiClient.configureCloud({
                 provider,
                 auto_sync: autoSync,
-                local_cloud_path: localCloudPath
+                local_cloud_path: localCloudPath,
+                self_hosted_url: selfHostedUrl,
+                self_hosted_api_key: selfHostedApiKey
             });
             window.uiController.showToast('Cloud & Save preferences saved!', 'success');
             await this.loadAll();

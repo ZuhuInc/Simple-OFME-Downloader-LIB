@@ -45,9 +45,11 @@ class CloudSyncManager:
 
     def _load_settings(self) -> Dict[str, Any]:
         defaults = {
-            "provider": "gdrive_api",  # 'gdrive_api' or 'local_folder'
+            "provider": "gdrive_api",  # 'gdrive_api', 'local_folder', or 'self_hosted'
             "auto_sync": False,
             "local_cloud_path": self._detect_default_cloud_folder(),
+            "self_hosted_url": "",
+            "self_hosted_api_key": "",
             "google_tokens": {},
             "custom_save_paths": {},
             "last_synced": {}
@@ -476,11 +478,79 @@ class CloudSyncManager:
         return None
 
     # ──────────────────────────────────────────────────────────────────────────
-    # Unified Cloud Operations (Google Drive API + Local My Drive Folder)
+    # Self-Hosted Cloud Server Provider Helpers (Fanta-OFME-Cloud)
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _get_self_hosted_base_url(self, custom_url: Optional[str] = None) -> Optional[str]:
+        raw = (custom_url if custom_url is not None else self.settings.get("self_hosted_url") or "").strip()
+        if not raw:
+            return None
+        if not raw.startswith("http://") and not raw.startswith("https://"):
+            raw = "http://" + raw
+        return raw.rstrip("/")
+
+    def _get_self_hosted_headers(self, custom_api_key: Optional[str] = None) -> Dict[str, str]:
+        key = (custom_api_key if custom_api_key is not None else self.settings.get("self_hosted_api_key") or "").strip()
+        headers: Dict[str, str] = {}
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
+            headers["X-API-Key"] = key
+        return headers
+
+    def is_self_hosted_configured(self) -> bool:
+        return bool(self._get_self_hosted_base_url())
+
+    def test_self_hosted_connection(self, url: Optional[str] = None, api_key: Optional[str] = None) -> Dict[str, Any]:
+        """Pings GET /api/status on the self-hosted server and returns connection & auth info."""
+        base_url = self._get_self_hosted_base_url(url)
+        if not base_url:
+            return {"success": False, "error": "Server URL is required."}
+
+        headers = self._get_self_hosted_headers(api_key)
+        start_time = time.time()
+        try:
+            resp = requests.get(f"{base_url}/api/status", headers=headers, timeout=10)
+            latency_ms = int((time.time() - start_time) * 1000)
+            if resp.status_code == 200:
+                data = {}
+                try:
+                    data = resp.json()
+                except Exception:
+                    pass
+                return {
+                    "success": True,
+                    "status": data.get("status", "ok"),
+                    "version": data.get("version", "1.0.0"),
+                    "server_name": data.get("server_name", "Fanta-OFME-Cloud"),
+                    "authenticated": data.get("authenticated", True),
+                    "latency_ms": latency_ms,
+                    "url": base_url
+                }
+            elif resp.status_code in (401, 403):
+                return {
+                    "success": False,
+                    "error": "Authentication failed (Invalid or missing API Key).",
+                    "status_code": resp.status_code
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Server returned HTTP {resp.status_code}",
+                    "status_code": resp.status_code
+                }
+        except requests.exceptions.ConnectionError:
+            return {"success": False, "error": f"Could not connect to {base_url}. Ensure the server is running."}
+        except requests.exceptions.Timeout:
+            return {"success": False, "error": f"Connection to {base_url} timed out."}
+        except Exception as e:
+            return {"success": False, "error": f"Connection error: {str(e)}"}
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Unified Cloud Operations (Google Drive API + Local Folder + Self-Hosted)
     # ──────────────────────────────────────────────────────────────────────────
 
     def list_all_cloud_saves(self) -> Dict[str, Any]:
-        """Pre-indexes all saves available in cloud storage (local folder or Google Drive) in one operation."""
+        """Pre-indexes all saves available in cloud storage (local folder, self-hosted, or Google Drive) in one operation."""
         provider = self.get_provider()
         index = {}
 
@@ -518,6 +588,45 @@ class CloudSyncManager:
                                     index[norm_key] = item_data
                 except Exception as e:
                     print(f"[CloudSync] Error scanning local cloud directory: {e}", flush=True)
+
+        elif provider == "self_hosted":
+            base_url = self._get_self_hosted_base_url()
+            if base_url:
+                headers = self._get_self_hosted_headers()
+                try:
+                    resp = requests.get(f"{base_url}/api/saves", headers=headers, timeout=20)
+                    if resp.status_code == 200:
+                        payload = resp.json()
+                        saves_list = payload.get("saves", []) if isinstance(payload, dict) else (payload if isinstance(payload, list) else [])
+                        for s in saves_list:
+                            if not isinstance(s, dict):
+                                continue
+                            safe_name = (s.get("safe_name") or s.get("title") or "").strip()
+                            if safe_name.endswith("_save.zip"):
+                                safe_name = safe_name[:-9]
+                            if not safe_name:
+                                continue
+                            size = int(s.get("size_bytes") or s.get("size") or 0)
+                            raw_mtime = s.get("mtime")
+                            try:
+                                mtime = float(raw_mtime) if raw_mtime is not None else time.time()
+                            except Exception:
+                                mtime = time.time()
+                            item_data = {
+                                "exists": True,
+                                "safe_name": safe_name,
+                                "provider": "self_hosted",
+                                "size_bytes": size,
+                                "mtime": mtime,
+                                "mtime_str": datetime.fromtimestamp(mtime).strftime("%b %d, %Y • %I:%M %p")
+                            }
+                            index[safe_name] = item_data
+                            index[safe_name.lower()] = item_data
+                            norm_key = re.sub(r'[^a-zA-Z0-9]', '', safe_name).lower()
+                            if norm_key:
+                                index[norm_key] = item_data
+                except Exception as e:
+                    print(f"[CloudSync] Error indexing self-hosted cloud saves: {e}", flush=True)
 
         else:
             token = self._get_valid_access_token()
@@ -588,6 +697,8 @@ class CloudSyncManager:
             fallback_status = "None"
             if provider == "gdrive_api" and not self.is_gdrive_connected():
                 fallback_status = "Not Connected"
+            elif provider == "self_hosted" and not self.is_self_hosted_configured():
+                fallback_status = "Not Configured"
             return {"exists": False, "provider": provider, "size_bytes": 0, "mtime": None, "mtime_str": fallback_status}
 
         if provider == "local_folder":
@@ -615,6 +726,34 @@ class CloudSyncManager:
                     "path": zip_path
                 }
             return {"exists": False, "provider": "local_folder", "size_bytes": 0, "mtime": None, "mtime_str": "None"}
+
+        elif provider == "self_hosted":
+            base_url = self._get_self_hosted_base_url()
+            if not base_url:
+                return {"exists": False, "provider": "self_hosted", "size_bytes": 0, "mtime": None, "mtime_str": "Not Configured"}
+
+            headers = self._get_self_hosted_headers()
+            encoded_name = urllib.parse.quote(safe_name)
+            try:
+                resp = requests.get(f"{base_url}/api/saves/{encoded_name}", headers=headers, timeout=15)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get("exists", True):
+                        size = int(data.get("size_bytes") or data.get("size") or 0)
+                        raw_mtime = data.get("mtime")
+                        mtime = float(raw_mtime) if raw_mtime is not None else time.time()
+                        return {
+                            "exists": True,
+                            "safe_name": data.get("safe_name") or safe_name,
+                            "provider": "self_hosted",
+                            "size_bytes": size,
+                            "mtime": mtime,
+                            "mtime_str": datetime.fromtimestamp(mtime).strftime("%b %d, %Y • %I:%M %p")
+                        }
+            except Exception as e:
+                print(f"[CloudSync] Error fetching self-hosted save info for {title}: {e}", flush=True)
+
+            return {"exists": False, "provider": "self_hosted", "size_bytes": 0, "mtime": None, "mtime_str": "None"}
 
         else:
             # Google Drive API provider
@@ -715,6 +854,43 @@ class CloudSyncManager:
                 self.save_settings()
                 return {"success": True, "message": f"Successfully backed up to Local Cloud Folder ({dest_dir})", "mtime": mtime}
 
+            elif provider == "self_hosted":
+                base_url = self._get_self_hosted_base_url()
+                if not base_url:
+                    return {"success": False, "error": "Self-hosted server URL is not configured."}
+
+                headers = self._get_self_hosted_headers()
+                encoded_name = urllib.parse.quote(safe_name)
+                filename = f"{safe_name}_save.zip"
+
+                with open(zip_path, "rb") as zf:
+                    files = {"file": (filename, zf, "application/zip")}
+                    form_data = {
+                        "title": clean_title,
+                        "safe_name": safe_name,
+                        "mtime": str(mtime)
+                    }
+                    resp = requests.post(
+                        f"{base_url}/api/saves/{encoded_name}",
+                        headers=headers,
+                        files=files,
+                        data=form_data,
+                        timeout=60
+                    )
+
+                if resp.status_code in (200, 201):
+                    self.settings.setdefault("last_synced", {})[clean_title] = mtime
+                    self.save_settings()
+                    return {
+                        "success": True,
+                        "message": f"Successfully backed up {clean_title} to Self-Hosted Server!",
+                        "mtime": mtime
+                    }
+                elif resp.status_code in (401, 403):
+                    return {"success": False, "error": "Self-hosted server rejected authentication (check API key)."}
+                else:
+                    return {"success": False, "error": f"Self-hosted upload failed: HTTP {resp.status_code} {resp.text}"}
+
             else:
                 token = self._get_valid_access_token()
                 if not token:
@@ -802,6 +978,29 @@ class CloudSyncManager:
                 if not source_zip or not os.path.exists(source_zip):
                     return {"success": False, "error": "Local cloud archive not found."}
                 shutil.copy2(source_zip, zip_target)
+
+            elif provider == "self_hosted":
+                base_url = self._get_self_hosted_base_url()
+                if not base_url:
+                    return {"success": False, "error": "Self-hosted server URL is not configured."}
+
+                target_name = cloud_info.get("safe_name") or safe_name
+                encoded_name = urllib.parse.quote(target_name)
+                headers = self._get_self_hosted_headers()
+                resp = requests.get(
+                    f"{base_url}/api/saves/{encoded_name}/download",
+                    headers=headers,
+                    stream=True,
+                    timeout=60
+                )
+                if resp.status_code == 200:
+                    with open(zip_target, "wb") as f:
+                        for chunk in resp.iter_content(chunk_size=65536):
+                            if chunk:
+                                f.write(chunk)
+                else:
+                    return {"success": False, "error": f"Download failed from Self-Hosted Server: HTTP {resp.status_code}"}
+
             else:
                 token = self._get_valid_access_token()
                 if not token:
@@ -835,6 +1034,52 @@ class CloudSyncManager:
             return {"success": False, "error": f"Restore failed: {str(e)}"}
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def delete_cloud_save(self, title: str) -> Dict[str, Any]:
+        """Deletes cloud save backup for a game from the active cloud provider."""
+        clean_title = (title or "").strip()
+        safe_name = re.sub(r'[^a-zA-Z0-9_\-\s]', '', clean_title).strip()
+        provider = self.get_provider()
+
+        try:
+            if provider == "local_folder":
+                base_dir = self.settings.get("local_cloud_path") or self._detect_default_cloud_folder()
+                game_cloud_dir = os.path.join(base_dir, safe_name)
+                if os.path.exists(game_cloud_dir):
+                    shutil.rmtree(game_cloud_dir, ignore_errors=True)
+                    return {"success": True, "message": f"Deleted local cloud backup for {clean_title}."}
+                return {"success": False, "error": f"No local cloud backup found for '{clean_title}'."}
+
+            elif provider == "self_hosted":
+                base_url = self._get_self_hosted_base_url()
+                if not base_url:
+                    return {"success": False, "error": "Self-hosted server URL is not configured."}
+                headers = self._get_self_hosted_headers()
+                encoded_name = urllib.parse.quote(safe_name)
+                resp = requests.delete(f"{base_url}/api/saves/{encoded_name}", headers=headers, timeout=20)
+                if resp.status_code in (200, 204):
+                    return {"success": True, "message": f"Deleted backup for {clean_title} from Self-Hosted Server."}
+                elif resp.status_code == 404:
+                    return {"success": False, "error": f"No backup found on server for '{clean_title}'."}
+                else:
+                    return {"success": False, "error": f"Failed to delete from server: HTTP {resp.status_code}"}
+
+            else:
+                cloud_info = self.get_cloud_save_info(clean_title)
+                if not cloud_info.get("exists") or not cloud_info.get("file_id"):
+                    return {"success": False, "error": f"No Google Drive backup found for '{clean_title}'."}
+                token = self._get_valid_access_token()
+                if not token:
+                    return {"success": False, "error": "Not connected to Google Drive."}
+                file_id = cloud_info["file_id"]
+                headers = {"Authorization": f"Bearer {token}"}
+                resp = requests.delete(f"https://www.googleapis.com/drive/v3/files/{file_id}", headers=headers, timeout=20)
+                if resp.status_code in (200, 204):
+                    return {"success": True, "message": f"Deleted Google Drive backup for {clean_title}."}
+                else:
+                    return {"success": False, "error": f"Google Drive delete failed: HTTP {resp.status_code}"}
+        except Exception as e:
+            return {"success": False, "error": f"Delete failed: {str(e)}"}
 
     def check_and_restore_newer_cloud_save(self, title: str) -> bool:
         """

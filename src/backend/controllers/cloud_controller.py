@@ -20,6 +20,8 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
         local_path = cloud_sync.settings.get("local_cloud_path") or cloud_sync._detect_default_cloud_folder()
         has_creds = cloud_sync.has_gdrive_credentials()
         client_id = (cloud_sync.settings.get("gdrive_client_id") or "").strip()
+        self_hosted_url = (cloud_sync.settings.get("self_hosted_url") or "").strip()
+        self_hosted_api_key = (cloud_sync.settings.get("self_hosted_api_key") or "").strip()
 
         return jsonify({
             "provider": provider,
@@ -29,7 +31,10 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             "has_credentials": has_creds,
             "gdrive_client_id": client_id,
             "local_cloud_path": local_path,
-            "default_local_path": cloud_sync._detect_default_cloud_folder()
+            "default_local_path": cloud_sync._detect_default_cloud_folder(),
+            "self_hosted_url": self_hosted_url,
+            "self_hosted_api_key": self_hosted_api_key,
+            "self_hosted_configured": cloud_sync.is_self_hosted_configured()
         })
 
     @bp.route('/credentials', methods=['POST'])
@@ -64,6 +69,10 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             cloud_sync.settings["auto_sync"] = bool(data["auto_sync"])
         if "local_cloud_path" in data and data["local_cloud_path"]:
             cloud_sync.settings["local_cloud_path"] = data["local_cloud_path"]
+        if "self_hosted_url" in data:
+            cloud_sync.settings["self_hosted_url"] = (data.get("self_hosted_url") or "").strip()
+        if "self_hosted_api_key" in data:
+            cloud_sync.settings["self_hosted_api_key"] = (data.get("self_hosted_api_key") or "").strip()
         if "gdrive_client_id" in data and data["gdrive_client_id"]:
             cloud_sync.settings["gdrive_client_id"] = data["gdrive_client_id"].strip()
         if "gdrive_client_secret" in data and data["gdrive_client_secret"]:
@@ -71,6 +80,14 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
 
         cloud_sync.save_settings()
         return jsonify({"success": True, "settings": cloud_sync.settings})
+
+    @bp.route('/test_self_hosted', methods=['POST'])
+    def test_self_hosted():
+        data = request.get_json() or {}
+        url = data.get("url")
+        api_key = data.get("api_key")
+        res = cloud_sync.test_self_hosted_connection(url=url, api_key=api_key)
+        return jsonify(res)
 
     @bp.route('/auth_url', methods=['GET'])
     def get_auth_url():
@@ -382,6 +399,16 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             return jsonify({"success": False, "error": "Missing game title"}), 400
 
         res = cloud_sync.restore_game(title, custom_save_path)
+        return jsonify(res)
+
+    @bp.route('/delete', methods=['POST'])
+    def delete_cloud_save():
+        data = request.get_json() or {}
+        title = data.get('title')
+        if not title:
+            return jsonify({"success": False, "error": "Missing game title"}), 400
+
+        res = cloud_sync.delete_cloud_save(title)
         return jsonify(res)
 
     @bp.route('/set_save_path', methods=['POST'])

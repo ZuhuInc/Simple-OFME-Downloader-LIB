@@ -770,6 +770,113 @@ Fix:
             self.assertEqual(called_entry["version"], "0.6.0.3")
             self.assertEqual(called_entry["host"], "GoFile")
 
+    def test_self_hosted_cloud_provider(self):
+        """Test Self-Hosted Cloud Save provider (Fanta-OFME-Cloud) full lifecycle and Flask endpoints"""
+        import io
+        import zipfile
+        from flask import Flask
+        from src.backend.cloud_sync import CloudSyncManager
+        from src.backend.controllers.cloud_controller import create_cloud_blueprint
+
+        mgr = CloudSyncManager(data_folder=self.temp_dir)
+        mgr.settings["provider"] = "self_hosted"
+        mgr.settings["self_hosted_url"] = "http://127.0.0.1:27845/"
+        mgr.settings["self_hosted_api_key"] = "fanta_secret_123"
+        mgr.save_settings()
+
+        self.assertEqual(mgr._get_self_hosted_base_url(), "http://127.0.0.1:27845")
+        self.assertEqual(mgr._get_self_hosted_headers().get("Authorization"), "Bearer fanta_secret_123")
+        self.assertEqual(mgr._get_self_hosted_headers().get("X-API-Key"), "fanta_secret_123")
+        self.assertTrue(mgr.is_self_hosted_configured())
+
+        # 1. Test connection check (200 OK)
+        with unittest.mock.patch('requests.get') as mock_get:
+            mock_get.return_value.status_code = 200
+            mock_get.return_value.json.return_value = {
+                "status": "ok",
+                "version": "1.0.0",
+                "server_name": "Fanta-OFME-Cloud",
+                "authenticated": True
+            }
+            conn_res = mgr.test_self_hosted_connection()
+            self.assertTrue(conn_res["success"])
+            self.assertEqual(conn_res["server_name"], "Fanta-OFME-Cloud")
+
+        # 2. Test list_all_cloud_saves with self_hosted
+        with unittest.mock.patch('requests.get') as mock_get:
+            mock_get.return_value.status_code = 200
+            mock_get.return_value.json.return_value = {
+                "saves": [
+                    {
+                        "safe_name": "Schedule I",
+                        "title": "Schedule I",
+                        "size_bytes": 4096,
+                        "mtime": 1730540000.0
+                    }
+                ]
+            }
+            index = mgr.list_all_cloud_saves()
+            self.assertIn("Schedule I", index)
+            self.assertEqual(index["Schedule I"]["provider"], "self_hosted")
+            self.assertEqual(index["Schedule I"]["size_bytes"], 4096)
+
+        # 3. Test backup_game with self_hosted
+        save_dir = os.path.join(self.temp_dir, "ScheduleISaves")
+        os.makedirs(save_dir, exist_ok=True)
+        with open(os.path.join(save_dir, "player.json"), "w") as f:
+            f.write('{"money": 9999}')
+        mgr.settings["custom_save_paths"]["Schedule I"] = save_dir
+
+        with unittest.mock.patch('requests.post') as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"success": True}
+            b_res = mgr.backup_game("Schedule I")
+            self.assertTrue(b_res["success"])
+            mock_post.assert_called_once()
+            called_url = mock_post.call_args[0][0]
+            self.assertIn("/api/saves/Schedule%20I", called_url)
+
+        # 4. Test restore_game with self_hosted
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("restored_player.json", '{"money": 50000}')
+        zip_bytes = zip_buf.getvalue()
+
+        with unittest.mock.patch('requests.get') as mock_get:
+            def side_effect(url, **kwargs):
+                resp = unittest.mock.MagicMock()
+                if url.endswith("/download"):
+                    resp.status_code = 200
+                    resp.iter_content.return_value = [zip_bytes]
+                else:
+                    resp.status_code = 200
+                    resp.json.return_value = {
+                        "exists": True,
+                        "safe_name": "Schedule I",
+                        "size_bytes": len(zip_bytes),
+                        "mtime": 1730549999.0
+                    }
+                return resp
+
+            mock_get.side_effect = side_effect
+            r_res = mgr.restore_game("Schedule I")
+            self.assertTrue(r_res["success"])
+            self.assertTrue(os.path.exists(os.path.join(save_dir, "restored_player.json")))
+
+        # 5. Test delete_cloud_save & Flask endpoints
+        app = Flask(__name__)
+        config = Config(data_folder=self.temp_dir)
+        db_mock = unittest.mock.MagicMock()
+        db_mock.games = {}
+        app.register_blueprint(create_cloud_blueprint(mgr, config, db_mock))
+        client = app.test_client()
+
+        with unittest.mock.patch('requests.delete') as mock_del:
+            mock_del.return_value.status_code = 200
+            del_resp = client.post('/api/cloud/delete', json={"title": "Schedule I"})
+            self.assertEqual(del_resp.status_code, 200)
+            self.assertTrue(del_resp.get_json().get("success"))
+
 
 if __name__ == "__main__":
     unittest.main()
