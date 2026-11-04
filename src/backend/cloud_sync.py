@@ -100,6 +100,53 @@ class CloudSyncManager:
                 return c
         return candidates[0]
 
+    def _resolve_game_metadata(self, title: str, game_location: Optional[str] = None, app_id: Optional[Any] = None) -> Tuple[Optional[str], Optional[Any]]:
+        """Resolves game_location and app_id from config.data or standard game directories when not explicitly provided."""
+        clean_title = (title or "").strip()
+        norm_title = re.sub(r'[^a-zA-Z0-9]', '', clean_title).lower()
+
+        if (not game_location or not app_id) and self.config_ref and hasattr(self.config_ref, "data"):
+            installed_games = self.config_ref.data
+            if isinstance(installed_games, dict):
+                record = installed_games.get(clean_title.upper()) or installed_games.get(clean_title)
+                if not record:
+                    for k, v in installed_games.items():
+                        if not isinstance(v, dict):
+                            continue
+                        k_clean = str(k).strip()
+                        k_norm = re.sub(r'[^a-zA-Z0-9]', '', k_clean).lower()
+                        if k_clean.lower() == clean_title.lower() or (norm_title and k_norm == norm_title):
+                            record = v
+                            break
+                if isinstance(record, dict):
+                    if not game_location:
+                        game_location = record.get("location") or record.get("install_path")
+                    if not app_id:
+                        app_id = record.get("app_id") or record.get("appid")
+
+        # If game_location points to a parent games directory containing a subfolder for this title, prefer the subfolder
+        if game_location and os.path.isdir(game_location) and clean_title:
+            sub_cand = os.path.join(game_location, clean_title)
+            if os.path.isdir(sub_cand):
+                game_location = sub_cand
+
+        # Fallback: check configured / standard game directories if game_location is still missing
+        if (not game_location or not os.path.isdir(game_location)) and clean_title:
+            candidate_bases: List[str] = []
+            if self.config_ref and hasattr(self.config_ref, "get"):
+                for cfg_key in ("extract_path", "default_download_path", "download_path"):
+                    val = self.config_ref.get(cfg_key)
+                    if val and isinstance(val, str):
+                        candidate_bases.append(val)
+            candidate_bases.extend([r"D:\games", r"D:\Games", r"D:\GAMES2", r"C:\Games"])
+            for base in candidate_bases:
+                cand_dir = os.path.join(base, clean_title)
+                if os.path.isdir(cand_dir):
+                    game_location = cand_dir
+                    break
+
+        return game_location, app_id
+
     def detect_save_path(self, title: str, game_location: Optional[str] = None, app_id: Optional[Any] = None) -> Tuple[Optional[str], str]:
         """
         Auto-detects save folder for a game based on Goldberg SteamEmu, Unreal, Unity, or internal save folder.
@@ -108,10 +155,19 @@ class CloudSyncManager:
         clean_title = (title or "").strip()
         norm_title = re.sub(r'[^a-zA-Z0-9]', '', clean_title).lower()
 
-        # 1. Check custom path saved in CloudSync.json or config
-        custom = self.settings.get("custom_save_paths", {}).get(clean_title)
+        # 1. Check custom path saved in CloudSync.json or config (case-insensitive fallback)
+        custom_paths = self.settings.get("custom_save_paths", {})
+        custom = custom_paths.get(clean_title)
+        if not custom and isinstance(custom_paths, dict):
+            for k, v in custom_paths.items():
+                if str(k).strip().lower() == clean_title.lower():
+                    custom = v
+                    break
         if custom and os.path.exists(custom):
             return custom, "Custom"
+
+        # Resolve game_location and app_id from config if not provided by caller
+        game_location, app_id = self._resolve_game_metadata(clean_title, game_location, app_id)
 
         # 2. Extract Steam AppID from game directory if available
         detected_app_id = str(app_id) if app_id else None
@@ -293,12 +349,12 @@ class CloudSyncManager:
 
         # Safety rollback if folder already exists with data
         if os.path.exists(target_folder) and os.listdir(target_folder):
-            rollback_dir = os.path.join(os.path.expanduser("~"), "Documents", "Fanta_Save_Rollbacks")
-            os.makedirs(rollback_dir, exist_ok=True)
-            ts = int(time.time())
-            folder_name = os.path.basename(os.path.normpath(target_folder))
-            rollback_zip = os.path.join(rollback_dir, f"{folder_name}_rollback_{ts}.zip")
             try:
+                rollback_dir = os.path.join(os.path.expanduser("~"), "Documents", "Fanta_Save_Rollbacks")
+                os.makedirs(rollback_dir, exist_ok=True)
+                ts = int(time.time())
+                folder_name = os.path.basename(os.path.normpath(target_folder))
+                rollback_zip = os.path.join(rollback_dir, f"{folder_name}_rollback_{ts}.zip")
                 CloudSyncManager.archive_save_folder(target_folder, rollback_zip)
                 print(f"[CloudSync] Created safety rollback before restore at: {rollback_zip}", flush=True)
             except Exception as e:

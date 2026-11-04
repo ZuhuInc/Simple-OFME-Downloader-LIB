@@ -909,6 +909,25 @@ Fix:
             self.assertTrue(tr_data["success"])
             self.assertEqual(tr_data["transferred"], 1)
 
+        # 7. Test backup_game resolves Game Folder save path (<GameLocation>\Saves) via config_ref
+        fish_install_dir = os.path.join(self.temp_dir, "games", "Fish Hunters Most Lethal Fishing Simulator")
+        fish_saves_dir = os.path.join(fish_install_dir, "Saves")
+        os.makedirs(fish_saves_dir, exist_ok=True)
+        with open(os.path.join(fish_saves_dir, "First casting_app_0.2.5.bin"), "wb") as f:
+            f.write(b"\x00\x01\x02" * 100)
+
+        config.data["FISH HUNTERS MOST LETHAL FISHING SIMULATOR"] = {
+            "downloaded": True,
+            "location": fish_install_dir
+        }
+        mgr.config_ref = config
+        with unittest.mock.patch('requests.post') as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"success": True}
+            b_fish = client.post('/api/cloud/backup', json={"title": "Fish Hunters Most Lethal Fishing Simulator"})
+            self.assertEqual(b_fish.status_code, 200)
+            self.assertTrue(b_fish.get_json().get("success"))
+
 
 if __name__ == "__main__":
     unittest.main()

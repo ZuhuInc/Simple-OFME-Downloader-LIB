@@ -610,11 +610,15 @@ class CloudSavesController {
         if (!title) return;
         window.uiController.showToast(`Starting save backup for '${title}'...`, 'info');
         try {
-            const res = await window.apiClient.backupCloudSave({ title });
+            const game = this.games.find(g => g.title === title || g.title.toLowerCase() === title.toLowerCase());
+            const payload = { title };
+            if (game && game.save_path) {
+                payload.save_path = game.save_path;
+            }
+            const res = await window.apiClient.backupCloudSave(payload);
             if (res && res.success) {
                 window.uiController.showToast(`Backup complete for ${title}!`, 'success');
                 // Instant live UI update
-                const game = this.games.find(g => g.title === title || g.title.toLowerCase() === title.toLowerCase());
                 if (game) {
                     game.cloud_exists = true;
                     game.cloud_size_bytes = game.local_size_bytes;
@@ -634,14 +638,19 @@ class CloudSavesController {
     }
 
     async restoreGame(title) {
+        await this.syncPendingSelfHostedInputs();
         if (!title) return;
         window.uiController.showToast(`Restoring save for '${title}' (Safety rollback created)...`, 'info');
         try {
-            const res = await window.apiClient.restoreCloudSave({ title });
+            const game = this.games.find(g => g.title === title || g.title.toLowerCase() === title.toLowerCase());
+            const payload = { title };
+            if (game && game.save_path) {
+                payload.save_path = game.save_path;
+            }
+            const res = await window.apiClient.restoreCloudSave(payload);
             if (res && res.success) {
                 window.uiController.showToast(`Save restored for ${title}!`, 'success');
                 // Instant live UI update
-                const game = this.games.find(g => g.title === title || g.title.toLowerCase() === title.toLowerCase());
                 if (game) {
                     game.local_exists = true;
                     game.sync_state = 'in_sync';
@@ -658,6 +667,7 @@ class CloudSavesController {
     }
 
     async backupAllGames() {
+        await this.syncPendingSelfHostedInputs();
         const eligible = this.games.filter(g => g.local_exists && !g.is_excluded);
         if (eligible.length === 0) {
             window.uiController.showToast('No local save files detected to backup.', 'warning');
@@ -668,7 +678,11 @@ class CloudSavesController {
         let successCount = 0;
         for (const g of eligible) {
             try {
-                const res = await window.apiClient.backupCloudSave({ title: g.title });
+                const payload = { title: g.title };
+                if (g.save_path) {
+                    payload.save_path = g.save_path;
+                }
+                const res = await window.apiClient.backupCloudSave(payload);
                 if (res && res.success) successCount++;
             } catch (e) {
                 console.error(`Backup error for ${g.title}:`, e);
