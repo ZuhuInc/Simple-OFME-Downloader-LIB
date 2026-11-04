@@ -924,7 +924,7 @@
 
                 <!-- Provider & Sync Settings Grid -->
                 <div class="cloud-settings-grid"
-                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                    style="gap: 16px; margin-bottom: 12px;">
                     <!-- Card 1: Cloud Storage Provider Selector -->
                     <div class="glass-card" style="display: flex; flex-direction: column; gap: 14px;">
                         <div>
@@ -1050,7 +1050,7 @@
 
                             <div id="selfHostedSection"
                                 style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-glass); display: flex; flex-direction: column; gap: 10px;">
-                                <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px;">
+                                <div style="display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 8px;">
                                     <div>
                                         <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Server URL:</label>
                                         <input type="text" id="selfHostedUrlInput" class="form-input"
@@ -1108,6 +1108,21 @@
                                 </label>
                             </div>
 
+                            <div class="form-row"
+                                style="background: rgba(96, 165, 250, 0.04); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid rgba(96, 165, 250, 0.18);">
+                                <div class="form-label-area">
+                                    <span class="form-label"
+                                        style="font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fa-brands fa-steam" style="color: #60a5fa;"></i> Auto-Exclude Official Steam Cloud Games
+                                    </span>
+                                    <span class="form-desc" style="font-size: 11px;">Automatically detects &amp; skips legitimate Steam games already backed up by Steam Cloud</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cloudAutoExcludeSteamToggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
                             <div style="font-size: 11px; color: var(--text-muted); line-height: 1.6; padding: 4px 6px;">
                                 <div><strong style="color: var(--text-secondary);">When Automatic Sync is ON:</strong>
                                     Saves upload seamlessly whenever you exit a game, and newer saves from your other PC
@@ -1121,6 +1136,56 @@
                                     whenever a save is restored, ensuring you never lose data.</div>
                             </div>
                         </div>
+
+                            <!-- Cross-Provider Save Transfer & Migration Panel -->
+                            <div class="cloud-transfer-panel" style="margin-top: 6px; padding: 12px 14px; background: rgba(0, 0, 0, 0.22); border-radius: var(--radius-sm); border: 1px solid var(--border-glass); display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px;">
+                                            <i class="fa-solid fa-right-left" style="color: var(--accent);"></i> Transfer / Migrate Saves Between Providers
+                                        </div>
+                                        <span style="font-size: 11px; color: var(--text-muted);">Copy all save archives between Google Drive, Self-Hosted Server, Local Folder, or This PC</span>
+                                    </div>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: end; min-width: 0;">
+                                    <div>
+                                        <label style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">From (Source):</label>
+                                        <select id="cloudTransferSourceSelect" class="select-dropdown" style="width: 100%; font-size: 12px; padding: 6px 10px;">
+                                            <option value="gdrive_api">Google Drive Online</option>
+                                            <option value="self_hosted">Self-Hosted Cloud Server</option>
+                                            <option value="local_folder">Local Cloud Folder</option>
+                                            <option value="local_pc">This PC (Local Saves)</option>
+                                        </select>
+                                    </div>
+
+                                    <button type="button" id="swapCloudTransferBtn" class="btn btn-secondary btn-sm" title="Swap Source & Destination" style="padding: 6px 10px; height: 32px;">
+                                        <i class="fa-solid fa-right-left"></i>
+                                    </button>
+
+                                    <div>
+                                        <label style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">To (Destination):</label>
+                                        <select id="cloudTransferTargetSelect" class="select-dropdown" style="width: 100%; font-size: 12px; padding: 6px 10px;">
+                                            <option value="self_hosted" selected>Self-Hosted Cloud Server</option>
+                                            <option value="gdrive_api">Google Drive Online</option>
+                                            <option value="local_folder">Local Cloud Folder</option>
+                                            <option value="local_pc">This PC (Local Saves)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 2px;">
+                                    <div style="flex: 1 1 160px; min-width: 0;"><select id="cloudTransferModeSelect" class="select-dropdown" style="font-size: 11px; padding: 5px 10px; width: 100%;">
+                                        <option value="newer_or_missing" selected>Only Missing or Newer Saves (Safe)</option>
+                                        <option value="overwrite_all">Overwrite All Saves on Destination</option>
+                                    </select>
+                                    </div><button type="button" id="startCloudTransferBtn" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 6px 14px; border-color: rgba(212, 168, 83, 0.45); color: var(--accent); white-space: nowrap; flex-shrink: 0;">
+                                        <i class="fa-solid fa-truck-fast"></i> Transfer All Saves
+                                    </button>
+                                </div>
+
+                                <div id="cloudTransferStatusText" style="display: none; font-size: 11px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.06);"></div>
+                            </div>
 
                         <div style="display: flex; justify-content: flex-end; padding-top: 8px;">
                             <button id="saveCloudSettingsBtn" class="btn btn-primary btn-sm" style="padding: 6px 18px;">
@@ -1150,6 +1215,7 @@
                             <div class="filter-pill" data-cloud-filter="local_newer">LOCAL NEWER</div>
                             <div class="filter-pill" data-cloud-filter="cloud_newer">CLOUD NEWER</div>
                             <div class="filter-pill" data-cloud-filter="local_only">NEEDS BACKUP</div>
+                            <div class="filter-pill" data-cloud-filter="excluded" id="cloudFilterExcludedPill" title="View auto-detected Steam Cloud &amp; manually ignored games"><i class="fa-brands fa-steam" style="margin-right: 3px;"></i> IGNORED</div>
                         </div>
                     </div>
 

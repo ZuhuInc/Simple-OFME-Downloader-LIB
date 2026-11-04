@@ -34,7 +34,9 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             "default_local_path": cloud_sync._detect_default_cloud_folder(),
             "self_hosted_url": self_hosted_url,
             "self_hosted_api_key": self_hosted_api_key,
-            "self_hosted_configured": cloud_sync.is_self_hosted_configured()
+            "self_hosted_configured": cloud_sync.is_self_hosted_configured(),
+            "auto_exclude_steam_cloud": bool(cloud_sync.settings.get("auto_exclude_steam_cloud", True)),
+            "excluded_games": cloud_sync.settings.get("excluded_games", [])
         })
 
     @bp.route('/credentials', methods=['POST'])
@@ -67,6 +69,8 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             cloud_sync.settings["provider"] = data["provider"]
         if "auto_sync" in data:
             cloud_sync.settings["auto_sync"] = bool(data["auto_sync"])
+        if "auto_exclude_steam_cloud" in data:
+            cloud_sync.settings["auto_exclude_steam_cloud"] = bool(data["auto_exclude_steam_cloud"])
         if "local_cloud_path" in data and data["local_cloud_path"]:
             cloud_sync.settings["local_cloud_path"] = data["local_cloud_path"]
         if "self_hosted_url" in data:
@@ -87,6 +91,13 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
         url = data.get("url")
         api_key = data.get("api_key")
         res = cloud_sync.test_self_hosted_connection(url=url, api_key=api_key)
+        if res.get("success"):
+            if url is not None:
+                cloud_sync.settings["self_hosted_url"] = url.strip()
+            if api_key is not None:
+                cloud_sync.settings["self_hosted_api_key"] = api_key.strip()
+            cloud_sync.settings["provider"] = "self_hosted"
+            cloud_sync.save_settings()
         return jsonify(res)
 
     @bp.route('/auth_url', methods=['GET'])
@@ -344,7 +355,7 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             installed_games = config.data
 
         # Build list of games from installed records and db_manager
-        game_names = set(installed_games.keys())
+        canonical_names = {k.strip().lower(): k.strip() for k in installed_games.keys() if k and str(k).strip()}
         thumb_map = {}
 
         if db_manager and hasattr(db_manager, "games"):
@@ -353,15 +364,16 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             for g in games_source:
                 title = getattr(g, "title", None) or (g.get("title") if isinstance(g, dict) else None)
                 if title:
-                    game_names.add(title)
+                    canonical_names[title.strip().lower()] = title.strip()
                     thumb = getattr(g, "thumbnail", None) or (g.get("thumbnail") if isinstance(g, dict) else "")
                     if thumb:
                         thumb_map[title.strip().lower()] = thumb
 
         # Pre-index cloud saves for fast responses
         cloud_index = cloud_sync.list_all_cloud_saves()
+        steam_index = cloud_sync.get_official_steam_games_index()
 
-        for title in sorted(list(game_names)):
+        for title in sorted(canonical_names.values(), key=lambda x: x.lower()):
             record = installed_games.get(title.upper()) or installed_games.get(title) or {}
             is_downloaded = record.get("downloaded", False)
             location = record.get("location")
@@ -371,7 +383,7 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             thumbnail = thumb_map.get(title.strip().lower(), "")
 
             # Calculate sync status
-            status = cloud_sync.get_game_sync_status(title, game_location=location, app_id=app_id, cloud_index=cloud_index)
+            status = cloud_sync.get_game_sync_status(title, game_location=location, app_id=app_id, cloud_index=cloud_index, steam_index=steam_index)
             status["is_installed"] = is_downloaded
             status["game_location"] = location
             status["thumbnail"] = thumbnail
@@ -422,5 +434,51 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
         cloud_sync.settings.setdefault("custom_save_paths", {})[title] = save_path
         cloud_sync.save_settings()
         return jsonify({"success": True, "save_path": save_path})
+
+    @bp.route('/transfer', methods=['POST'])
+    def transfer_saves():
+        data = request.get_json() or {}
+        source_provider = (data.get('source_provider') or '').strip()
+        target_provider = (data.get('target_provider') or '').strip()
+        mode = (data.get('mode') or 'newer_or_missing').strip()
+        switch_to_target = bool(data.get('switch_to_target', True))
+
+        # Build games_catalog if local_pc is involved
+        games_catalog = []
+        if source_provider == 'local_pc' or target_provider == 'local_pc':
+            installed_games = config.data if (config and hasattr(config, "data")) else {}
+            canonical_names = {k.strip().lower(): k.strip() for k in installed_games.keys() if k and str(k).strip()}
+            if db_manager and hasattr(db_manager, "games"):
+                games_source = db_manager.games.values() if isinstance(db_manager.games, dict) else (db_manager.games or [])
+                for g in games_source:
+                    title = getattr(g, "title", None) or (g.get("title") if isinstance(g, dict) else None)
+                    if title:
+                        canonical_names[title.strip().lower()] = title.strip()
+            for t in sorted(canonical_names.values(), key=lambda x: x.lower()):
+                rec = installed_games.get(t.upper()) or installed_games.get(t) or {}
+                games_catalog.append({
+                    "title": t,
+                    "location": rec.get("location"),
+                    "app_id": rec.get("app_id")
+                })
+
+        res = cloud_sync.transfer_saves(
+            source_provider=source_provider,
+            target_provider=target_provider,
+            mode=mode,
+            switch_to_target=switch_to_target,
+            games_catalog=games_catalog
+        )
+        return jsonify(res)
+
+    @bp.route('/exclude', methods=['POST'])
+    def toggle_exclude_game():
+        data = request.get_json() or {}
+        title = (data.get('title') or '').strip()
+        excluded = bool(data.get('excluded', True))
+        if not title:
+            return jsonify({"success": False, "error": "Missing game title"}), 400
+        res = cloud_sync.set_game_exclusion(title, excluded)
+        return jsonify(res)
 
     return bp

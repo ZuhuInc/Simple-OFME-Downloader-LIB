@@ -165,6 +165,8 @@ class ApiClient {
     restoreCloudSave(payload) { return this.request('/api/cloud/restore', { method: 'POST', body: payload }); }
     deleteCloudSave(payload) { return this.request('/api/cloud/delete', { method: 'POST', body: payload }); }
     setCloudSavePath(payload) { return this.request('/api/cloud/set_save_path', { method: 'POST', body: payload }); }
+    transferCloudSaves(payload) { return this.request('/api/cloud/transfer', { method: 'POST', body: payload }); }
+    toggleCloudExclude(payload) { return this.request('/api/cloud/exclude', { method: 'POST', body: payload }); }
 }
 
 window.apiClient = new ApiClient();

@@ -2104,6 +2104,39 @@ input[type="number"] {
 }
 
 /* ─── CLOUD SAVES & BACKUP ─── */
+.cloud-settings-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.cloud-settings-grid > .glass-card {
+    min-width: 0;
+}
+
+.cloud-settings-grid .form-input,
+.cloud-settings-grid .form-input-path {
+    min-width: 0 !important;
+    width: 100%;
+}
+
+.cloud-transfer-panel .custom-select-wrapper {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.cloud-transfer-panel .custom-select-trigger {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+@media (max-width: 1040px) {
+    .cloud-settings-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
 .cloud-provider-card:hover {
     border-color: rgba(212, 168, 83, 0.3) !important;
     transform: translateY(-1px);

@@ -201,6 +201,21 @@ class CloudSavesController {
         }
 
         const browseCustomSavePathBtn = document.getElementById('browseCustomSavePathBtn');
+        const swapTransferBtn = document.getElementById('swapCloudTransferBtn');
+        if (swapTransferBtn) {
+            swapTransferBtn.addEventListener('click', () => this.swapTransferProviders());
+        }
+        const startTransferBtn = document.getElementById('startCloudTransferBtn');
+        if (startTransferBtn) {
+            startTransferBtn.addEventListener('click', () => this.transferAllSaves());
+        }
+        const autoExcludeSteamToggle = document.getElementById('cloudAutoExcludeSteamToggle');
+        if (autoExcludeSteamToggle) {
+            autoExcludeSteamToggle.addEventListener('change', async () => {
+                await window.apiClient.configureCloud({ auto_exclude_steam_cloud: autoExcludeSteamToggle.checked });
+                await this.loadGames();
+            });
+        }
         if (browseCustomSavePathBtn) {
             browseCustomSavePathBtn.addEventListener('click', () => this.browseDirectory('customSavePathInput'));
         }
@@ -267,6 +282,10 @@ class CloudSavesController {
             const autoSyncToggle = document.getElementById('cloudAutoSyncToggle');
             if (autoSyncToggle) {
                 autoSyncToggle.checked = Boolean(data.auto_sync);
+            }
+            const autoExcludeSteamToggle = document.getElementById('cloudAutoExcludeSteamToggle');
+            if (autoExcludeSteamToggle) {
+                autoExcludeSteamToggle.checked = data.auto_exclude_steam_cloud !== undefined ? Boolean(data.auto_exclude_steam_cloud) : true;
             }
 
             // Local cloud path
@@ -370,7 +389,17 @@ class CloudSavesController {
         try {
             const data = await window.apiClient.getCloudGames();
             if (data && Array.isArray(data.games)) {
-                this.games = data.games;
+                const byKey = new Map();
+                for (const g of data.games) {
+                    const key = (g.title || '').trim().toLowerCase();
+                    if (!key) continue;
+                    const existing = byKey.get(key);
+                    // Prefer proper mixed-case title over ALL-CAPS installed key
+                    if (!existing || (existing.title === existing.title.toUpperCase() && g.title !== g.title.toUpperCase())) {
+                        byKey.set(key, g);
+                    }
+                }
+                this.games = Array.from(byKey.values());
                 this.renderGames();
             }
         } catch (err) {
@@ -390,6 +419,12 @@ class CloudSavesController {
         const container = document.getElementById('cloudGamesList');
         if (!container) return;
 
+        const excludedCount = this.games.filter(g => g.is_excluded).length;
+        const excludedPill = document.getElementById('cloudFilterExcludedPill');
+        if (excludedPill) {
+            excludedPill.innerHTML = `<i class="fa-brands fa-steam" style="margin-right: 3px;"></i> IGNORED${excludedCount > 0 ? ' (' + excludedCount + ')' : ''}`;
+        }
+
         // Filter games
         const filtered = this.games.filter(g => {
             if (this.searchQuery) {
@@ -398,6 +433,8 @@ class CloudSavesController {
                 if (!titleMatch && !pathMatch) return false;
             }
 
+            if (this.currentFilter === 'excluded') return Boolean(g.is_excluded);
+            if (g.is_excluded) return false;
             if (this.currentFilter === 'in_sync') return g.sync_state === 'in_sync';
             if (this.currentFilter === 'local_newer') return g.sync_state === 'local_newer';
             if (this.currentFilter === 'cloud_newer') return g.sync_state === 'cloud_newer';
@@ -457,6 +494,8 @@ class CloudSavesController {
                                 <h4 class="cloud-game-title">${g.title}</h4>
                                 ${badgeHtml}
                                 ${g.is_installed ? '<span class="status-pill" style="font-size: 9px; padding: 1px 6px;">Installed</span>' : ''}
+                                ${g.is_steam_cloud ? '<span class="status-pill" style="font-size: 9px; padding: 1px 7px; background: rgba(96, 165, 250, 0.16); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.35);"><i class="fa-brands fa-steam"></i> Steam Cloud</span>' : ''}
+                                ${g.is_excluded ? `<span class="status-pill" style="font-size: 9px; padding: 1px 7px; background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35);"><i class="fa-solid fa-eye-slash"></i> ${g.exclude_reason === 'Steam Cloud' ? 'Auto-Ignored' : 'Ignored'}</span>` : ''}
                             </div>
                             <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
                                 <span style="color: var(--accent);"><i class="fa-solid fa-tag"></i> ${g.detection_type}</span>
@@ -470,6 +509,15 @@ class CloudSavesController {
 
                     <!-- Action Buttons -->
                     <div class="cloud-card-actions">
+                        ${g.is_excluded ? `
+                            <button class="btn btn-sm btn-secondary" style="border-color: rgba(96, 165, 250, 0.45); color: #60a5fa;" title="Include this game in Fanta Cloud Sync" onclick="window.cloudSavesController.toggleExcludeGame('${this.escapeHtml(g.title)}', false)">
+                                <i class="fa-solid fa-eye"></i> Include in Sync
+                            </button>
+                        ` : `
+                            <button class="btn-icon" title="Ignore / Exclude from Fanta Cloud Sync (e.g. Steam Cloud game)" onclick="window.cloudSavesController.toggleExcludeGame('${this.escapeHtml(g.title)}', true)">
+                                <i class="fa-solid fa-eye-slash"></i>
+                            </button>
+                        `}
                         ${g.save_path ? `
                             <button class="btn-icon" title="Open Local Save Folder" onclick="window.cloudSavesController.openFolder('${this.escapePath(g.save_path)}')">
                                 <i class="fa-solid fa-folder-open"></i>
@@ -541,7 +589,24 @@ class CloudSavesController {
         `;
     }
 
+    async syncPendingSelfHostedInputs() {
+        const radioSelfHosted = document.getElementById('radioProviderSelfHosted');
+        const url = document.getElementById('selfHostedUrlInput')?.value?.trim() || '';
+        const apiKey = document.getElementById('selfHostedApiKeyInput')?.value?.trim() || '';
+        if (radioSelfHosted && radioSelfHosted.checked && url) {
+            if (!this.status || this.status.provider !== 'self_hosted' || this.status.self_hosted_url !== url || this.status.self_hosted_api_key !== apiKey) {
+                await window.apiClient.configureCloud({ provider: 'self_hosted', self_hosted_url: url, self_hosted_api_key: apiKey });
+                if (this.status) {
+                    this.status.provider = 'self_hosted';
+                    this.status.self_hosted_url = url;
+                    this.status.self_hosted_api_key = apiKey;
+                }
+            }
+        }
+    }
+
     async backupGame(title) {
+        await this.syncPendingSelfHostedInputs();
         if (!title) return;
         window.uiController.showToast(`Starting save backup for '${title}'...`, 'info');
         try {
@@ -593,7 +658,7 @@ class CloudSavesController {
     }
 
     async backupAllGames() {
-        const eligible = this.games.filter(g => g.local_exists);
+        const eligible = this.games.filter(g => g.local_exists && !g.is_excluded);
         if (eligible.length === 0) {
             window.uiController.showToast('No local save files detected to backup.', 'warning');
             return;
@@ -611,6 +676,25 @@ class CloudSavesController {
         }
 
         window.uiController.showToast(`Batch backup finished: ${successCount} / ${eligible.length} games synced.`, 'success');
+        await this.loadGames();
+    }
+
+    async toggleExcludeGame(title, excluded) {
+        if (!title) return;
+        try {
+            const res = await window.apiClient.toggleCloudExclude({ title, excluded });
+            if (res && res.success) {
+                window.uiController.showToast(
+                    res.message || (excluded ? `Ignored '${title}' from Fanta Cloud Sync.` : `Included '${title}' in Fanta Cloud Sync.`),
+                    'info'
+                );
+                await this.loadGames();
+            } else {
+                window.uiController.showToast(`Could not update exclusion: ${(res && res.error) || 'Unknown error'}`, 'danger');
+            }
+        } catch (err) {
+            window.uiController.showToast(`Exclusion error: ${err.message}`, 'danger');
+        }
         await this.loadGames();
     }
 
@@ -723,7 +807,9 @@ class CloudSavesController {
                         </span>
                     `;
                 }
-                window.uiController.showToast(`Connected to ${srvName}${latency}!`, 'success');
+                await window.apiClient.configureCloud({ provider: 'self_hosted', self_hosted_url: url, self_hosted_api_key: apiKey });
+                window.uiController.showToast(`Connected to ${srvName}${latency} & saved settings!`, 'success');
+                await this.loadGames();
             } else {
                 const errMsg = (res && res.error) ? res.error : 'Connection failed';
                 if (statusText) {
@@ -752,6 +838,100 @@ class CloudSavesController {
         }
     }
 
+    swapTransferProviders() {
+        const srcSelect = document.getElementById('cloudTransferSourceSelect');
+        const dstSelect = document.getElementById('cloudTransferTargetSelect');
+        if (!srcSelect || !dstSelect) return;
+        const tmp = srcSelect.value;
+        srcSelect.value = dstSelect.value;
+        dstSelect.value = tmp;
+        srcSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        dstSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    async transferAllSaves() {
+        const srcSelect = document.getElementById('cloudTransferSourceSelect');
+        const dstSelect = document.getElementById('cloudTransferTargetSelect');
+        const modeSelect = document.getElementById('cloudTransferModeSelect');
+        const startBtn = document.getElementById('startCloudTransferBtn');
+        const statusEl = document.getElementById('cloudTransferStatusText');
+
+        const sourceProvider = srcSelect ? srcSelect.value : 'gdrive_api';
+        const targetProvider = dstSelect ? dstSelect.value : 'self_hosted';
+        const mode = modeSelect ? modeSelect.value : 'newer_or_missing';
+
+        if (sourceProvider === targetProvider) {
+            window.uiController.showToast('Please select two different providers to transfer between.', 'warning');
+            return;
+        }
+
+        // First persist any typed URL / API key / Local Cloud Path in the UI inputs
+        const localCloudPath = document.getElementById('localCloudPathInput')?.value?.trim() || '';
+        const selfHostedUrl = document.getElementById('selfHostedUrlInput')?.value?.trim() || '';
+        const selfHostedApiKey = document.getElementById('selfHostedApiKeyInput')?.value?.trim() || '';
+        try {
+            await window.apiClient.configureCloud({
+                local_cloud_path: localCloudPath,
+                self_hosted_url: selfHostedUrl,
+                self_hosted_api_key: selfHostedApiKey
+            });
+        } catch (_) {}
+
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Transferring...';
+        }
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = `<span style="color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Transferring save archives across providers...</span>`;
+        }
+
+        try {
+            const res = await window.apiClient.transferCloudSaves({
+                source_provider: sourceProvider,
+                target_provider: targetProvider,
+                mode,
+                switch_to_target: true
+            });
+
+            if (res && res.success) {
+                if (statusEl) {
+                    statusEl.innerHTML = `
+                        <span style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-circle-check"></i> ${this.escapeHtml(res.message || 'Transfer completed!')}
+                        </span>
+                    `;
+                }
+                window.uiController.showToast(res.message || 'Transfer completed successfully!', 'success');
+                await this.loadAll();
+            } else {
+                const errMsg = (res && res.error) ? res.error : (res && res.message ? res.message : 'Transfer failed');
+                if (statusEl) {
+                    statusEl.innerHTML = `
+                        <span style="color: var(--danger); font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-circle-exclamation"></i> ${this.escapeHtml(errMsg)}
+                        </span>
+                    `;
+                }
+                window.uiController.showToast(errMsg, 'danger');
+            }
+        } catch (err) {
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <span style="color: var(--danger); font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-circle-exclamation"></i> ${this.escapeHtml(err.message)}
+                    </span>
+                `;
+            }
+            window.uiController.showToast(`Transfer error: ${err.message}`, 'danger');
+        } finally {
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fa-solid fa-truck-fast"></i> Transfer All Saves';
+            }
+        }
+    }
+
     async savePreferences() {
         const radioLocal = document.getElementById('radioProviderLocal');
         const radioSelfHosted = document.getElementById('radioProviderSelfHosted');
@@ -763,6 +943,7 @@ class CloudSavesController {
         }
 
         const autoSync = document.getElementById('cloudAutoSyncToggle')?.checked || false;
+        const autoExcludeSteamCloud = document.getElementById('cloudAutoExcludeSteamToggle')?.checked ?? true;
         const localCloudPath = document.getElementById('localCloudPathInput')?.value?.trim() || '';
         const selfHostedUrl = document.getElementById('selfHostedUrlInput')?.value?.trim() || '';
         const selfHostedApiKey = document.getElementById('selfHostedApiKeyInput')?.value?.trim() || '';
@@ -776,6 +957,7 @@ class CloudSavesController {
             await window.apiClient.configureCloud({
                 provider,
                 auto_sync: autoSync,
+                auto_exclude_steam_cloud: autoExcludeSteamCloud,
                 local_cloud_path: localCloudPath,
                 self_hosted_url: selfHostedUrl,
                 self_hosted_api_key: selfHostedApiKey

@@ -878,6 +878,38 @@ Fix:
             self.assertTrue(del_resp.get_json().get("success"))
 
 
+        # 6. Test cross-provider transfer (/api/cloud/transfer: local_folder -> self_hosted)
+        local_cloud_dir = os.path.join(self.temp_dir, "LocalCloud")
+        game_folder = os.path.join(local_cloud_dir, "Schedule I")
+        os.makedirs(game_folder, exist_ok=True)
+        local_zip = os.path.join(game_folder, "Schedule I_save.zip")
+        with open(local_zip, "wb") as f:
+            f.write(zip_bytes)
+        mgr.settings["local_cloud_path"] = local_cloud_dir
+
+        with unittest.mock.patch('requests.get') as mock_get, unittest.mock.patch('requests.post') as mock_post:
+            def transfer_get_side_effect(url, **kwargs):
+                resp = unittest.mock.MagicMock()
+                resp.status_code = 200
+                if url.endswith("/api/status"):
+                    resp.json.return_value = {"status": "ok", "version": "1.0.0"}
+                elif url.endswith("/api/saves"):
+                    resp.json.return_value = {"saves": []}
+                return resp
+            mock_get.side_effect = transfer_get_side_effect
+            mock_post.return_value.status_code = 200
+
+            tr_resp = client.post('/api/cloud/transfer', json={
+                "source_provider": "local_folder",
+                "target_provider": "self_hosted",
+                "mode": "newer_or_missing"
+            })
+            self.assertEqual(tr_resp.status_code, 200)
+            tr_data = tr_resp.get_json()
+            self.assertTrue(tr_data["success"])
+            self.assertEqual(tr_data["transferred"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
 
