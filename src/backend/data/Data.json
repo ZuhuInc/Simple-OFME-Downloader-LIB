@@ -2831,5 +2831,18 @@
                 "fix_url": ""
             }
         }
+    },
+    "Rip It! Card Collector": {
+        "version": "26344643",
+        "host": "BuzzHeavier",
+        "approx_size": "621.5MB",
+        "description": "Congratulations, recruit. Team Ballistic has selected you for an extremely important assignment: collect cards. Lots of them.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/5088440/1a4a5360d7f56e1e0a21066d4cfcd3162fcae701/library_capsule_2x.jpg?t=1793355225",
+        "origin_url": "https://steamrip.com/rip-it-card-collector-free-download/",
+        "parts": [
+            "https://bzzhr.to/x9d0wu3fx42x"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }
