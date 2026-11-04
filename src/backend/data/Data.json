@@ -2857,5 +2857,26 @@
         ],
         "fix_url": "",
         "category": "General"
+    },
+    "Gold Mining Simulator": {
+        "version": "1.10.0.12",
+        "host": "GoFile",
+        "approx_size": "27.3GB",
+        "description": "The game Gold Mining Simulator previously known as Gold Rush: The Game make yourgold mining dreamcome true! Start with nothing but few spare bucks and work your way up to becoming the millionaire.Gold Rush: The Gameis a gold mining simulator based on smash-hit TV Series from Discovery Channel. Let’s get digging. Sit behind the wheel of multiple vehicles such as excavator, drill, front-end loader, bulldozer, and others. The whole gold mining operation depends on your steeringskills",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4707700/edf2d543050eae72b0de44f276181476d97f7fd1/library_capsule_2x.jpg?t=1793049210",
+        "origin_url": "https://steamrip.com/gold-rush-the-game-free-download-n1/",
+        "parts": [
+            "https://gofile.io/d/VIe7v4"
+        ],
+        "fix_url": "",
+        "category": "General",
+        "mirrors": {
+            "BuzzHeavier": {
+                "parts": [
+                    "https://bzzhr.to/ke30csb3e5o4"
+                ],
+                "fix_url": ""
+            }
+        }
     }
 }
