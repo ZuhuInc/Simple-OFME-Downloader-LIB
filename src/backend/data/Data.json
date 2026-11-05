@@ -2878,5 +2878,18 @@
                 "fix_url": ""
             }
         }
+    },
+    "Lightyear Frontier": {
+        "version": "1.0",
+        "host": "BuzzHeavier",
+        "approx_size": "4.6GB",
+        "description": "Start your interstellarhomesteadin this peaceful open-world farming adventure Build your sustainable exofarm, grow alien crops, customize your mech, and explore a new world full ofmysterywith up to three friends",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/1677110/9f91663a3f5214acd9b1ff8f2c14c2fca36bf596/library_600x900_2x.jpg?t=1759132677",
+        "origin_url": "https://steamrip.com/lightyear-frontier-free-download/",
+        "parts": [
+            "https://bzzhr.to/yqhrghocbtek"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }
