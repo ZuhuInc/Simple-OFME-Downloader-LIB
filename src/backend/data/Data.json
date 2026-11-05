@@ -2906,5 +2906,18 @@
         ],
         "fix_url": "",
         "category": "General"
+    },
+    "Retro Rewind – Video Store Simulator": {
+        "version": "2308",
+        "host": "GoFile",
+        "approx_size": "1.9GB",
+        "description": "Relive thegoldenages of video rentals by opening your very own video store. Rent, sell, organize and build your business from the ground up.Hirestaff, manage your team and become the best rental destination in town. From taking reservations and charging late fees to recommending movies and preparing delicioussnacks, there’s never a dull moment when running yourGrind Survivors",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/3552140/71b5ccdf32bdf441488ddf24cd895de140c69a38/library_capsule_2x.jpg?t=1760549490",
+        "origin_url": "https://steamrip.com/retro-rewind-video-store-simulator-free-download/",
+        "parts": [
+            "https://gofile.io/d/ouGBTu"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }
