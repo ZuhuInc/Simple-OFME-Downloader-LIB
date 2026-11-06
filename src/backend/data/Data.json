@@ -2607,7 +2607,7 @@
         "category": "General"
     },
     "Crimson Desert": {
-        "version": "26448710",
+        "version": "26480954",
         "host": "GoFile",
         "approx_size": "81.5 GB",
         "description": "On the continent of Pywel, the rival factions of Pailune maintained a tense balance. At Kliff's side stood his steadfast Greymane comrades, but a devastating ambush in the deep of night by their sworn enemies the Black Bears leaves members of the Greymanes dead or scattered across the continent. Kliff—having lost his family in all but name—is determined to reunite with the survivors and rebuild the faction. But on a journey where alliances are forged, dangers abound, and mysterious factions are uncovered, Kliff will meet those who seek to upend the very order of the continent and face a mission unlike any he has ever known.",
@@ -2918,6 +2918,136 @@
             "https://gofile.io/d/ouGBTu"
         ],
         "fix_url": "",
+        "category": "General"
+    },
+    "Waterpark Simulator": {
+        "version": "1.0.28",
+        "host": "GoFile",
+        "approx_size": "20GB",
+        "description": "Build and run your own waterpark solo or with friends. Design slides, send guests flying with ragdoll physics, manage staff, and fully customize your park. Turn total madness into a diamond five-star empire in this first-person management simulator!",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/3293260/3a2c834881a15fec4da5f3200247b02550f68737/library_capsule_2x.jpg?t=1764697216",
+        "origin_url": "https://online-fix.me/games/sandbox/18182-waterpark-simulator-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/sx2WqG",
+            "https://gofile.io/d/yBxRce"
+        ],
+        "fix_url": "https://gofile.io/d/Eac1IG",
+        "category": "General",
+        "mirrors": {
+            "PixelDrain": {
+                "parts": [
+                    "https://pixeldrain.com/u/UFJ2bTRM",
+                    "https://pixeldrain.com/u/nLLJUvPm"
+                ],
+                "fix_url": "https://pixeldrain.com/u/37icYZyF"
+            }
+        }
+    },
+    "Pizza House Simulator": {
+        "version": "1.007",
+        "host": "GoFile",
+        "approx_size": "5GB",
+        "description": "Run your dream pizzeria solo or with up to 6 players in chaotic online co-op multiplayer. Cook authentic pizzas, automate your kitchen, customize your restaurant, survive disasters, invest in stocks, gamble and build the ultimate Italian restaurant empire.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4132330/8a138ff9008ba56a1d5d3e423b9ea806ce42bdad/library_capsule_2x.jpg?t=1791829557",
+        "origin_url": "https://online-fix.me/games/simulator/18208-pizza-house-simulator-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/kkLFDprI"
+        ],
+        "fix_url": "https://gofile.io/d/TBiubNZr",
+        "category": "General",
+        "mirrors": {
+            "PixelDrain": {
+                "parts": [
+                    "https://pixeldrain.com/u/WRoz48G5"
+                ],
+                "fix_url": "https://pixeldrain.com/u/eMhBLXTN"
+            }
+        }
+    },
+    "Storage Hunter Simulator": {
+        "version": "27112025",
+        "host": "GoFile",
+        "approx_size": "8GB",
+        "description": "Play as one of the bidders for abandoned warehouses and uncover hidden treasures! Storage Hunter is a garage auction simulation game. Bid, win, and sell for profit! Become the king of storage auction.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/1442430/2dde0e5ccda2459e02c7096c497e3c33a49fac04/library_600x900_2x.jpg?t=1753376231",
+        "origin_url": "https://online-fix.me/games/simulator/17959-storage-hunter-simulator-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/2J9nHG",
+            "https://gofile.io/d/gtKIGE",
+            "https://gofile.io/d/gV32ry"
+        ],
+        "fix_url": "https://gofile.io/d/xgR3QZ",
+        "category": "General",
+        "mirrors": {
+            "PixelDrain": {
+                "parts": [
+                    "https://pixeldrain.com/u/pxmk8G7k",
+                    "https://pixeldrain.com/u/c2Mb6zer",
+                    "https://pixeldrain.com/u/82fk1fqK"
+                ],
+                "fix_url": "https://pixeldrain.com/u/B8cfzUFb"
+            }
+        }
+    },
+    "Bus Simulator 27": {
+        "version": "1.14.53243",
+        "host": "GoFile",
+        "approx_size": "20GB",
+        "description": "Drive officially licensed buses from renowned manufacturers and manage your bus company to success. Felicia Bay’s public transportation system is counting on you!",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/2397320/51079b38037d016c34161d44cf6769c8479757e1/library_600x900_2x.jpg?t=1752670081",
+        "origin_url": "https://online-fix.me/games/officialservers/18250-bus-simulator-27-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/7kU7n96n",
+            "https://gofile.io/d/6eT11sPe",
+            "https://gofile.io/d/jCOl7AID",
+            "https://gofile.io/d/bQci5J6L"
+        ],
+        "fix_url": "https://gofile.io/d/oug6DRHY",
+        "category": "General",
+        "mirrors": {
+            "PixelDrain": {
+                "parts": [
+                    "https://pixeldrain.com/u/UotToSab",
+                    "https://pixeldrain.com/u/eTyZQyrv",
+                    "https://pixeldrain.com/u/sxnvcGut",
+                    "https://pixeldrain.com/u/oP2S4Eiu"
+                ],
+                "fix_url": "https://pixeldrain.com/u/CXcjPvPV"
+            }
+        }
+    },
+    "Wrap House Simulator": {
+        "version": "1.07a",
+        "host": "GoFile",
+        "approx_size": "5GB",
+        "description": "Welcome to Wrap House Simulator! Run your own wrap shop, chop, grill, and serve in this cooking adventure. Customize your shop, master the grill, and survive the rush solo or co-op with up to 6 players. Keep up with orders, satisfy customers, and build your dream restaurant!",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/3533100/100fea41290d640f2cd8f0f5abab60d4b4973199/library_capsule_2x.jpg?t=1765291245",
+        "origin_url": "https://online-fix.me/games/simulator/17784-wrap-house-simulator-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/9Z4UVM"
+        ],
+        "fix_url": "https://gofile.io/d/b8f9Th",
+        "category": "General",
+        "mirrors": {
+            "PixelDrain": {
+                "parts": [
+                    "https://pixeldrain.com/u/g2jnEmnR"
+                ],
+                "fix_url": "https://pixeldrain.com/u/eUBxfDGb"
+            }
+        }
+    },
+    "Hardware Store Simulator Online": {
+        "version": "16052026",
+        "host": "GoFile",
+        "approx_size": "5GB",
+        "description": "Compete with up to 4 players to build the most successful hardware store! Design your shop, manage inventory, hire employees, and influence market prices in this detailed business simulator. Master retail management as you expand your store empire.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/3358560/5e70202e56f7eeb1025a76bfcd918b67935992cc/library_600x900_2x.jpg?t=1745828499",
+        "origin_url": "https://online-fix.me/games/simulator/18142-hardware-store-simulator-online.html",
+        "parts": [
+            "https://gofile.io/d/MbhsNF"
+        ],
+        "fix_url": "https://gofile.io/d/PwTxUB",
         "category": "General"
     }
 }
