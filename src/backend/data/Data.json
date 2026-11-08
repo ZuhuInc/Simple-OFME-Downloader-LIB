@@ -3049,5 +3049,18 @@
         ],
         "fix_url": "https://gofile.io/d/PwTxUB",
         "category": "General"
+    },
+    "ATMOSFAR": {
+        "version": "26491628",
+        "host": "BuzzHeavier",
+        "approx_size": "11.6GB",
+        "description": "Uncover the fate of humanity’s final outpost as you survive and explore a thrilling world of floating islands. Brave the skies on your own or assemble a squadron of friends, and scavenge scrap to engineer and upgrade flying vessels, bringing your airship along for the journey.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/1798230/eabd6c40acfd5cc2e0c6efcb076fba0df3a84bd8/library_600x900_2x.jpg?t=1756826070",
+        "origin_url": "https://steamrip.com/atmosfar-free-download/",
+        "parts": [
+            "https://bzzhr.to/edfai0e44mgc"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }
