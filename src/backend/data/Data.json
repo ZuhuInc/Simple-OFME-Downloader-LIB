@@ -3232,5 +3232,18 @@
         ],
         "fix_url": "",
         "category": "General"
+    },
+    "Moon Sweepers": {
+        "version": "1.0.5",
+        "host": "GoFile",
+        "approx_size": "2 GB",
+        "description": "An entire Moon to clean. One toothbrush to start. Team up with up to 16 players, collect and sell lunar dust, upgrade your tools, and unlock cleaning vehicles. Turn a ridiculous job into a thriving operation, if your friends actually help.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/5335510/b11598a928ea1ac19bfa83eec2ab071a93ec7313/library_capsule_2x.jpg?t=1792523658",
+        "origin_url": "https://online-fix.me/games/simulator/18290-moon-sweepers-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/KE19Y1uJ"
+        ],
+        "fix_url": "https://gofile.io/d/FXgkfPvB",
+        "category": "General"
     }
 }
