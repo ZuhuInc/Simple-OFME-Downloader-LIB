@@ -3075,5 +3075,18 @@
         ],
         "fix_url": "https://gofile.io/d/FHAml4",
         "category": "General"
+    },
+    "Dead Sector": {
+        "version": "26521179",
+        "host": "GoFile",
+        "approx_size": "376 MB",
+        "description": "You begin with a bare room and a single server you assembled by hand. Grow it into a sprawling enterprise data center: rows of hundreds of racks, redundant power and networking, massive storage fabric, and a steady stream of clients pushing heavy workloads across hardware you designed yourself every day. You do not buy servers off a shelf. You build them. Choose every piece of hardware and where it goes: processors, memory, storage drives, network cards, GPUs, and enterprise AI accelerators, each with its own cost, performance, and power draw.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4736470/adbbd4735dfe9993ec44b0445914f24989084f11/library_capsule_2x.jpg?t=1791930002",
+        "origin_url": "https://cracked-games.org/dead-sector-free-download",
+        "parts": [
+            "https://gofile.io/d/EVwjUqpy"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }
