@@ -2907,19 +2907,6 @@
         "fix_url": "",
         "category": "General"
     },
-    "Retro Rewind – Video Store Simulator": {
-        "version": "2308",
-        "host": "GoFile",
-        "approx_size": "1.9GB",
-        "description": "Relive thegoldenages of video rentals by opening your very own video store. Rent, sell, organize and build your business from the ground up.Hirestaff, manage your team and become the best rental destination in town. From taking reservations and charging late fees to recommending movies and preparing delicioussnacks, there’s never a dull moment when running yourGrind Survivors",
-        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/3552140/71b5ccdf32bdf441488ddf24cd895de140c69a38/library_capsule_2x.jpg?t=1760549490",
-        "origin_url": "https://steamrip.com/retro-rewind-video-store-simulator-free-download/",
-        "parts": [
-            "https://gofile.io/d/ouGBTu"
-        ],
-        "fix_url": "",
-        "category": "General"
-    },
     "Waterpark Simulator": {
         "version": "1.0.28",
         "host": "GoFile",
@@ -3075,6 +3062,163 @@
         ],
         "fix_url": "https://gofile.io/d/FHAml4",
         "category": "General"
+    },
+    "Retro Rewind - Video Store Simulator": {
+        "version": "26492108",
+        "host": "GoFile",
+        "approx_size": "2.1 GB",
+        "description": "Relive the golden ages of video rentals by opening your very own video store. Rent, sell, organize and build your business from the ground up. Hire staff, manage your team and become the best rental destination in town! From taking reservations and charging late fees to recommending movies and preparing delicious snacks, there’s never a dull moment when running your store! Customize your walls and floors, decorate with posters and memorabilia and expand your layout to build the video store of your dreams.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/3552140/71b5ccdf32bdf441488ddf24cd895de140c69a38/library_capsule_2x.jpg?t=1760549490",
+        "origin_url": "https://cracked-games.org/retro-rewind-video-store-simulator-free-download",
+        "parts": [
+            "https://gofile.io/d/GSWCwMcY"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "DiRT Rally": {
+        "version": "5887063",
+        "host": "GoFile",
+        "approx_size": "37.6 GB",
+        "description": "Download DiRT Rally for free. DiRT Rally is the most authentic and thrilling rally game ever made, road-tested over 80 million miles by the DiRT community. It p...",
+        "thumbnail": "https://cdn2.steamgriddb.com/thumb/87ae5c2ec5166b0a865ac1a2f0ff1717.jpg",
+        "origin_url": "https://cracked-games.org/dirt-rally-free-download",
+        "parts": [
+            "https://gofile.io/d/GlwwjS0A"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "The Sims 4": {
+        "version": "1.126.78.1020",
+        "host": "GoFile",
+        "approx_size": "77.1GB",
+        "description": "Imagine a world where you’re the creator. In The Sims 4, you can design unique Sims, build dream homes, and experience their lives in a way that’s entirely up to you.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/1222670/library_600x900_2x.jpg?t=1752166821",
+        "origin_url": "https://steamrip.com/the-sims-4-free-download-9hj/",
+        "parts": [
+            "https://gofile.io/d/PJeEEasR"
+        ],
+        "fix_url": "",
+        "category": "General",
+        "mirrors": {
+            "BuzzHeavier": {
+                "parts": [
+                    "https://bzzhr.to/k0hj9y5e4xul"
+                ],
+                "fix_url": ""
+            }
+        }
+    },
+    "Grand Theft Auto IV": {
+        "version": "1.2.0.59",
+        "host": "BuzzHeavier",
+        "approx_size": "19.9GB",
+        "description": "Niko Bellic, Johnny Klebitz, and Luis Lopez all have one thing in common – they live in the worst city inAmericaLiberty City worships money and status, and is heaven for those who have them and a living nightmare for those who don’t. Niko is looking toescapehis past and make a new life for himself in the land of opportunity.",
+        "thumbnail": "https://cdn2.steamgriddb.com/thumb/a32bc8141e168ff20fdfe3f0fbc72155.jpg",
+        "origin_url": "https://steamrip.com/grand-theft-auto-4-1f2/",
+        "parts": [
+            "https://bzzhr.to/akft1ubwr2g1"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "The Witcher 3: Wild Hunt Remastered": {
+        "version": "5.01",
+        "host": "BuzzHeavier",
+        "approx_size": "69.3GB",
+        "description": "Become a professional monster slayer and embark on anadventureof epic proportions Upon its release, The Witcher 3: Wild Hunt became an instant classic, claiming over 250 Game of the Year awards. Now you can enjoy this huge, over 100-hour long,open-worldadventure along with both its story-driven expansions worth an extra 50 hours of gameplay. This edition includes all additional content – new weapons, armor, companion outfits, new game mode and side quests.Plague Inc: Evolved",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/292030/fe26986a2bd1601004ef0e4e1dfadd02948e3897/library_600x900_2x.jpg?t=1755527653",
+        "origin_url": "https://steamrip.com/the-witcher-3-wild-hunt-r-free-download-v8a/",
+        "parts": [
+            "https://bzzhr.to/dg6xl7b06aw1",
+            "https://bzzhr.to/wge5xqrqagzc"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "Red Dead Redemption": {
+        "version": "1.0.42.46611",
+        "host": "BuzzHeavier",
+        "approx_size": "8.41GB",
+        "description": "It’s astrangetime for PC gamers. After a long 14-year wait, Red Dead Redemption finally arrives on PC, only to be met with a hefty price tag. This is particularly odd considering its more recent andexpansivesequel, Red Dead Redemption 2, is currently on sale for a significantly lower price.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/2668510/f5cf694ddab93ed2462a9e2f5e01064e121c5663/library_600x900_2x.jpg?t=1730294614",
+        "origin_url": "https://steamrip.com/steam-red-dead-redemption-pc/",
+        "parts": [
+            "https://bzzhr.to/hy0e51nhccrk"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "Red Dead Redemption 2": {
+        "version": "1491.50",
+        "host": "BuzzHeavier",
+        "approx_size": "116GB",
+        "description": "Arthur Morgan and the Van der Linde gang areoutlawson the run. With federal agents and the best bounty hunters in the nation massing on their heels, the gang must rob, steal and fight their way across the rugged heartland ofAmericain order to survive. As deepening internal divisions threaten to tear the gang apart, Arthur must make a choice between his own ideals and loyalty to the gang who raised him. Now featuring additional Story Mode content and a fully-featured Photo Mode, Red Dead Redemption 2 also includes free access to the shared living world of Red DeadOnline, where players take on an array of roles to carve their own unique path on the frontier as they track wanted criminals as a Bounty Hunter",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/1174180/library_600x900_2x.jpg?t=1671484934",
+        "origin_url": "https://steamrip.com/red-dead-redemption-2-free-download-15/",
+        "parts": [
+            "https://bzzhr.to/ck7nob6r1bcv"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "Dragons Dogma 2": {
+        "version": "16102026",
+        "host": "GoFile",
+        "approx_size": "64.4 GB",
+        "description": "Dragon’s Dogma 2 is a single player, narrative driven action-RPG that challenges the players to choose their own experience – from the appearance of their Arisen, their vocation, their party, how to approach different situations and more - in a truly immersive fantasy world.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/2054970/library_600x900_2x.jpg?t=1727763478",
+        "origin_url": "https://online-fix.me/games/adventures/18234-dragons-dogma-2-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/ehl5k2IF",
+            "https://gofile.io/d/u1ft3cVl",
+            "https://gofile.io/d/mRudaxte",
+            "https://gofile.io/d/lSwpClK1",
+            "https://gofile.io/d/opYRWUJK",
+            "https://gofile.io/d/hOrUzThH",
+            "https://gofile.io/d/lfnyJFxU",
+            "https://gofile.io/d/a7OfhqIf",
+            "https://gofile.io/d/BYCjwi9m",
+            "https://gofile.io/d/We0k1AZc",
+            "https://gofile.io/d/4VsrfJVi",
+            "https://gofile.io/d/VVKUosCG",
+            "https://gofile.io/d/uV6enixQ",
+            "https://gofile.io/d/EtTyOr6s",
+            "https://gofile.io/d/P8kNmM08",
+            "https://gofile.io/d/vsK3Ya4B",
+            "https://gofile.io/d/fhAud9U7",
+            "https://gofile.io/d/SUGLj3fT",
+            "https://gofile.io/d/Dph5BN7i"
+        ],
+        "fix_url": "https://gofile.io/d/LYOWAJUN",
+        "category": "General",
+        "mirrors": {
+            "PixelDrain": {
+                "parts": [
+                    "https://pixeldrain.com/u/wL9yvxre",
+                    "https://pixeldrain.com/u/fEaZWqxH",
+                    "https://pixeldrain.com/u/9oQ46BUZ",
+                    "https://pixeldrain.com/u/LsTGNfgj",
+                    "https://pixeldrain.com/u/Erwzs6mH",
+                    "https://pixeldrain.com/u/4mS5QVrr",
+                    "https://pixeldrain.com/u/vAuSyzWS",
+                    "https://pixeldrain.com/u/MXDwxdL6",
+                    "https://pixeldrain.com/u/Zyw2HQCF",
+                    "https://pixeldrain.com/u/xz9X1ztR",
+                    "https://pixeldrain.com/u/b9QHQJTp",
+                    "https://pixeldrain.com/u/UnXioknW",
+                    "https://pixeldrain.com/u/MrMKuaBL",
+                    "https://pixeldrain.com/u/vfdtc6tt",
+                    "https://pixeldrain.com/u/We5vtyGZ",
+                    "https://pixeldrain.com/u/6ByPUnza",
+                    "https://pixeldrain.com/u/hR3fckLm",
+                    "https://pixeldrain.com/u/LVVVDhoX",
+                    "https://pixeldrain.com/u/9RNxw39L"
+                ],
+                "fix_url": "https://pixeldrain.com/u/tkVvYZKB"
+            }
+        }
     },
     "Dead Sector": {
         "version": "26521179",
