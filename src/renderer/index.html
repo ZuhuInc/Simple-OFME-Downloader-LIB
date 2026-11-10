@@ -23,7 +23,7 @@
         <div class="title-bar-left">
             <img class="app-icon" src="assets/OFME-DWND-ICO.ico" alt="Logo">
             <span class="app-title">FANTA OFME</span>
-            <span class="app-version-tag">v2.1.2</span>
+            <span class="app-version-tag">v2.1.3</span>
             <span id="sourceModeBadge" class="status-pill status-installed"
                 style="display: none; font-size: 10px; padding: 2px 8px; margin-left: 6px; background: rgba(212, 168, 83, 0.18); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.4);">SOURCE
                 MODE</span>
@@ -895,7 +895,7 @@
                                 updates powered by GitHub Releases.</p>
                         </div>
                         <span id="updateAppVersionBadge" class="status-pill status-installed"
-                            style="font-size: 11px;">v2.1.2</span>
+                            style="font-size: 11px;">v2.1.3</span>
                     </div>
 
                     <div
@@ -990,10 +990,9 @@
                 </div>
 
                 <!-- Provider & Sync Settings Grid -->
-                <div class="cloud-settings-grid"
-                    style="gap: 16px; margin-bottom: 12px;">
+                <div class="cloud-settings-grid">
                     <!-- Card 1: Cloud Storage Provider Selector -->
-                    <div class="glass-card" style="display: flex; flex-direction: column; gap: 14px;">
+                    <div class="glass-card" style="display: flex; flex-direction: column; gap: 14px; height: 100%;">
                         <div>
                             <h3
                                 style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
@@ -1006,7 +1005,7 @@
 
                         <!-- Provider Option 1: Google Drive API (Recommended) -->
                         <div class="cloud-provider-card active" id="providerCardGDrive"
-                            style="cursor: pointer; padding: 14px; border-radius: var(--radius-sm); border: 1px solid rgba(212, 168, 83, 0.4); background: rgba(212, 168, 83, 0.06); transition: var(--transition);">
+                            style="cursor: pointer; padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid rgba(212, 168, 83, 0.4); background: rgba(212, 168, 83, 0.06); transition: var(--transition);">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div style="display: flex; gap: 12px; align-items: center;">
                                     <div
@@ -1029,7 +1028,7 @@
                             </div>
 
                             <div id="gdriveAuthSection"
-                                style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                                 <div id="gdriveStatusText" style="font-size: 12px; color: var(--text-secondary);">
                                     <span style="color: var(--text-muted);"><i class="fa-solid fa-circle-question"></i>
                                         Not Connected</span>
@@ -1054,7 +1053,7 @@
 
                         <!-- Provider Option 2: Local Cloud Folder ("My Drive" / Google Drive Desktop / OneDrive) -->
                         <div class="cloud-provider-card" id="providerCardLocal"
-                            style="cursor: pointer; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); background: rgba(0, 0, 0, 0.2); transition: var(--transition);">
+                            style="cursor: pointer; padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); background: rgba(0, 0, 0, 0.2); transition: var(--transition);">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div style="display: flex; gap: 12px; align-items: center;">
                                     <div
@@ -1073,7 +1072,7 @@
                             </div>
 
                             <div id="localFolderSection"
-                                style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-glass);">
+                                style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-glass); display: none;">
                                 <label
                                     style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 6px;">Sync
                                     Directory Path:</label>
@@ -1092,7 +1091,7 @@
 
                         <!-- Provider Option 3: Self-Hosted Cloud Server (Fanta-OFME-Cloud) -->
                         <div class="cloud-provider-card" id="providerCardSelfHosted"
-                            style="cursor: pointer; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); background: rgba(0, 0, 0, 0.2); transition: var(--transition);">
+                            style="cursor: pointer; padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); background: rgba(0, 0, 0, 0.2); transition: var(--transition);">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div style="display: flex; gap: 12px; align-items: center;">
                                     <div
@@ -1116,7 +1115,7 @@
                             </div>
 
                             <div id="selfHostedSection"
-                                style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-glass); display: flex; flex-direction: column; gap: 10px;">
+                                style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-glass); display: none; flex-direction: column; gap: 10px;">
                                 <div style="display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 8px;">
                                     <div>
                                         <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Server URL:</label>
@@ -1146,18 +1145,29 @@
 
                     <!-- Card 2: Synchronization & Safety Settings -->
                     <div class="glass-card"
-                        style="display: flex; flex-direction: column; justify-content: space-between; gap: 14px;">
+                        style="display: flex; flex-direction: column; gap: 12px; height: 100%;">
                         <div>
-                            <h3
-                                style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
-                                <i class="fa-solid fa-arrows-rotate" style="color: var(--accent);"></i> Automatic Sync &
-                                Safety
-                            </h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h3
+                                    style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; margin: 0;">
+                                    <i class="fa-solid fa-arrows-rotate" style="color: var(--accent);"></i> Automatic Sync &amp; Safety
+                                </h3>
+                                <div class="cloud-info-tooltip-wrapper" tabindex="0" title="Click or hover for tips">
+                                    <i class="fa-solid fa-circle-info cloud-info-icon"></i>
+                                    <span style="font-size: 11px; color: var(--text-muted); margin-left: 5px; font-weight: 500;">Tips</span>
+                                    <div class="cloud-info-popout">
+                                        <div class="cloud-info-popout-title"><i class="fa-solid fa-circle-info"></i> Automatic Sync &amp; Safety Tips</div>
+                                        <div class="cloud-info-popout-item"><strong style="color: var(--text-secondary);">When Automatic Sync is ON:</strong> Saves upload seamlessly whenever you exit a game, and newer saves from your other PC are restored before launching.</div>
+                                        <div class="cloud-info-popout-item"><strong style="color: var(--text-secondary);">When Automatic Sync is OFF:</strong> All backups and restores are manual (via the Backup &amp; Restore buttons).</div>
+                                        <div class="cloud-info-popout-item"><strong style="color: var(--success);"><i class="fa-solid fa-shield-halved"></i> Safety Guarantee:</strong> A timestamped safety rollback snapshot is automatically kept in your Documents folder whenever a save is restored, ensuring you never lose data.</div>
+                                    </div>
+                                </div>
+                            </div>
                             <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Automate cross-PC
                                 save synchronization and preserve safety rollbacks.</p>
                         </div>
 
-                        <div class="settings-group" style="gap: 12px;">
+                        <div class="settings-group" style="gap: 10px; display: flex; flex-direction: column;">
                             <div class="form-row"
                                 style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
                                 <div class="form-label-area">
@@ -1190,71 +1200,68 @@
                                 </label>
                             </div>
 
-                            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.6; padding: 4px 6px;">
-                                <div><strong style="color: var(--text-secondary);">When Automatic Sync is ON:</strong>
-                                    Saves upload seamlessly whenever you exit a game, and newer saves from your other PC
-                                    are restored before launching.</div>
-                                <div style="margin-top: 4px;"><strong style="color: var(--text-secondary);">When
-                                        Automatic Sync is OFF:</strong> All backups and restores are manual (via the
-                                    Backup & Restore buttons below).</div>
-                                <div style="margin-top: 4px;"><strong style="color: var(--success);"><i
-                                            class="fa-solid fa-shield-halved"></i> Safety Guarantee:</strong> A
-                                    timestamped safety rollback snapshot is automatically kept in your Documents folder
-                                    whenever a save is restored, ensuring you never lose data.</div>
+                            <!-- Cross-Provider Save Transfer & Migration Panel (Collapsible) -->
+                            <div class="cloud-transfer-panel" style="background: rgba(0, 0, 0, 0.22); border-radius: var(--radius-sm); border: 1px solid var(--border-glass); display: flex; flex-direction: column; min-width: 0; overflow: hidden; transition: var(--transition);">
+                                <!-- Collapsible Dropdown Header -->
+                                <div id="cloudTransferToggleHeader" style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; cursor: pointer; user-select: none;">
+                                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                                        <i class="fa-solid fa-right-left" style="color: var(--accent); font-size: 12px; flex-shrink: 0;"></i>
+                                        <div style="min-width: 0;">
+                                            <div style="font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Transfer / Migrate Saves Between Providers</div>
+                                            <span style="font-size: 10px; color: var(--text-muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Copy archives between Google Drive, Self-Hosted, Local, or PC</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; flex-shrink: 0; margin-left: 6px;">
+                                        <i id="cloudTransferChevron" class="fa-solid fa-chevron-down" style="color: var(--text-muted); font-size: 12px; transition: transform 0.2s ease; padding: 2px 4px;"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Collapsible Body (Folded in by default) -->
+                                <div id="cloudTransferBody" style="display: none; padding: 12px 14px 14px 14px; border-top: 1px solid rgba(255, 255, 255, 0.05); flex-direction: column; gap: 10px;">
+                                    <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: end; min-width: 0;">
+                                        <div>
+                                            <label style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">From (Source):</label>
+                                            <select id="cloudTransferSourceSelect" class="select-dropdown" style="width: 100%; font-size: 12px; padding: 6px 10px;">
+                                                <option value="gdrive_api">Google Drive Online</option>
+                                                <option value="self_hosted">Self-Hosted Cloud Server</option>
+                                                <option value="local_folder">Local Cloud Folder</option>
+                                                <option value="local_pc">This PC (Local Saves)</option>
+                                            </select>
+                                        </div>
+
+                                        <button type="button" id="swapCloudTransferBtn" class="btn btn-secondary btn-sm" title="Swap Source & Destination" style="padding: 6px 10px; height: 34px; min-width: 34px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1px;">
+                                            <i class="fa-solid fa-right-left"></i>
+                                        </button>
+
+                                        <div>
+                                            <label style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">To (Destination):</label>
+                                            <select id="cloudTransferTargetSelect" class="select-dropdown" style="width: 100%; font-size: 12px; padding: 6px 10px;">
+                                                <option value="self_hosted" selected>Self-Hosted Cloud Server</option>
+                                                <option value="gdrive_api">Google Drive Online</option>
+                                                <option value="local_folder">Local Cloud Folder</option>
+                                                <option value="local_pc">This PC (Local Saves)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 2px;">
+                                        <div style="flex: 1 1 180px; min-width: 0;">
+                                            <select id="cloudTransferModeSelect" class="select-dropdown" style="font-size: 11px; padding: 5px 10px; width: 100%;">
+                                                <option value="newer_or_missing" selected>Only Missing or Newer Saves (Safe)</option>
+                                                <option value="overwrite_all">Overwrite All Saves on Destination</option>
+                                            </select>
+                                        </div>
+                                        <button type="button" id="startCloudTransferBtn" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 6px 14px; border-color: rgba(212, 168, 83, 0.45); color: var(--accent); white-space: nowrap; flex-shrink: 0;">
+                                            <i class="fa-solid fa-truck-fast"></i> Transfer All Saves
+                                        </button>
+                                    </div>
+
+                                    <div id="cloudTransferStatusText" style="display: none; font-size: 11px; padding: 8px 10px; background: rgba(0,0,0,0.25); border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.06);"></div>
+                                </div>
                             </div>
                         </div>
 
-                            <!-- Cross-Provider Save Transfer & Migration Panel -->
-                            <div class="cloud-transfer-panel" style="margin-top: 6px; padding: 12px 14px; background: rgba(0, 0, 0, 0.22); border-radius: var(--radius-sm); border: 1px solid var(--border-glass); display: flex; flex-direction: column; gap: 10px; min-width: 0;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px;">
-                                            <i class="fa-solid fa-right-left" style="color: var(--accent);"></i> Transfer / Migrate Saves Between Providers
-                                        </div>
-                                        <span style="font-size: 11px; color: var(--text-muted);">Copy all save archives between Google Drive, Self-Hosted Server, Local Folder, or This PC</span>
-                                    </div>
-                                </div>
-
-                                <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: end; min-width: 0;">
-                                    <div>
-                                        <label style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">From (Source):</label>
-                                        <select id="cloudTransferSourceSelect" class="select-dropdown" style="width: 100%; font-size: 12px; padding: 6px 10px;">
-                                            <option value="gdrive_api">Google Drive Online</option>
-                                            <option value="self_hosted">Self-Hosted Cloud Server</option>
-                                            <option value="local_folder">Local Cloud Folder</option>
-                                            <option value="local_pc">This PC (Local Saves)</option>
-                                        </select>
-                                    </div>
-
-                                    <button type="button" id="swapCloudTransferBtn" class="btn btn-secondary btn-sm" title="Swap Source & Destination" style="padding: 6px 10px; height: 32px;">
-                                        <i class="fa-solid fa-right-left"></i>
-                                    </button>
-
-                                    <div>
-                                        <label style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">To (Destination):</label>
-                                        <select id="cloudTransferTargetSelect" class="select-dropdown" style="width: 100%; font-size: 12px; padding: 6px 10px;">
-                                            <option value="self_hosted" selected>Self-Hosted Cloud Server</option>
-                                            <option value="gdrive_api">Google Drive Online</option>
-                                            <option value="local_folder">Local Cloud Folder</option>
-                                            <option value="local_pc">This PC (Local Saves)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 2px;">
-                                    <div style="flex: 1 1 160px; min-width: 0;"><select id="cloudTransferModeSelect" class="select-dropdown" style="font-size: 11px; padding: 5px 10px; width: 100%;">
-                                        <option value="newer_or_missing" selected>Only Missing or Newer Saves (Safe)</option>
-                                        <option value="overwrite_all">Overwrite All Saves on Destination</option>
-                                    </select>
-                                    </div><button type="button" id="startCloudTransferBtn" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 6px 14px; border-color: rgba(212, 168, 83, 0.45); color: var(--accent); white-space: nowrap; flex-shrink: 0;">
-                                        <i class="fa-solid fa-truck-fast"></i> Transfer All Saves
-                                    </button>
-                                </div>
-
-                                <div id="cloudTransferStatusText" style="display: none; font-size: 11px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.06);"></div>
-                            </div>
-
-                        <div style="display: flex; justify-content: flex-end; padding-top: 8px;">
+                        <div style="display: flex; justify-content: flex-end; margin-top: auto; padding-top: 8px;">
                             <button id="saveCloudSettingsBtn" class="btn btn-primary btn-sm" style="padding: 6px 18px;">
                                 <i class="fa-solid fa-check"></i> Save Preferences
                             </button>
@@ -1263,7 +1270,7 @@
                 </div>
 
                 <!-- Games Saves Section -->
-                <div class="glass-card" style="margin-top: 4px;">
+                <div class="glass-card">
                     <!-- Filter and Search Header -->
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">

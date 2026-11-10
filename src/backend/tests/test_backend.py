@@ -10,6 +10,7 @@ import shutil
 import tempfile
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 from backend.config import Config
 from backend.database import DatabaseManager, GameEntry
@@ -695,6 +696,7 @@ Fix:
             def __init__(self, title, thumb=""):
                 self.title = title
                 self.thumbnail = thumb
+        config.data["Liar's Bar"] = {"downloaded": True, "location": os.path.join(self.temp_dir, "Liar's Bar")}
         db_mock.games = [FakeGame("PEAK", "thumb.jpg"), FakeGame("Liar's Bar", "liar.jpg")]
         resp = client.get('/api/cloud/games')
         self.assertEqual(resp.status_code, 200)

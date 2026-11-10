@@ -354,7 +354,11 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
         if config and hasattr(config, "data"):
             installed_games = config.data
 
-        # Build list of games from installed records and db_manager
+        # Pre-index cloud saves for fast responses
+        cloud_index = cloud_sync.list_all_cloud_saves()
+        steam_index = cloud_sync.get_official_steam_games_index()
+
+        # Build list of games: only include installed games or games saved on the cloud
         canonical_names = {k.strip().lower(): k.strip() for k in installed_games.keys() if k and str(k).strip()}
         thumb_map = {}
 
@@ -364,14 +368,17 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             for g in games_source:
                 title = getattr(g, "title", None) or (g.get("title") if isinstance(g, dict) else None)
                 if title:
-                    canonical_names[title.strip().lower()] = title.strip()
                     thumb = getattr(g, "thumbnail", None) or (g.get("thumbnail") if isinstance(g, dict) else "")
                     if thumb:
                         thumb_map[title.strip().lower()] = thumb
 
-        # Pre-index cloud saves for fast responses
-        cloud_index = cloud_sync.list_all_cloud_saves()
-        steam_index = cloud_sync.get_official_steam_games_index()
+        # Add games from cloud index that exist in cloud storage
+        if isinstance(cloud_index, dict):
+            for c_key, c_val in cloud_index.items():
+                if isinstance(c_val, dict) and c_val.get("exists"):
+                    c_title = c_val.get("title") or c_key
+                    if c_title and str(c_title).strip():
+                        canonical_names[c_title.strip().lower()] = c_title.strip()
 
         for title in sorted(canonical_names.values(), key=lambda x: x.lower()):
             record = installed_games.get(title.upper()) or installed_games.get(title) or {}
@@ -387,7 +394,10 @@ def create_cloud_blueprint(cloud_sync, config, db_manager):
             status["is_installed"] = is_downloaded
             status["game_location"] = location
             status["thumbnail"] = thumbnail
-            results.append(status)
+
+            # Filter: only include games that are installed locally OR exist on the cloud (or local save detected)
+            if status.get("is_installed") or status.get("cloud_exists") or status.get("local_exists"):
+                results.append(status)
 
         return jsonify({"success": True, "games": results, "total": len(results)})
 

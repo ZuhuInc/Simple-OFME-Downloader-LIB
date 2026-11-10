@@ -384,7 +384,7 @@ html, body {
     padding: 3px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-glass);
-    flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .filter-pill {
@@ -2108,7 +2108,98 @@ input[type="number"] {
     display: grid;
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
     gap: 16px;
-    margin-bottom: 12px;
+    align-items: stretch;
+}
+
+.cloud-info-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    outline: none;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: var(--transition);
+    user-select: none;
+}
+
+.cloud-info-tooltip-wrapper:hover,
+.cloud-info-tooltip-wrapper:focus {
+    background: rgba(212, 168, 83, 0.12);
+    border-color: rgba(212, 168, 83, 0.35);
+}
+
+.cloud-info-tooltip-wrapper .cloud-info-icon {
+    font-size: 12px;
+    color: var(--accent);
+    transition: transform 0.18s ease;
+}
+
+.cloud-info-tooltip-wrapper:hover .cloud-info-icon,
+.cloud-info-tooltip-wrapper:focus .cloud-info-icon {
+    transform: scale(1.12);
+}
+
+.cloud-info-popout {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 320px;
+    background: rgba(18, 18, 22, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass-bright);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 16px rgba(212, 168, 83, 0.15);
+    padding: 12px 14px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    pointer-events: none;
+}
+
+.cloud-info-tooltip-wrapper:hover .cloud-info-popout,
+.cloud-info-tooltip-wrapper:focus .cloud-info-popout,
+.cloud-info-tooltip-wrapper:focus-within .cloud-info-popout {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.cloud-info-popout-title {
+    font-weight: 600;
+    color: #fff;
+    font-size: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 6px;
+}
+
+.cloud-info-popout-title i {
+    color: var(--accent);
+}
+
+.cloud-info-popout-item {
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+.cloud-info-popout-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 .cloud-settings-grid > .glass-card {
@@ -2132,7 +2223,7 @@ input[type="number"] {
     min-width: 0 !important;
 }
 
-@media (max-width: 1040px) {
+@media (max-width: 1220px) {
     .cloud-settings-grid {
         grid-template-columns: minmax(0, 1fr) !important;
     }
@@ -2180,6 +2271,16 @@ input[type="number"] {
     flex-shrink: 0;
 }
 
+.cloud-game-card.is-excluded {
+    opacity: 0.72;
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.cloud-game-card.is-excluded:hover {
+    opacity: 1;
+}
+
 .cloud-game-title {
     font-size: 15px;
     font-weight: 700;
@@ -2187,6 +2288,8 @@ input[type="number"] {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 320px;
+    min-width: 0;
 }
 
 .cloud-card-actions {
@@ -2194,6 +2297,7 @@ input[type="number"] {
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
 .cloud-path-truncate {
@@ -2214,6 +2318,17 @@ input[type="number"] {
     border-radius: var(--radius-sm);
     padding: 10px 14px;
     border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 860px) {
+    .cloud-comparison-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    .cloud-direction-divider {
+        transform: rotate(90deg);
+        padding: 4px 0;
+    }
 }
 
 .cloud-comp-box {

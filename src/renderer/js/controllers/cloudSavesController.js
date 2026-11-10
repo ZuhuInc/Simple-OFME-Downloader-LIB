@@ -209,6 +209,20 @@ class CloudSavesController {
         if (startTransferBtn) {
             startTransferBtn.addEventListener('click', () => this.transferAllSaves());
         }
+
+        const transferToggleHeader = document.getElementById('cloudTransferToggleHeader');
+        const transferBody = document.getElementById('cloudTransferBody');
+        const transferChevron = document.getElementById('cloudTransferChevron');
+        if (transferToggleHeader && transferBody) {
+            transferToggleHeader.addEventListener('click', () => {
+                const isHidden = transferBody.style.display === 'none' || !transferBody.style.display;
+                transferBody.style.display = isHidden ? 'flex' : 'none';
+                if (transferChevron) {
+                    transferChevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+            });
+        }
+
         const autoExcludeSteamToggle = document.getElementById('cloudAutoExcludeSteamToggle');
         if (autoExcludeSteamToggle) {
             autoExcludeSteamToggle.addEventListener('change', async () => {
@@ -248,6 +262,15 @@ class CloudSavesController {
             cardSelfHosted.style.borderColor = isSelfHosted ? 'rgba(212, 168, 83, 0.4)' : 'var(--border-glass)';
             cardSelfHosted.style.background = isSelfHosted ? 'rgba(212, 168, 83, 0.06)' : 'rgba(0, 0, 0, 0.2)';
         }
+
+        // Auto-adjust: only expand inputs for the selected provider
+        const gdriveSec = document.getElementById('gdriveAuthSection');
+        const localSec = document.getElementById('localFolderSection');
+        const selfHostedSec = document.getElementById('selfHostedSection');
+
+        if (gdriveSec) gdriveSec.style.display = isGDrive ? 'flex' : 'none';
+        if (localSec) localSec.style.display = isLocal ? 'block' : 'none';
+        if (selfHostedSec) selfHostedSec.style.display = isSelfHosted ? 'flex' : 'none';
     }
 
     async loadAll(notify = false) {
@@ -399,7 +422,8 @@ class CloudSavesController {
                         byKey.set(key, g);
                     }
                 }
-                this.games = Array.from(byKey.values());
+                // Filter: only keep games that are installed locally or exist on cloud storage
+                this.games = Array.from(byKey.values()).filter(g => Boolean(g.is_installed || g.cloud_exists || g.local_exists));
                 this.renderGames();
             }
         } catch (err) {
@@ -425,8 +449,10 @@ class CloudSavesController {
             excludedPill.innerHTML = `<i class="fa-brands fa-steam" style="margin-right: 3px;"></i> IGNORED${excludedCount > 0 ? ' (' + excludedCount + ')' : ''}`;
         }
 
-        // Filter games
+        // Filter games: strictly only installed games or games with cloud saves
         const filtered = this.games.filter(g => {
+            if (!g.is_installed && !g.cloud_exists && !g.local_exists) return false;
+
             if (this.searchQuery) {
                 const titleMatch = g.title.toLowerCase().includes(this.searchQuery);
                 const pathMatch = g.save_path && g.save_path.toLowerCase().includes(this.searchQuery);
@@ -484,23 +510,23 @@ class CloudSavesController {
         const cloudSizeStr = g.cloud_size_bytes > 0 ? this.formatBytes(g.cloud_size_bytes) : '';
 
         return `
-            <div class="glass-card cloud-game-card status-${g.sync_state}" id="save-card-${this.escapeId(g.title)}">
+            <div class="glass-card cloud-game-card status-${g.sync_state} ${g.is_excluded ? 'is-excluded' : ''}" id="save-card-${this.escapeId(g.title)}">
                 <!-- Top Row: Thumbnail + Title + Sync State Badge + Actions -->
                 <div class="cloud-game-header">
                     <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1;">
                         <img src="${thumb}" class="cloud-game-thumb" onerror="this.src='assets/OFME-DWND-ICO.ico'">
                         <div style="min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 2px;">
-                                <h4 class="cloud-game-title">${g.title}</h4>
+                                <h4 class="cloud-game-title" title="${this.escapeHtml(g.title)}">${this.escapeHtml(g.title)}</h4>
                                 ${badgeHtml}
                                 ${g.is_installed ? '<span class="status-pill" style="font-size: 9px; padding: 1px 6px;">Installed</span>' : ''}
                                 ${g.is_steam_cloud ? '<span class="status-pill" style="font-size: 9px; padding: 1px 7px; background: rgba(96, 165, 250, 0.16); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.35);"><i class="fa-brands fa-steam"></i> Steam Cloud</span>' : ''}
                                 ${g.is_excluded ? `<span class="status-pill" style="font-size: 9px; padding: 1px 7px; background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35);"><i class="fa-solid fa-eye-slash"></i> ${g.exclude_reason === 'Steam Cloud' ? 'Auto-Ignored' : 'Ignored'}</span>` : ''}
                             </div>
                             <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
-                                <span style="color: var(--accent);"><i class="fa-solid fa-tag"></i> ${g.detection_type}</span>
-                                ${g.save_path ? `&bull; <span class="cloud-path-truncate" title="${g.save_path}">${g.save_path}</span>` : '&bull; <span style="color: var(--danger);">No save folder detected</span>'}
-                                <button class="btn-icon" style="width: 22px; height: 22px; font-size: 10px;" title="Change save location" onclick="window.cloudSavesController.openCustomPathModal('${this.escapeHtml(g.title)}', '${this.escapeHtml(g.save_path || '')}')">
+                                <span style="color: var(--accent);"><i class="fa-solid fa-tag"></i> ${this.escapeHtml(g.detection_type || 'Auto')}</span>
+                                ${g.save_path ? `&bull; <span class="cloud-path-truncate" title="${this.escapeHtml(g.save_path)}">${this.escapeHtml(g.save_path)}</span>` : '&bull; <span style="color: var(--danger);">No save folder detected</span>'}
+                                <button class="btn-icon" style="width: 22px; height: 22px; font-size: 10px;" title="Change save location" onclick="window.cloudSavesController.openCustomPathModal('${this.escapeHtml(g.title)}', '${this.escapePath(g.save_path || '')}')">
                                     <i class="fa-solid fa-pencil"></i>
                                 </button>
                             </div>
@@ -773,6 +799,9 @@ class CloudSavesController {
 
     async deleteCloudSave(title) {
         if (!title) return;
+        if (!confirm(`Are you sure you want to delete the cloud backup for '${title}'? This action cannot be undone.`)) {
+            return;
+        }
         window.uiController.showToast(`Deleting cloud backup for '${title}'...`, 'info');
         try {
             const res = await window.apiClient.deleteCloudSave({ title });
@@ -861,6 +890,8 @@ class CloudSavesController {
         dstSelect.value = tmp;
         srcSelect.dispatchEvent(new Event('change', { bubbles: true }));
         dstSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        if (srcSelect._customSelectInstance) srcSelect._customSelectInstance.updateSelectedState();
+        if (dstSelect._customSelectInstance) dstSelect._customSelectInstance.updateSelectedState();
     }
 
     async transferAllSaves() {
