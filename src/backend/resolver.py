@@ -551,6 +551,70 @@ class LinkResolver:
                 return direct_url, f"buzzheavier_{file_id}.zip", None
 
 
+        # 3b. MegaDB resolver (megadb.net)
+        if "megadb.net/" in url:
+            log(f"Resolving MegaDB link: {url}")
+            file_id = url.split("megadb.net/")[-1].split("?")[0].strip("/")
+            target_url = f"https://megadb.net/{file_id}"
+
+            try:
+                s = requests.Session()
+                s.headers.update({
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                    'Referer': 'https://steamrip.com/'
+                })
+                r = s.get(target_url, timeout=15)
+                if r.status_code == 200:
+                    file_name = None
+                    m_name = re.search(r'<title>(.*?)\s*-\s*MegaDB</title>', r.text, re.I)
+                    if m_name:
+                        file_name = m_name.group(1).strip()
+
+                    m_dl = re.search(r"finalDownloadUrl\s*=\s*'([^']+)'", r.text)
+                    if m_dl:
+                        final_dl_url = m_dl.group(1)
+                        m_sec = re.search(r"var\s+seconds\s*=\s*(\d+)", r.text)
+                        wait_sec = int(m_sec.group(1)) if m_sec else 10
+                        log(f"MegaDB countdown timer: waiting {wait_sec}s for direct stream token...")
+                        time.sleep(wait_sec + 0.5)
+
+                        r_dl = s.get(final_dl_url, headers={'Referer': target_url}, allow_redirects=False, timeout=15)
+                        direct_url = r_dl.headers.get('location') or r_dl.headers.get('Location')
+                        if not direct_url and '<meta http-equiv="refresh"' in r_dl.text:
+                            m_meta = re.search(r"url='([^']+)'", r_dl.text)
+                            if m_meta:
+                                direct_url = m_meta.group(1)
+
+                        if direct_url:
+                            log(f"MegaDB direct stream resolved: {direct_url[:80]}... Filename: '{file_name}'")
+                            return direct_url, file_name or f"megadb_{file_id}.rar", s.cookies.get_dict()
+            except Exception as mega_err:
+                log(f"MegaDB direct resolver error: {mega_err}")
+
+            # Browser Fallback if direct session fails
+            session = None
+            try:
+                from selenium.webdriver.common.by import By
+                log("Launching background browser for MegaDB fallback...")
+                session, is_chromium = create_scraper_driver()
+                driver = session.driver
+                driver.get("https://steamrip.com/")
+                time.sleep(1)
+                driver.execute_script(f"window.location.href = '{target_url}';")
+                time.sleep(12)
+                cookies = {c['name']: c['value'] for c in driver.get_cookies()}
+                page_src = driver.page_source
+                m_meta = re.search(r"url='([^']+)'", page_src)
+                if m_meta:
+                    direct_url = m_meta.group(1)
+                    log(f"Browser captured MegaDB stream: {direct_url[:80]}...")
+                    return direct_url, f"megadb_{file_id}.rar", cookies
+            except Exception as browser_err:
+                log(f"MegaDB browser scraper error: {browser_err}")
+            finally:
+                if session:
+                    session.quit()
+
         # 3. GoFile resolver (Fast REST API + Browser Scraper Driver Fallback)
         if "gofile.io/d/" in url:
             log(f"Resolving GoFile URL: {url}...")

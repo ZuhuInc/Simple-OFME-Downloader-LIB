@@ -369,7 +369,9 @@ class Downloader:
                     self._notify(job)
                     print(f"[Downloader] [{job.id}] Step 3/3: Downloading data stream...", flush=True)
 
-                    mode = "ab" if "Range" in headers else "wb"
+                    mode = "ab" if resp.status_code == 206 else "wb"
+                    if resp.status_code == 200:
+                        job.downloaded_bytes = 0
                     with open(part_path, mode) as f:
                         for chunk in resp.iter_content(chunk_size=65536):
                             if job._cancel_flag:

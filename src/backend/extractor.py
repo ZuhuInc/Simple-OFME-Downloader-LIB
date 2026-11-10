@@ -185,13 +185,12 @@ class Extractor:
         error_msg = ""
 
         # Determine passwords to try
-        if password == "":
-            passwords_to_try = [""]
-        else:
-            passwords_to_try = [password]
-            for alt in ["online-fix.me", "cracked-games.org", ""]:
-                if alt not in passwords_to_try:
-                    passwords_to_try.append(alt)
+        passwords_to_try = []
+        if password:
+            passwords_to_try.append(password)
+        for alt in ["cracked-games.org", "online-fix.me", ""]:
+            if alt not in passwords_to_try:
+                passwords_to_try.append(alt)
 
         # Method 1: Python zipfile for .zip archives (native, instant, zero GUI dialogs)
         if archive_path.lower().endswith(".zip"):

@@ -283,3 +283,4 @@ class SteamArtworkManager:
 
         print(f"[Artwork] Injected {copied_count} assets into Steam grid ({grid_dir})", flush=True)
         return copied_count > 0
+
