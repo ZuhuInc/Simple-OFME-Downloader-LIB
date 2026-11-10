@@ -3246,5 +3246,18 @@
         ],
         "fix_url": "https://gofile.io/d/FXgkfPvB",
         "category": "General"
+    },
+    "Dreadline Net Quota": {
+        "version": "19072025",
+        "host": "GoFile",
+        "approx_size": "2 GB",
+        "description": "No description available.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/3576880/71ad7177a03f5b4bed53a3d381866b852d49f222/library_600x900_2x.jpg?t=1764860209",
+        "origin_url": "https://online-fix.me/games/horror/17820-dreadline-net-quota-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/tX950m"
+        ],
+        "fix_url": "https://gofile.io/d/Vxrm2Q",
+        "category": "General"
     }
 }
