@@ -63,6 +63,10 @@ class ConfigDefaults:
     enable_scrape_cache: bool = False
     scrape_cache_ttl_minutes: int = 15
     game_edit_mode: bool = False
+    ach_overlay_enabled: bool = True
+    ach_sound_enabled: bool = True
+    ach_volume: int = 80
+    ach_duration: int = 4500
 
 
 def get_bundled_data_path(filename: str = "Data.json") -> str:
@@ -258,7 +262,7 @@ class Config:
                 from src.backend import __version__
                 return __version__
             except ImportError:
-                return os.environ.get("FANTA_APP_VERSION", "2.1.0")
+                return os.environ.get("FANTA_APP_VERSION", "2.1.1")
 
     def get_local_db_path(self) -> str:
         custom_path = self.get("local_db_path")

@@ -22,13 +22,15 @@ from backend.extractor import Extractor
 from backend.version_checker import VersionChecker
 from backend.steam import SteamManager
 from backend.cloud_sync import CloudSyncManager
+from backend.achievements import AchievementManager
 from backend.controllers import (
     create_games_blueprint,
     create_downloads_blueprint,
     create_steam_blueprint,
     create_version_checker_blueprint,
     create_settings_blueprint,
-    create_cloud_blueprint
+    create_cloud_blueprint,
+    create_achievements_blueprint
 )
 
 app = Flask(__name__)
@@ -60,8 +62,9 @@ version_checker = VersionChecker(
     enable_notifications=config.get("enable_notifications", True)
 )
 steam_manager = SteamManager(custom_path=config.get("steam_path"))
+achievement_manager = AchievementManager(config=config, socketio=socketio)
 
-# Connect downloader events to WebSocket
+# Connect downloader and achievements events to WebSocket
 def on_download_progress(job_data):
     try:
         socketio.emit("download_progress", job_data)
@@ -70,6 +73,14 @@ def on_download_progress(job_data):
 
 downloader.set_callback(on_download_progress)
 
+def on_achievement_unlocked(ach_data):
+    try:
+        socketio.emit("achievement_unlocked", ach_data)
+    except Exception as e:
+        print(f"[Bridge] Socket emit achievement error: {e}")
+
+achievement_manager.set_callback(on_achievement_unlocked)
+
 # Register Controller Blueprints
 app.register_blueprint(create_games_blueprint(db_manager, config, cloud_sync=cloud_sync))
 app.register_blueprint(create_downloads_blueprint(downloader, extractor, config, socketio))
@@ -77,6 +88,7 @@ app.register_blueprint(create_steam_blueprint(steam_manager, config, db_manager)
 app.register_blueprint(create_version_checker_blueprint(version_checker, db_manager, config, socketio))
 app.register_blueprint(create_settings_blueprint(config, extractor, steam_manager, db_manager, downloader, version_checker))
 app.register_blueprint(create_cloud_blueprint(cloud_sync, config, db_manager))
+app.register_blueprint(create_achievements_blueprint(achievement_manager, config, db_manager))
 
 # Initial database pre-fetch on startup
 try:

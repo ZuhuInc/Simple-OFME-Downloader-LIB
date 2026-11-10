@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fanta OFME Achievement Overlay</title>
+    <link rel="stylesheet" href="assets/fontawesome/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: transparent;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .overlay-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Pill wrapper that bounds bubbles strictly behind the pill card */
+        .pill-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Bubbles situated strictly BEHIND the pill */
+        .bubble-emitter {
+            position: absolute;
+            top: -45px;
+            bottom: -5px;
+            left: 14px;
+            right: 14px;
+            pointer-events: none;
+            z-index: 1;
+            overflow: visible;
+        }
+
+        .soda-bubble {
+            position: absolute;
+            bottom: 12px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.85), rgba(245, 166, 35, 0.45) 55%, rgba(245, 166, 35, 0.1) 90%);
+            box-shadow: 0 0 8px rgba(245, 166, 35, 0.35);
+            opacity: 0;
+            animation: bubbleFloat 1.8s infinite ease-out;
+        }
+
+        @keyframes bubbleFloat {
+            0% {
+                opacity: 0;
+                transform: translateY(0) scale(0.35);
+            }
+            20% {
+                opacity: 0.85;
+                transform: translateY(-16px) scale(0.85);
+            }
+            60% {
+                opacity: 0.65;
+                transform: translateY(-45px) scale(1.1);
+            }
+            85% {
+                opacity: 0.25;
+                transform: translateY(-68px) scale(1.25);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-82px) scale(1.35);
+            }
+        }
+
+        /* Xbox-Style Sleek Translucent Capsule Pill */
+        .xbox-pill {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 8px 24px 8px 10px;
+            background: rgba(18, 20, 24, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 999px;
+            border: 1px solid rgba(245, 166, 35, 0.38);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 166, 35, 0.18);
+            opacity: 0;
+            transform: translateY(35px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 500px;
+        }
+
+        .xbox-pill.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .xbox-pill.closing {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.35s ease-in;
+        }
+
+        /* Left Circular Badge */
+        .badge-circle {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1.5px solid rgba(245, 166, 35, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px rgba(245, 166, 35, 0.3);
+        }
+
+        .badge-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .badge-trophy-fallback {
+            font-size: 18px;
+            color: #f5a623;
+        }
+
+        /* Text Content */
+        .pill-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .pill-headline {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.2px;
+        }
+
+        .pill-subline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #d2d2d2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 380px;
+        }
+
+        .pill-trophy-ico {
+            color: #f5a623;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .pill-ach-name {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .pill-game-name {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <audio id="sodaAudio" src="assets/sodaCan.mp3" preload="auto"></audio>
+
+    <div class="overlay-wrap">
+        <div class="pill-wrapper">
+            <div id="bubbleEmitter" class="bubble-emitter"></div>
+
+            <div id="xboxPill" class="xbox-pill">
+                <div class="badge-circle">
+                    <img id="badgeImg" class="badge-img" src="assets/OFME-DWND-ICO.ico" alt="Achievement" onerror="this.style.display='none'; document.getElementById('badgeTrophy').style.display='block';" />
+                    <i id="badgeTrophy" class="fa-solid fa-trophy badge-trophy-fallback" style="display: none;"></i>
+                </div>
+                <div class="pill-text">
+                    <div class="pill-headline">Achievement unlocked!</div>
+                    <div class="pill-subline">
+                        <i class="fa-solid fa-trophy pill-trophy-ico"></i>
+                        <span id="achName" class="pill-ach-name">Achievement Title</span>
+                        <span id="gameName" class="pill-game-name">&bull; Game Title</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let activeTimeout = null;
+
+        function playSynthSodaSound(volume = 0.8) {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                if (!audioCtx) audioCtx = new AudioContext();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const ctx = audioCtx;
+                const now = ctx.currentTime;
+                const volMultiplier = Math.max(0, Math.min(1, volume));
+
+                // Metallic snap
+                const snapOsc = ctx.createOscillator();
+                const snapGain = ctx.createGain();
+                snapOsc.type = 'triangle';
+                snapOsc.frequency.setValueAtTime(320, now);
+                snapOsc.frequency.exponentialRampToValueAtTime(120, now + 0.06);
+                snapGain.gain.setValueAtTime(0.7 * volMultiplier, now);
+                snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                snapOsc.connect(snapGain);
+                snapGain.connect(ctx.destination);
+                snapOsc.start(now);
+                snapOsc.stop(now + 0.08);
+
+                // Gas hiss
+                const bufferSize = ctx.sampleRate * 0.4;
+                const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+                const whiteNoise = ctx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+                const bandpass = ctx.createBiquadFilter();
+                bandpass.type = 'bandpass';
+                bandpass.frequency.setValueAtTime(2400, now);
+                bandpass.Q.setValueAtTime(1.5, now);
+                const hissGain = ctx.createGain();
+                hissGain.gain.setValueAtTime(0.01, now);
+                hissGain.gain.exponentialRampToValueAtTime(0.65 * volMultiplier, now + 0.02);
+                hissGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+                whiteNoise.connect(bandpass);
+                bandpass.connect(hissGain);
+                hissGain.connect(ctx.destination);
+                whiteNoise.start(now + 0.01);
+            } catch (e) {
+                console.warn('[Overlay Synth Audio]', e);
+            }
+        }
+
+        function playSodaCanSound(soundEnabled = true, volume = 80) {
+            if (soundEnabled === false) return;
+            const vol = (volume != null ? Number(volume) : 80) / 100;
+            const audio = document.getElementById('sodaAudio');
+            if (audio) {
+                audio.currentTime = 0;
+                audio.volume = Math.max(0, Math.min(1, vol));
+                audio.play().catch(e => {
+                    console.warn('[Overlay Audio file failed, using synth fallback]', e);
+                    playSynthSodaSound(vol);
+                });
+            } else {
+                playSynthSodaSound(vol);
+            }
+        }
+
+        function spawnBubbles() {
+            const emitter = document.getElementById('bubbleEmitter');
+            if (!emitter) return;
+            emitter.innerHTML = '';
+            for (let i = 0; i < 18; i++) {
+                const b = document.createElement('span');
+                b.className = 'soda-bubble';
+                const size = Math.floor(Math.random() * 11) + 6;
+                const left = Math.floor(Math.random() * 88) + 6;
+                const delay = (Math.random() * 1.3).toFixed(2);
+                const duration = (1.2 + Math.random() * 1.0).toFixed(2);
+                b.style.width = `${size}px`;
+                b.style.height = `${size}px`;
+                b.style.left = `${left}%`;
+                b.style.animationDelay = `${delay}s`;
+                b.style.animationDuration = `${duration}s`;
+                emitter.appendChild(b);
+            }
+        }
+
+        function showPopup(data) {
+            if (activeTimeout) clearTimeout(activeTimeout);
+
+            const pill = document.getElementById('xboxPill');
+            const badgeImg = document.getElementById('badgeImg');
+            const badgeTrophy = document.getElementById('badgeTrophy');
+            const achName = document.getElementById('achName');
+            const gameName = document.getElementById('gameName');
+
+            achName.textContent = data.name || data.api_name || 'Achievement';
+            gameName.textContent = data.game_title ? `• ${data.game_title}` : '';
+
+            if (data.icon) {
+                badgeImg.src = data.icon;
+                badgeImg.style.display = 'block';
+                badgeTrophy.style.display = 'none';
+            } else {
+                badgeImg.style.display = 'none';
+                badgeTrophy.style.display = 'block';
+            }
+
+            spawnBubbles();
+            playSodaCanSound(data.sound_enabled !== false, data.volume ?? 80);
+
+            pill.classList.remove('closing');
+            pill.classList.add('active');
+
+            const duration = Number(data.duration) || 4500;
+
+            activeTimeout = setTimeout(() => {
+                pill.classList.remove('active');
+                pill.classList.add('closing');
+                setTimeout(() => {
+                    if (window.api && window.api.hideAchievementOverlay) {
+                        window.api.hideAchievementOverlay();
+                    }
+                }, 380);
+            }, duration);
+        }
+
+        if (window.api && window.api.onAchievementPopup) {
+            window.api.onAchievementPopup((data) => {
+                showPopup(data);
+            });
+        }
+    </script>
+</body>
+</html>
+

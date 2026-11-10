@@ -48,6 +48,10 @@ class ApiClient {
         this.socket.on('version_check_progress', (data) => {
             this.emitLocal('version_check_progress', data);
         });
+
+        this.socket.on('achievement_unlocked', (data) => {
+            this.emitLocal('achievement_unlocked', data);
+        });
     }
 
     on(event, callback) {
@@ -163,6 +167,17 @@ class ApiClient {
     backupCloudSave(payload) { return this.request('/api/cloud/backup', { method: 'POST', body: payload }); }
     restoreCloudSave(payload) { return this.request('/api/cloud/restore', { method: 'POST', body: payload }); }
     setCloudSavePath(payload) { return this.request('/api/cloud/set_save_path', { method: 'POST', body: payload }); }
+
+    // Achievements
+    getAchievementsSummary() { return this.request('/api/achievements/summary'); }
+    getGameAchievements(title, appid = '') {
+        const params = { title };
+        if (appid) params.appid = appid;
+        const q = new URLSearchParams(params).toString();
+        return this.request(`/api/achievements/game?${q}`);
+    }
+    triggerTestUnlock(payload = {}) { return this.request('/api/achievements/test-unlock', { method: 'POST', body: payload }); }
+    resetGameAchievements(payload) { return this.request('/api/achievements/reset', { method: 'POST', body: payload }); }
 }
 
 window.apiClient = new ApiClient();

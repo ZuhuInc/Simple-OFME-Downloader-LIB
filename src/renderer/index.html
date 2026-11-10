@@ -23,7 +23,7 @@
         <div class="title-bar-left">
             <img class="app-icon" src="assets/OFME-DWND-ICO.ico" alt="Logo">
             <span class="app-title">FANTA OFME</span>
-            <span class="app-version-tag">v2.1.0</span>
+            <span class="app-version-tag">v2.1.1</span>
             <span id="sourceModeBadge" class="status-pill status-installed"
                 style="display: none; font-size: 10px; padding: 2px 8px; margin-left: 6px; background: rgba(212, 168, 83, 0.18); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.4);">SOURCE
                 MODE</span>
@@ -55,6 +55,10 @@
                 <div class="sidebar-nav-item" data-tab="downloadsTab">
                     <i class="fa-solid fa-cloud-arrow-down"></i>
                     <span>Downloads</span>
+                </div>
+                <div class="sidebar-nav-item" data-tab="achievementsTab">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span>Achievements</span>
                 </div>
                 <div class="sidebar-nav-item" data-tab="versionCheckerTab">
                     <i class="fa-solid fa-arrows-rotate"></i>
@@ -743,7 +747,70 @@
                     </div>
                 </div>
 
-                <!-- 🛠️ Database Source & Developer Options -->
+                <!-- Steam Achievements & In-Game Overlay Settings -->
+                <div class="glass-card" id="achievementsSettingsCard">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <div>
+                            <h3
+                                style="font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-trophy" style="color: var(--primary-color);"></i> Steam Achievements & Overlay
+                            </h3>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Configure real-time
+                                achievement tracking, in-game unlock alerts, and soda pop audio.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">In-Game Desktop Overlay</span>
+                                <span class="form-desc">Display Xbox-style capsule pop-up over games when an achievement is unlocked</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_ach_overlay_enabled" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Achievement Sound</span>
+                                <span class="form-desc">Play soda can opening audio when an achievement is unlocked</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set_ach_sound_enabled" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Sound Volume</span>
+                                <span class="form-desc">Volume of the soda can unlock audio</span>
+                            </div>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <input type="range" id="set_ach_volume" min="0" max="100" value="80" style="width: 140px; accent-color: var(--accent); cursor: pointer;">
+                                <span id="ach_volume_val" style="font-size: 13px; font-weight: 600; min-width: 40px; color: var(--text-primary);">80%</span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-label-area">
+                                <span class="form-label">Pop-up Duration</span>
+                                <span class="form-desc">How long the achievement notification stays on screen</span>
+                            </div>
+                            <select id="set_ach_duration" class="form-input" style="max-width: 170px;">
+                                <option value="3000">3 Seconds (Fast)</option>
+                                <option value="4500" selected>4.5 Seconds (Normal)</option>
+                                <option value="6000">6 Seconds (Slow)</option>
+                                <option value="8000">8 Seconds (Long)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database Source & Developer Options -->
                 <div class="glass-card" id="sourceDbSettingsCard">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
@@ -828,7 +895,7 @@
                                 updates powered by GitHub Releases.</p>
                         </div>
                         <span id="updateAppVersionBadge" class="status-pill status-installed"
-                            style="font-size: 11px;">v2.1.0</span>
+                            style="font-size: 11px;">v2.1.1</span>
                     </div>
 
                     <div
@@ -1104,6 +1171,97 @@
                     <div class="cloud-games-list-container" id="cloudGamesList"
                         style="display: flex; flex-direction: column; gap: 12px;">
                         <!-- Dynamically filled with game cards -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: ACHIEVEMENTS -->
+            <section id="achievementsTab" class="tab-content-panel">
+                <!-- Achievements Header Banner & Global Stats -->
+                <div class="ach-header-card glass-card">
+                    <div class="ach-header-info">
+                        <h2 class="ach-main-title">
+                            <i class="fa-solid fa-trophy" style="color: var(--accent);"></i> Steam Achievements & Tracker
+                        </h2>
+                        <p class="ach-main-subtitle">
+                            Track official Steam achievements in real-time across your installed games with instant on-screen unlock alerts.
+                        </p>
+                    </div>
+
+                    <div class="ach-stats-summary-row">
+                        <div class="ach-summary-stat">
+                            <span class="ach-summary-label"><i class="fa-solid fa-gamepad"></i> Tracked Games</span>
+                            <span id="achTotalGamesCount" class="ach-summary-val">0</span>
+                        </div>
+                        <div class="ach-summary-stat">
+                            <span class="ach-summary-label"><i class="fa-solid fa-trophy"></i> Total Unlocks</span>
+                            <span id="achTotalUnlockedCount" class="ach-summary-val">0 / 0</span>
+                        </div>
+                        <div class="ach-summary-stat">
+                            <span class="ach-summary-label"><i class="fa-solid fa-chart-pie"></i> Overall Progress</span>
+                            <span id="achOverallPercentage" class="ach-summary-val">0%</span>
+                        </div>
+                        <button id="testAchievementToastBtn" class="ach-summary-stat ach-summary-stat-btn" title="Simulate Pop-up Alert and Soda Can Sound">
+                            <span class="ach-summary-label"><i class="fa-solid fa-bell"></i> Pop-up Alert</span>
+                            <span class="ach-summary-val" style="display: flex; align-items: center; gap: 6px; color: var(--primary-color);">
+                                <i class="fa-solid fa-play" style="font-size: 11px;"></i> Test Pop-up
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Split Layout: Games List on Left, Achievements Grid on Right -->
+                <div class="ach-split-layout">
+                    <!-- Left Column: Search & Installed Games -->
+                    <div class="ach-sidebar-pane glass-card">
+                        <div class="ach-search-wrap">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="achievementSearchInput" class="search-input" placeholder="Search installed games...">
+                        </div>
+                        <div class="ach-games-scroll-list" id="achievementsGamesList">
+                            <!-- Populated dynamically by achievementsController -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Game Details & Achievement Grid -->
+                    <div class="ach-detail-pane glass-card">
+                        <!-- Active Game Detail Header -->
+                        <div class="ach-game-detail-header">
+                            <div class="ach-detail-left">
+                                <img id="achDetailThumb" class="ach-detail-thumb" src="assets/OFME-DWND-ICO.ico" alt="Thumb" onerror="this.src='assets/OFME-DWND-ICO.ico'">
+                                <div class="ach-detail-title-col">
+                                    <h3 id="achDetailTitle" class="ach-detail-title">Select an installed game</h3>
+                                    <div class="ach-detail-progress-row">
+                                        <span id="achDetailStats" class="ach-detail-stats-text">0 / 0 Unlocked (0%)</span>
+                                    </div>
+                                    <div class="ach-detail-progress-track">
+                                        <div id="achDetailProgressBar" class="ach-progress-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ach-detail-actions">
+                                <button id="resetGameUnlocksBtn" class="btn btn-secondary btn-sm" title="Reset all unlocked achievements for this game">
+                                    <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filter Pills -->
+                        <div class="ach-filters-toolbar" id="achievementsFilterPills">
+                            <div class="filter-pills-group">
+                                <div class="filter-pill active" data-filter="all">ALL</div>
+                                <div class="filter-pill" data-filter="unlocked">UNLOCKED</div>
+                                <div class="filter-pill" data-filter="locked">LOCKED</div>
+                            </div>
+                        </div>
+
+                        <!-- Achievements Grid -->
+                        <div class="ach-grid-container" id="achievementsGrid">
+                            <div class="ach-empty-grid">
+                                <i class="fa-solid fa-trophy"></i>
+                                <p>Select an installed game from the left to view achievements.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1981,6 +2139,7 @@
     <script src="js/controllers/downloadController.js"></script>
     <script src="js/controllers/versionCheckerController.js"></script>
     <script src="js/controllers/steamController.js"></script>
+    <script src="js/controllers/achievementsController.js"></script>
     <script src="js/controllers/settingsController.js"></script>
     <script src="js/controllers/cloudSavesController.js"></script>
     <script src="js/controllers/addGameController.js"></script>

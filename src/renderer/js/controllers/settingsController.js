@@ -40,6 +40,13 @@ class SettingsController {
         this.scrapeCacheTtlInput = document.getElementById('set_scrape_cache_ttl');
         this.clearCacheBtn = document.getElementById('clearScrapeCacheBtn');
 
+        // Steam Achievements & Overlay controls
+        this.achOverlayCheck = document.getElementById('set_ach_overlay_enabled');
+        this.achSoundCheck = document.getElementById('set_ach_sound_enabled');
+        this.achVolumeSlider = document.getElementById('set_ach_volume');
+        this.achVolumeVal = document.getElementById('ach_volume_val');
+        this.achDurationSelect = document.getElementById('set_ach_duration');
+
         // Update UI elements
         this.checkUpdatesBtn = document.getElementById('checkForUpdatesBtn');
         this.startDownloadUpdateBtn = document.getElementById('startDownloadUpdateBtn');
@@ -150,6 +157,12 @@ class SettingsController {
                         window.uiController.showToast(`Failed to clear cache: ${e.message}`, 'danger');
                     }
                 }
+            });
+        }
+
+        if (this.achVolumeSlider && this.achVolumeVal) {
+            this.achVolumeSlider.addEventListener('input', (e) => {
+                this.achVolumeVal.textContent = `${e.target.value}%`;
             });
         }
 
@@ -359,6 +372,19 @@ class SettingsController {
         if (this.scanWorkersInput) this.scanWorkersInput.value = this.settings.scan_workers || 6;
         if (this.enableScrapeCacheCheck) this.enableScrapeCacheCheck.checked = Boolean(this.settings.enable_scrape_cache);
         if (this.scrapeCacheTtlInput) this.scrapeCacheTtlInput.value = this.settings.scrape_cache_ttl_minutes || 15;
+
+        // Achievements & Overlay settings
+        if (this.achOverlayCheck) this.achOverlayCheck.checked = this.settings.ach_overlay_enabled !== false;
+        if (this.achSoundCheck) this.achSoundCheck.checked = this.settings.ach_sound_enabled !== false;
+        if (this.achVolumeSlider) {
+            const vol = this.settings.ach_volume !== undefined ? this.settings.ach_volume : 80;
+            this.achVolumeSlider.value = vol;
+            if (this.achVolumeVal) this.achVolumeVal.textContent = `${vol}%`;
+        }
+        if (this.achDurationSelect) {
+            this.achDurationSelect.value = String(this.settings.ach_duration || 4500);
+        }
+
         this.setEditMode(Boolean(this.settings.game_edit_mode), false);
     }
 
@@ -419,7 +445,11 @@ class SettingsController {
             multi_threaded_scan: Boolean(this.multiThreadedScanCheck?.checked),
             scan_workers: parseInt(this.scanWorkersInput?.value || 6, 10),
             enable_scrape_cache: Boolean(this.enableScrapeCacheCheck?.checked),
-            scrape_cache_ttl_minutes: parseInt(this.scrapeCacheTtlInput?.value || 15, 10)
+            scrape_cache_ttl_minutes: parseInt(this.scrapeCacheTtlInput?.value || 15, 10),
+            ach_overlay_enabled: Boolean(this.achOverlayCheck?.checked),
+            ach_sound_enabled: Boolean(this.achSoundCheck?.checked),
+            ach_volume: parseInt(this.achVolumeSlider?.value || 80, 10),
+            ach_duration: parseInt(this.achDurationSelect?.value || 4500, 10)
         };
 
         if (window.downloadController) {

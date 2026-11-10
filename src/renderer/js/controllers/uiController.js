@@ -34,6 +34,16 @@ class UIController {
             content.classList.toggle('active', content.id === tabId);
         });
 
+        const contentArea = document.querySelector('.content-area');
+        if (contentArea) {
+            contentArea.scrollTop = 0;
+            if (tabId === 'achievementsTab') {
+                contentArea.style.overflowY = 'hidden';
+            } else {
+                contentArea.style.overflowY = '';
+            }
+        }
+
         if (tabId === 'versionCheckerTab' && window.versionCheckerController) {
             window.versionCheckerController.loadSavedCredentials();
         } else if (tabId === 'settingsTab' && window.settingsController) {
@@ -42,6 +52,8 @@ class UIController {
             window.steamController.loadSteamInfo();
         } else if (tabId === 'cloudSavesTab' && window.cloudSavesController) {
             window.cloudSavesController.loadAll();
+        } else if (tabId === 'achievementsTab' && window.achievementsController) {
+            window.achievementsController.loadSummary();
         }
     }
 

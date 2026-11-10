@@ -2275,3 +2275,660 @@ input[type="number"] {
 
 
 
+
+/* ==========================================================================
+   ACHIEVEMENTS TAB & REAL-TIME TRACKER STYLES
+   ========================================================================== */
+
+.content-area:has(#achievementsTab.active) {
+    overflow-y: hidden !important;
+}
+
+#achievementsTab {
+    height: 100%;
+    max-height: 100%;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+}
+
+#achievementsTab.active {
+    display: flex;
+}
+
+.ach-header-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 0;
+    padding: 10px 18px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.ach-main-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2px;
+}
+
+.ach-main-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.ach-stats-summary-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.ach-summary-stat {
+    display: flex;
+    flex-direction: column;
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    min-width: 90px;
+}
+
+.ach-summary-stat-btn {
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-glass);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.ach-summary-stat-btn:hover {
+    background: rgba(245, 166, 35, 0.12);
+    border-color: rgba(245, 166, 35, 0.45);
+    transform: translateY(-1px);
+}
+
+.ach-summary-stat-btn:active {
+    transform: translateY(0);
+}
+
+.ach-summary-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ach-summary-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 1px;
+}
+
+/* Split Pane Layout */
+.ach-split-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+}
+
+/* Left Pane: Games List */
+.ach-sidebar-pane {
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    overflow: hidden;
+    height: 100%;
+    min-height: 0;
+}
+
+.ach-search-wrap {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.ach-search-wrap i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.ach-search-wrap .search-input {
+    width: 100%;
+    padding-left: 34px;
+    font-size: 12px;
+}
+
+.ach-games-scroll-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+}
+
+.ach-game-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.ach-game-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(212, 168, 83, 0.4);
+    transform: translateX(2px);
+}
+
+.ach-game-card.active {
+    background: rgba(212, 168, 83, 0.12);
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(212, 168, 83, 0.15);
+}
+
+.ach-game-thumb {
+    width: 42px;
+    height: 56px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-glass);
+    flex-shrink: 0;
+}
+
+.ach-game-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ach-game-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+
+.ach-game-stats-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.ach-stat-count {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #e0e0e0;
+}
+
+.ach-stat-pct {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.ach-progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.ach-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f5a623, #d4a853);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+.ach-no-games {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 10px;
+    color: var(--text-muted);
+    text-align: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.ach-no-games i {
+    font-size: 24px;
+    opacity: 0.5;
+}
+
+/* Right Pane: Achievements Detail & Grid */
+.ach-detail-pane {
+    display: flex;
+    flex-direction: column;
+    padding: 14px 18px;
+    overflow: hidden;
+    height: 100%;
+    min-height: 0;
+}
+
+.ach-game-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-glass);
+    margin-bottom: 12px;
+}
+
+.ach-detail-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
+}
+
+.ach-detail-thumb {
+    width: 52px;
+    height: 70px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid rgba(212, 168, 83, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
+}
+
+.ach-detail-title-col {
+    flex: 1;
+    min-width: 0;
+}
+
+.ach-detail-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 6px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ach-detail-stats-text {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.ach-detail-progress-track {
+    width: 240px;
+    max-width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.ach-filters-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.ach-grid-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    align-content: start;
+    padding-right: 6px;
+}
+
+/* Individual Achievement Cards */
+.ach-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    position: relative;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.ach-card.unlocked {
+    background: rgba(212, 168, 83, 0.08);
+    border: 1px solid rgba(212, 168, 83, 0.35);
+}
+
+.ach-card.unlocked:hover {
+    background: rgba(212, 168, 83, 0.14);
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(212, 168, 83, 0.18);
+    transform: translateY(-1px);
+}
+
+.ach-card.locked {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    opacity: 0.72;
+}
+
+.ach-card.locked:hover {
+    opacity: 0.95;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.ach-card-icon-wrapper {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+}
+
+.ach-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ach-card.locked .ach-card-icon {
+    filter: grayscale(100%) contrast(85%);
+}
+
+.ach-unlocked-badge,
+.ach-locked-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    border: 1px solid rgba(0, 0, 0, 0.6);
+}
+
+.ach-unlocked-badge {
+    background: #27ae60;
+    color: #fff;
+}
+
+.ach-locked-badge {
+    background: rgba(40, 40, 40, 0.85);
+    color: #aaa;
+}
+
+.ach-card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.ach-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2px;
+}
+
+.ach-card.unlocked .ach-card-title {
+    color: #ffde8a;
+}
+
+.ach-card-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.35;
+    margin-bottom: 4px;
+}
+
+.ach-card-date {
+    font-size: 10px;
+    color: #27ae60;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ach-card-test-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px;
+    opacity: 0.5;
+    transition: var(--transition);
+}
+
+.ach-card:hover .ach-card-test-btn {
+    opacity: 1;
+}
+
+.ach-card-test-btn:hover {
+    color: var(--accent);
+    transform: scale(1.15);
+}
+
+.ach-empty-grid,
+.ach-loading-spinner {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    text-align: center;
+    gap: 12px;
+    font-size: 13px;
+}
+
+.ach-loading-spinner i,
+.ach-empty-grid i {
+    font-size: 32px;
+    color: var(--accent);
+    opacity: 0.8;
+}
+
+/* ==========================================================================
+   FANTA MIDDLE-BOTTOM SODA CAN BUBBLE TOAST NOTIFICATION
+   ========================================================================== */
+
+.fanta-achievement-toast-container {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999999;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 14px;
+    pointer-events: none;
+}
+
+.fanta-achievement-toast-pill-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+/* Bubbles situated strictly BEHIND the pill */
+.fanta-bubble-emitter {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: visible;
+}
+
+.fanta-soda-bubble {
+    position: absolute;
+    bottom: 15px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(245, 166, 35, 0.35) 60%, rgba(245, 166, 35, 0.05) 90%);
+    box-shadow: 0 0 8px rgba(245, 166, 35, 0.3);
+    opacity: 0;
+    animation: fantaBubbleRise 1.8s infinite ease-out;
+}
+
+/* Xbox-Style Sleek Translucent Capsule Pill */
+.fanta-xbox-pill {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 24px 8px 10px;
+    background: rgba(18, 20, 24, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 999px;
+    border: 1px solid rgba(245, 166, 35, 0.35);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 166, 35, 0.15);
+    opacity: 0;
+    transform: translateY(35px) scale(0.95);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 490px;
+}
+
+.fanta-xbox-pill.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.fanta-xbox-pill.closing {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.35s ease-in;
+}
+
+/* Left Circular Badge */
+.fanta-pill-badge-circle {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(245, 166, 35, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(245, 166, 35, 0.25);
+}
+
+.fanta-pill-badge-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.fanta-pill-trophy-fallback {
+    font-size: 18px;
+    color: #f5a623;
+}
+
+/* Text Content */
+.fanta-pill-text-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.fanta-pill-headline {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.2px;
+}
+
+.fanta-pill-subline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #d2d2d2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 380px;
+}
+
+.fanta-pill-trophy-ico {
+    color: #f5a623;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.fanta-pill-ach-name {
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.fanta-pill-game-name {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11px;
+}
+
+@keyframes fantaBubbleRise {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.35);
+    }
+    20% {
+        opacity: 0.8;
+        transform: translateY(-20px) scale(0.9);
+    }
+    60% {
+        opacity: 0.6;
+        transform: translateY(-60px) scale(1.15);
+    }
+    90% {
+        opacity: 0.2;
+        transform: translateY(-95px) scale(1.3);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-115px) scale(1.4);
+    }
+}

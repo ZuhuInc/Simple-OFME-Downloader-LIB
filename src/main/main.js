@@ -10,6 +10,7 @@ autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
 let mainWindow = null;
+let overlayWindow = null;
 let pythonProcess = null;
 const logBuffer = [];
 
@@ -367,6 +368,49 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.destroy();
+      overlayWindow = null;
+    }
+    app.quit();
+  });
+}
+
+function createOverlayWindow() {
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+
+  const overlayWidth = 540;
+  const overlayHeight = 150;
+  const x = Math.round((width - overlayWidth) / 2);
+  const y = height - overlayHeight - 35; // 35px from bottom of screen
+
+  overlayWindow = new BrowserWindow({
+    width: overlayWidth,
+    height: overlayHeight,
+    x: x,
+    y: y,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    show: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+  overlayWindow.setIgnoreMouseEvents(true);
+  overlayWindow.loadFile(path.join(__dirname, '..', 'renderer', 'overlay.html'));
+
+  overlayWindow.on('closed', () => {
+    overlayWindow = null;
   });
 }
 
@@ -386,7 +430,15 @@ ipcMain.on('maximize-window', () => {
 });
 
 ipcMain.on('close-window', () => {
-  if (mainWindow) mainWindow.close();
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.destroy();
+    overlayWindow = null;
+  }
+  if (mainWindow) {
+    mainWindow.close();
+  } else {
+    app.quit();
+  }
 });
 
 ipcMain.handle('select-directory', async () => {
@@ -537,8 +589,26 @@ ipcMain.handle('restart-and-install-update', () => {
   autoUpdater.quitAndInstall(true, true);
 });
 
+// Achievement Overlay IPCs
+ipcMain.on('show-achievement-overlay', (event, data) => {
+  if (!overlayWindow || overlayWindow.isDestroyed()) {
+    createOverlayWindow();
+  }
+  if (overlayWindow && overlayWindow.webContents) {
+    overlayWindow.webContents.send('achievement-popup', data);
+    overlayWindow.showInactive();
+  }
+});
+
+ipcMain.on('hide-achievement-overlay', () => {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.hide();
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
+  createOverlayWindow();
   startBackend();
   setupAutoUpdater();
 

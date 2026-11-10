@@ -25,6 +25,13 @@ const exposed = {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('updater-event', handler);
     return () => ipcRenderer.removeListener('updater-event', handler);
+  },
+  showAchievementOverlay: (data) => ipcRenderer.send('show-achievement-overlay', data),
+  hideAchievementOverlay: () => ipcRenderer.send('hide-achievement-overlay'),
+  onAchievementPopup: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('achievement-popup', handler);
+    return () => ipcRenderer.removeListener('achievement-popup', handler);
   }
 };
 
