@@ -3074,7 +3074,8 @@
             "https://gofile.io/d/ouGBTu"
         ],
         "fix_url": "",
-        "category": "General"
+        "category": "General",
+        "steam_appid": "3552140"
     },
     "DiRT Rally": {
         "version": "5887063",

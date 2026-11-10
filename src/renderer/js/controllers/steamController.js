@@ -396,6 +396,9 @@ class SteamController {
                             <button class="btn btn-primary btn-sm" title="Launch via Steam" onclick="window.steamController.launchShortcut('${sc.steam_url}')" style="padding: 5px 10px; font-size: 11px;">
                                 <i class="fa-brands fa-steam"></i> Play
                             </button>
+                            <button class="btn btn-secondary btn-sm" title="Download & Apply Official Steam Artwork (Cover, Hero, Logo, Wide Cover)" onclick="window.steamController.customizeArtwork('${escapedName}', '${escapedExe}')" style="padding: 5px 8px; font-size: 11px;">
+                                <i class="fa-solid fa-palette"></i>
+                            </button>
                             <button class="btn btn-secondary btn-sm" title="Open Game Folder" onclick="window.steamController.openShortcutFolder('${escapedExe}', '${escapedStartDir}')" style="padding: 5px 8px; font-size: 11px;">
                                 <i class="fa-solid fa-folder-open"></i>
                             </button>
@@ -433,6 +436,33 @@ class SteamController {
         } catch (e) {
             console.error('[SteamController] API launch fallback error:', e);
             window.uiController.showToast('Could not launch Steam shortcut', 'danger');
+        }
+    }
+
+    async customizeArtwork(name, exePath) {
+        try {
+            window.uiController.showToast(`Downloading official Steam artwork for "${name}"...`, 'info', 3500);
+            const res = await window.apiClient.syncShortcutArtwork({
+                name: name,
+                exe_path: exePath,
+                account_id: this.activeAccountId
+            });
+            if (res.success) {
+                window.uiController.showToast(
+                    `Official Steam artwork applied for "${name}"!`,
+                    'success',
+                    7000,
+                    {
+                        text: 'Restart Steam',
+                        icon: 'fa-rotate',
+                        callback: () => this.restartSteam()
+                    }
+                );
+            } else {
+                window.uiController.showToast(`Failed to apply artwork: ${res.error || 'Unknown error'}`, 'danger', 4000);
+            }
+        } catch (err) {
+            window.uiController.showToast(`Artwork error: ${err.message}`, 'danger', 4000);
         }
     }
 
@@ -553,17 +583,20 @@ class SteamController {
         }
 
         try {
-            window.uiController.showToast(`Adding "${title}" to Steam shortcuts...`, 'info');
+            window.uiController.showToast(`Adding "${title}" to Steam shortcuts with official artwork...`, 'info');
             const res = await window.apiClient.addSteamShortcut({
                 name: title,
                 exe_path: exePath,
                 icon_path: this.activeGame?.thumbnail || '',
-                account_id: this.activeAccountId
+                account_id: this.activeAccountId,
+                auto_artwork: true,
+                steam_appid: this.activeGame?.steam_appid || this.activeGame?.appid || ''
             });
 
             if (res.success) {
+                const artworkMsg = res.artwork?.applied ? ' with official artwork' : '';
                 window.uiController.showToast(
-                    `"${title}" added to Steam!`,
+                    `"${title}" added to Steam${artworkMsg}!`,
                     'success',
                     7000,
                     {

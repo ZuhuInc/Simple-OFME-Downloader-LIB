@@ -115,6 +115,14 @@ class SteamManager:
         self.libraries: List[str] = []
         if self.steam_path:
             self.libraries = self.detect_libraries()
+        try:
+            from backend.steam_artwork import SteamArtworkManager
+        except ImportError:
+            try:
+                from .steam_artwork import SteamArtworkManager
+            except ImportError:
+                from src.backend.steam_artwork import SteamArtworkManager
+        self.artwork_manager = SteamArtworkManager(self)
 
     def detect_steam_path(self) -> Optional[str]:
         if winreg:
@@ -466,7 +474,9 @@ class SteamManager:
         icon_path: str = "",
         launch_options: str = "",
         tags: Optional[List[str]] = None,
-        account_id: Optional[str] = None
+        account_id: Optional[str] = None,
+        auto_artwork: bool = True,
+        steam_appid: Optional[str] = None
     ) -> Dict[str, Any]:
         """Injects or updates a non-Steam shortcut into shortcuts.vdf."""
         path = self._get_shortcuts_path(account_id)
@@ -546,6 +556,16 @@ class SteamManager:
                 except Exception: pass
             os.replace(tmp_path, path)
 
+            artwork_res = {}
+            if auto_artwork and hasattr(self, 'artwork_manager') and self.artwork_manager:
+                try:
+                    artwork_paths = self.artwork_manager.download_and_save_artwork(name, appid=steam_appid)
+                    if artwork_paths:
+                        applied = self.artwork_manager.apply_artwork_to_steam_grid(clean_exe, name, artwork_paths, account_id=account_id)
+                        artwork_res = {"applied": applied, "paths": artwork_paths}
+                except Exception as e:
+                    print(f"[Steam] Artwork customization notice: {e}", flush=True)
+
             print(f"[Steam] Successfully injected shortcut '{name}' (AppID: {appid}) into {path}")
             return {
                 "success": True,
@@ -553,10 +573,35 @@ class SteamManager:
                 "appid": appid,
                 "shortcut_id": str(short_id_64),
                 "steam_url": f"steam://rungameid/{short_id_64}",
+                "artwork": artwork_res,
                 "message": f"Added '{name}' to Steam shortcuts."
             }
         except Exception as e:
             return {"success": False, "error": f"Failed to save shortcuts.vdf: {e}"}
+
+    def sync_game_artwork(
+        self,
+        name: str,
+        exe_path: str,
+        steam_appid: Optional[str] = None,
+        account_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Customizes or updates official Steam artwork for a non-Steam shortcut."""
+        if not hasattr(self, 'artwork_manager') or not self.artwork_manager:
+            return {"success": False, "error": "Artwork manager is unavailable"}
+        try:
+            artwork_paths = self.artwork_manager.download_and_save_artwork(name, appid=steam_appid)
+            if not artwork_paths:
+                return {"success": False, "error": f"Could not find or download artwork for '{name}'"}
+            applied = self.artwork_manager.apply_artwork_to_steam_grid(exe_path, name, artwork_paths, account_id=account_id)
+            return {
+                "success": True,
+                "applied": applied,
+                "artwork_paths": artwork_paths,
+                "message": f"Successfully updated artwork for '{name}'."
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     def delete_shortcut(
         self,

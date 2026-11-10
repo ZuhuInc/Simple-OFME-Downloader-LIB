@@ -136,6 +136,7 @@ class ApiClient {
     selectSteamAccount(accountId) { return this.request('/api/steam/select-account', { method: 'POST', body: { account_id: accountId } }); }
     getSteamShortcuts(accountId = '') { return this.request(`/api/steam/shortcuts${accountId ? '?account_id=' + accountId : ''}`); }
     addSteamShortcut(data) { return this.request('/api/steam/shortcuts/add', { method: 'POST', body: data }); }
+    syncShortcutArtwork(payload) { return this.request('/api/steam/shortcuts/artwork', { method: 'POST', body: payload }); }
     deleteSteamShortcut(payload) { return this.request('/api/steam/shortcuts/delete', { method: 'POST', body: payload }); }
     rescanSteam() { return this.request('/api/steam/rescan', { method: 'POST' }); }
     restartSteam() { return this.request('/api/steam/restart', { method: 'POST' }); }

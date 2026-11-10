@@ -100,6 +100,8 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
         launch_options = data.get('launch_options', '')
         tags = data.get('tags', ['Online-Fix'])
         account_id = data.get('account_id') or config.get('steam_id') or config.get('steam_user_id')
+        auto_artwork = data.get('auto_artwork', True)
+        steam_appid = data.get('steam_appid')
 
         if not name or not exe_path:
             return jsonify({"error": "Missing name or exe_path"}), 400
@@ -111,16 +113,47 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
             icon_path=icon_path,
             launch_options=launch_options,
             tags=tags,
-            account_id=account_id
+            account_id=account_id,
+            auto_artwork=auto_artwork,
+            steam_appid=steam_appid
         )
 
-        # If matching game exists in Data.json, update steam_url
+        # If matching game exists in Data.json, update steam_url and steam_appid
         if res.get("success") and config and hasattr(config, "data"):
             key = name.upper()
             record = config.data.get(key, {})
             record["steam_url"] = res.get("steam_url")
+            if steam_appid:
+                record["steam_appid"] = str(steam_appid)
             config.data[key] = record
             config.save()
+
+        return jsonify(res)
+
+    @bp.route('/shortcuts/artwork', methods=['POST'])
+    def customize_steam_artwork():
+        data = request.get_json() or {}
+        name = data.get('name') or data.get('title')
+        exe_path = data.get('exe_path') or data.get('exe', '')
+        steam_appid = data.get('steam_appid') or data.get('appid')
+        account_id = data.get('account_id') or config.get('steam_id') or config.get('steam_user_id')
+
+        if not name:
+            return jsonify({"error": "Missing game name"}), 400
+
+        res = steam_manager.sync_game_artwork(
+            name=name,
+            exe_path=exe_path,
+            steam_appid=steam_appid,
+            account_id=account_id
+        )
+
+        # If matching game in Data.json and steam_appid provided, update Data.json
+        if res.get("success") and steam_appid and config and hasattr(config, "data"):
+            key = name.upper()
+            if key in config.data:
+                config.data[key]["steam_appid"] = str(steam_appid)
+                config.save()
 
         return jsonify(res)
 
