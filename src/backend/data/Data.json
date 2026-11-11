@@ -3260,5 +3260,18 @@
         ],
         "fix_url": "https://gofile.io/d/Vxrm2Q",
         "category": "General"
+    },
+    "CRACK": {
+        "version": "1.1.29",
+        "host": "GoFile",
+        "approx_size": "3 GB",
+        "description": "No description available.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4312190/41fe49c40fa4226ddd7fafdb4b15c15687756f68/library_capsule_2x.jpg?t=1793567509",
+        "origin_url": "https://online-fix.me/games/adventures/18293-crack-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/8FcIx914"
+        ],
+        "fix_url": "https://gofile.io/d/gceEKq0a",
+        "category": "General"
     }
 }
