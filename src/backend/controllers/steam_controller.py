@@ -106,6 +106,19 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
         if not name or not exe_path:
             return jsonify({"error": "Missing name or exe_path"}), 400
 
+        # Resolve steam_appid from config or DB if not supplied in request
+        if not steam_appid:
+            for k, v in getattr(config, 'data', {}).items():
+                if k.strip().lower() == name.strip().lower() and isinstance(v, dict):
+                    if v.get("steam_appid"):
+                        steam_appid = str(v.get("steam_appid"))
+                        break
+            if not steam_appid:
+                for g in _get_db_games():
+                    if g.get("title", "").strip().lower() == name.strip().lower() and g.get("steam_appid"):
+                        steam_appid = str(g.get("steam_appid"))
+                        break
+
         res = steam_manager.add_non_steam_game(
             name=name,
             exe_path=exe_path,
@@ -140,6 +153,19 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
 
         if not name:
             return jsonify({"error": "Missing game name"}), 400
+
+        # Resolve steam_appid from config or DB if not supplied in request
+        if not steam_appid:
+            for k, v in getattr(config, 'data', {}).items():
+                if k.strip().lower() == name.strip().lower() and isinstance(v, dict):
+                    if v.get("steam_appid"):
+                        steam_appid = str(v.get("steam_appid"))
+                        break
+            if not steam_appid:
+                for g in _get_db_games():
+                    if g.get("title", "").strip().lower() == name.strip().lower() and g.get("steam_appid"):
+                        steam_appid = str(g.get("steam_appid"))
+                        break
 
         res = steam_manager.sync_game_artwork(
             name=name,

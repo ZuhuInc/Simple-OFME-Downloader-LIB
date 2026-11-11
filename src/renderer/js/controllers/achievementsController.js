@@ -23,10 +23,14 @@ class AchievementsController {
             window.apiClient.on('achievement_unlocked', (data) => {
                 this.showAchievementToast(data);
                 // If currently viewing this game, refresh its UI
-                if (this.selectedGame && (this.selectedGame.title === data.game_title || this.selectedGame.appid === data.appid)) {
+                const matchesGame = this.selectedGame && (
+                    (this.selectedGame.title && data.game_title && this.selectedGame.title.toLowerCase() === data.game_title.toLowerCase()) ||
+                    (this.selectedGame.appid && data.appid && String(this.selectedGame.appid) === String(data.appid))
+                );
+                if (matchesGame) {
                     this.loadGameAchievements(this.selectedGame.title, this.selectedGame.appid);
                 }
-                // Refresh summary progress
+                // Refresh summary progress & list bars live
                 this.loadSummary(false);
             });
         }

@@ -87,6 +87,26 @@ class SteamArtworkManager:
         clean_title = self.sanitize_filename(game_title)
         resolved_appid = str(appid).strip() if appid and str(appid).isdigit() else None
 
+        # Check steam_manager for steam_appid if not directly supplied
+        if not resolved_appid and hasattr(self, 'steam_manager') and self.steam_manager:
+            fanta_games = getattr(self.steam_manager, 'fanta_games', {})
+            for gname, ginfo in fanta_games.items():
+                if gname.strip().lower() == game_title.strip().lower() and isinstance(ginfo, dict):
+                    aid = ginfo.get("steam_appid")
+                    if aid and str(aid).isdigit():
+                        resolved_appid = str(aid)
+                        break
+
+        # If AppID is verified, directly deliver official Steam CDN assets
+        # (100% accurate to the specific game, high-res, and unhashed)
+        if resolved_appid:
+            std_base = f"{self.STEAM_CDN_BASE}/{resolved_appid}"
+            assets["Cover"] = f"{std_base}/library_600x900_2x.jpg"
+            assets["Background"] = f"{std_base}/library_hero.jpg"
+            assets["Logo"] = f"{std_base}/logo.png"
+            assets["WideCover"] = f"{std_base}/header.jpg"
+            return assets
+
         # 1. Query SteamGridDB for Original Steam Assets metadata
         sgdb_data = self._fetch_steamgriddb_metadata(game_title, resolved_appid)
         if sgdb_data and "steam" in sgdb_data.get("platforms", {}):
@@ -162,15 +182,23 @@ class SteamArtworkManager:
         if not search_res or not search_res.get("data"):
             return None
 
-        # Pick first game with steam types or best match
+        # Pick candidate that matches the title
         candidates = search_res["data"]
         target_game = None
+        clean_target = re.sub(r'[^a-zA-Z0-9]', '', title).lower()
         for c in candidates:
-            if "steam" in c.get("types", []):
+            c_clean = re.sub(r'[^a-zA-Z0-9]', '', c.get("name", "")).lower()
+            if c_clean == clean_target:
                 target_game = c
                 break
-        if not target_game and candidates:
-            target_game = candidates[0]
+
+        # Fallback to candidate that starts with target or first candidate with steam type
+        if not target_game:
+            for c in candidates:
+                c_clean = re.sub(r'[^a-zA-Z0-9]', '', c.get("name", "")).lower()
+                if c_clean.startswith(clean_target) and "steam" in c.get("types", []):
+                    target_game = c
+                    break
 
         game_id = target_game.get("id")
         if not game_id:

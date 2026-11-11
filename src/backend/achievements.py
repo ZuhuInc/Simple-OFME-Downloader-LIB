@@ -221,16 +221,22 @@ class AchievementManager:
     # -------------------------------------------------------------------------
     # Local Unlocks Management
     # -------------------------------------------------------------------------
-    def get_user_unlocks(self, appid: str) -> Dict[str, Dict[str, Any]]:
-        """Returns map of unlocked achievements for an appid: { api_name: { unlocked_at: timestamp, ... } }"""
+    def get_persisted_unlocks(self, appid: str) -> Dict[str, Dict[str, Any]]:
+        """Returns map of unlocked achievements saved on disk without mutating."""
         user_file = os.path.join(self.user_data_dir, f"{appid}.json")
-        unlocks = {}
         if os.path.exists(user_file):
             try:
                 with open(user_file, "r", encoding="utf-8") as f:
-                    unlocks = json.load(f)
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        return data
             except Exception:
-                unlocks = {}
+                pass
+        return {}
+
+    def get_user_unlocks(self, appid: str) -> Dict[str, Dict[str, Any]]:
+        """Returns map of unlocked achievements for an appid: { api_name: { unlocked_at: timestamp, ... } }"""
+        unlocks = self.get_persisted_unlocks(appid)
 
         # Also inspect local emulator files and merge
         emu_unlocks = self._scan_emulator_unlocks(appid)
@@ -242,6 +248,8 @@ class AchievementManager:
 
         if changed:
             self._save_user_unlocks(appid, unlocks)
+            if appid in self._last_checked_state:
+                self._last_checked_state[appid].update(unlocks.keys())
 
         return unlocks
 
@@ -258,10 +266,15 @@ class AchievementManager:
         found = {}
         candidates = []
 
-        # 1. Goldberg SteamEmu (%APPDATA%)
+        # 1. Goldberg SteamEmu (%APPDATA% & %LOCALAPPDATA%)
         appdata = os.environ.get("APPDATA", "")
         if appdata:
             candidates.append(os.path.join(appdata, "Goldberg SteamEmu Saves", appid, "achievements.json"))
+            candidates.append(os.path.join(appdata, "Goldberg SteamEmu Saves", appid, "stats", "achievements.json"))
+        local_appdata = os.environ.get("LOCALAPPDATA", "")
+        if local_appdata:
+            candidates.append(os.path.join(local_appdata, "Goldberg SteamEmu Saves", appid, "achievements.json"))
+            candidates.append(os.path.join(local_appdata, "Goldberg SteamEmu Saves", appid, "stats", "achievements.json"))
 
         # 2. Public Documents: OnlineFix, RUNE, CODEX
         public_docs = os.environ.get("PUBLIC", "")
@@ -269,10 +282,20 @@ class AchievementManager:
             candidates.append(os.path.join(public_docs, "Documents", "OnlineFix", appid, "Stats", "Achievements.ini"))
             candidates.append(os.path.join(public_docs, "Documents", "OnlineFix", appid, "Stats", "achievements.ini"))
             candidates.append(os.path.join(public_docs, "Documents", "OnlineFix", appid, "Stats", "achievements.json"))
+            candidates.append(os.path.join(public_docs, "Documents", "OnlineFix", appid, "achievements.ini"))
             candidates.append(os.path.join(public_docs, "Documents", "Steam", "RUNE", appid, "achievements.ini"))
             candidates.append(os.path.join(public_docs, "Documents", "Steam", "CODEX", appid, "achievements.ini"))
+            candidates.append(os.path.join(public_docs, "Documents", "Steam", "CODEX", appid, "Stats", "achievements.ini"))
 
-        # 3. Check inside installed game folder if known
+        # 3. User Documents: OnlineFix, RUNE, CODEX
+        user_docs = os.path.join(os.environ.get("USERPROFILE", ""), "Documents")
+        if user_docs and os.path.exists(user_docs):
+            candidates.append(os.path.join(user_docs, "OnlineFix", appid, "Stats", "Achievements.ini"))
+            candidates.append(os.path.join(user_docs, "OnlineFix", appid, "Stats", "achievements.ini"))
+            candidates.append(os.path.join(user_docs, "Steam", "RUNE", appid, "achievements.ini"))
+            candidates.append(os.path.join(user_docs, "Steam", "CODEX", appid, "achievements.ini"))
+
+        # 4. Check inside installed game folder if known
         if self.config and getattr(self.config, 'data', None):
             for t, inf in self.config.data.items():
                 if isinstance(inf, dict):
@@ -322,8 +345,8 @@ class AchievementManager:
                             if raw_line.startswith("[") and raw_line.endswith("]"):
                                 if current_section and current_section.lower() not in ["steamachievements", "settings"]:
                                     achieved = section_data.get("achieved", section_data.get("earned", ""))
-                                    if achieved in ["1", "true", "True"]:
-                                        ts = section_data.get("unlocktime", section_data.get("timestamp", ""))
+                                    if str(achieved).strip().lower() in ["1", "true"]:
+                                        ts = section_data.get("unlocktime") or section_data.get("timestamp", "")
                                         found[current_section] = {
                                             "unlocked_at": int(ts) if ts and str(ts).isdigit() else int(time.time()),
                                             "source": "emulator"
@@ -337,8 +360,8 @@ class AchievementManager:
                         # Check last section
                         if current_section and current_section.lower() not in ["steamachievements", "settings"]:
                             achieved = section_data.get("achieved", section_data.get("earned", ""))
-                            if achieved in ["1", "true", "True"]:
-                                ts = section_data.get("unlocktime", section_data.get("timestamp", ""))
+                            if str(achieved).strip().lower() in ["1", "true"]:
+                                ts = section_data.get("unlocktime") or section_data.get("timestamp", "")
                                 found[current_section] = {
                                     "unlocked_at": int(ts) if ts and str(ts).isdigit() else int(time.time()),
                                     "source": "emulator"
@@ -517,6 +540,9 @@ class AchievementManager:
             except Exception as e:
                 return {"success": False, "error": str(e)}
 
+        if resolved_id in self._last_checked_state:
+            self._last_checked_state[resolved_id].clear()
+
         return {"success": True, "message": f"Reset unlocks for {title} (AppID: {resolved_id})"}
 
     # -------------------------------------------------------------------------
@@ -525,48 +551,73 @@ class AchievementManager:
     def _monitor_loop(self):
         """Monitors local save files for new achievements while games are running."""
         while self._running:
-            time.sleep(3)
+            time.sleep(1.5)
             try:
                 if not self.config or not getattr(self.config, 'data', None):
                     continue
 
                 installed_data = self.config.data
                 for title, info in installed_data.items():
-                    appid = self.resolve_appid(title, game_data=info)
+                    # Resolve appid
+                    appid = self.resolve_appid(title, game_data=info, allow_network=False)
                     if not appid:
                         continue
 
-                    # Check emulator save file
+                    # Scan emulator save files directly
                     current_emu_unlocks = self._scan_emulator_unlocks(appid)
                     if not current_emu_unlocks:
                         continue
 
-                    known_unlocks = self.get_user_unlocks(appid)
-                    schema = self.get_schema(appid)
-                    schema_map = {a.get("api_name"): a for a in schema}
+                    # Initialize last checked state from persisted data if not present
+                    if appid not in self._last_checked_state:
+                        persisted = self.get_persisted_unlocks(appid)
+                        self._last_checked_state[appid] = set(persisted.keys())
+
+                    known_set = self._last_checked_state[appid]
+                    new_unlocks = {}
 
                     for api_name, unlock_data in current_emu_unlocks.items():
-                        if api_name not in known_unlocks:
-                            # Brand new unlock detected!
-                            known_unlocks[api_name] = unlock_data
-                            self._save_user_unlocks(appid, known_unlocks)
+                        if api_name not in known_set:
+                            new_unlocks[api_name] = unlock_data
 
-                            ach_meta = schema_map.get(api_name, {})
-                            payload = {
-                                "game_title": title,
-                                "appid": appid,
-                                "api_name": api_name,
-                                "name": ach_meta.get("name") or api_name,
-                                "description": ach_meta.get("description") or "",
-                                "icon": ach_meta.get("icon") or "",
-                                "unlocked_at": unlock_data.get("unlocked_at", int(time.time()))
-                            }
+                    if not new_unlocks:
+                        continue
 
-                            print(f"[Achievements] Real-time Unlock: {title} -> {payload['name']}", flush=True)
-                            if self.callback:
+                    # Real-time newly unlocked achievement(s) detected!
+                    persisted = self.get_persisted_unlocks(appid)
+                    schema = self.get_schema(appid, allow_network=True)
+                    schema_map = {a.get("api_name"): a for a in schema}
+
+                    for api_name, unlock_data in new_unlocks.items():
+                        known_set.add(api_name)
+                        persisted[api_name] = unlock_data
+
+                        ach_meta = schema_map.get(api_name, {})
+                        payload = {
+                            "game_title": title,
+                            "appid": appid,
+                            "api_name": api_name,
+                            "name": ach_meta.get("name") or api_name,
+                            "description": ach_meta.get("description") or "",
+                            "icon": ach_meta.get("icon") or "",
+                            "unlocked_at": unlock_data.get("unlocked_at", int(time.time()))
+                        }
+
+                        print(f"[Achievements] Real-time Unlock Detected: {title} -> {payload['name']}", flush=True)
+                        if self.callback:
+                            try:
                                 self.callback(payload)
-                            elif self.socketio:
+                            except Exception as cb_err:
+                                print(f"[Achievements] Callback error: {cb_err}", flush=True)
+                        if self.socketio:
+                            try:
                                 self.socketio.emit("achievement_unlocked", payload)
+                            except Exception as sock_err:
+                                print(f"[Achievements] Socket emit error: {sock_err}", flush=True)
+
+                    # Persist the newly unlocked achievements to disk
+                    self._save_user_unlocks(appid, persisted)
+
             except Exception as e:
                 # Keep monitor thread resilient
                 pass

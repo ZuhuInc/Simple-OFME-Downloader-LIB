@@ -2731,8 +2731,9 @@
         "version": "1.2.0",
         "host": "GoFile",
         "approx_size": "25GB",
+        "steam_appid": 2315050,
         "description": "You and your partner awaken inside a mysterious Norček facility with little recollection of how you got there. Communicate, cooperate, and unravel the secrets in this asymmetrical co-op adventure. Only together will you decide the fate of Tomorrow…",
-        "thumbnail": "https://store-images.s-microsoft.com/image/apps.59475.13556498983821705.03f02384-6c7b-463c-892f-be35d14e9e01.e8cc7522-5728-46a0-8077-87297db3f8ec",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/2315050/5170fa89f16330acbda072a73c210ca9c2c7acfd/library_capsule_2x.jpg?t=1792695687",
         "origin_url": "https://online-fix.me/games/adventures/18287-we-were-here-tomorrow-po-seti.html",
         "parts": [
             "https://gofile.io/d/X4SJxMHf",
