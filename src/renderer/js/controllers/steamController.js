@@ -556,7 +556,7 @@ class SteamController {
 
         const exeInput = document.getElementById('steamGameExeInput');
         if (exeInput) {
-            exeInput.value = game.location ? `${game.location}\\${game.title}.exe` : '';
+            exeInput.value = game.exe_path || (game.location ? `${game.location}\\${game.title}.exe` : '');
         }
 
         this.modal.classList.add('active');

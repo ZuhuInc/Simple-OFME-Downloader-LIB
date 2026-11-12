@@ -3080,3 +3080,175 @@ input[type="number"] {
         transform: translateY(-115px) scale(1.4);
     }
 }
+
+/* ==========================================================================
+   MULTI-RUNNER / LAUNCH MODES SYSTEM
+   ========================================================================== */
+.details-runners-section {
+    background: rgba(14, 14, 20, 0.5);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+}
+
+.runners-options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 8px;
+}
+
+.runner-card {
+    background: rgba(22, 22, 30, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 6px;
+    position: relative;
+}
+
+.runner-card:hover {
+    border-color: rgba(247, 163, 28, 0.4);
+    background: rgba(30, 30, 42, 0.85);
+    transform: translateY(-1px);
+}
+
+.runner-card.active {
+    border-color: var(--accent);
+    background: rgba(247, 163, 28, 0.09);
+    box-shadow: 0 0 12px rgba(247, 163, 28, 0.2);
+}
+
+.runner-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.runner-card-title-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 2px;
+}
+
+.runner-card-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.25;
+}
+
+.runner-card-subtitle {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    opacity: 0.9;
+    line-height: 1.2;
+}
+
+.runner-github-link {
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+.runner-github-link:hover {
+    color: var(--accent);
+    background: rgba(247, 163, 28, 0.15);
+    transform: scale(1.15);
+}
+
+.runner-tag {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.runner-tag.tag-installed {
+    background: rgba(46, 213, 115, 0.15);
+    color: #2ed573;
+    border: 1px solid rgba(46, 213, 115, 0.3);
+}
+
+.runner-tag.tag-missing {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.runner-tag.tag-update {
+    background: rgba(247, 163, 28, 0.18);
+    color: var(--accent);
+    border: 1px solid rgba(247, 163, 28, 0.4);
+}
+
+.runner-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.runner-version-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+}
+
+.runner-action-btn {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+}
+
+.runner-action-btn.btn-dl {
+    background: rgba(247, 163, 28, 0.2);
+    color: var(--accent);
+    border: 1px solid rgba(247, 163, 28, 0.4);
+}
+
+.runner-action-btn.btn-dl:hover {
+    background: var(--accent);
+    color: #000;
+}
+
+.runner-action-btn.btn-active-indicator {
+    background: rgba(46, 213, 115, 0.12);
+    color: #2ed573;
+    cursor: default;
+}
+
+.runner-action-btn.btn-update {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+}
+
+.runner-action-btn.btn-update:hover {
+    background: #f59e0b;
+    color: #000;
+}
+

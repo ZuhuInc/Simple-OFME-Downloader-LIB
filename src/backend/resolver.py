@@ -481,7 +481,6 @@ class LinkResolver:
         if "buzzheavier.com/" in url or "bzzhr.to/" in url:
             log(f"Resolving BuzzHeavier / bzzhr.to link: {url}")
             file_id = url.split("buzzheavier.com/")[-1].split("bzzhr.to/")[-1].split("?")[0].strip("/").replace("f/", "")
-            target_url = f"https://bzzhr.to/{file_id}"
             
             # Step 2a: High-speed TLS impersonation using curl_cffi (bypasses Cloudflare JA3 bot verification)
             try:
@@ -494,29 +493,35 @@ class LinkResolver:
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9',
                 }
-                r = s.get(target_url, headers=headers, timeout=12)
-                if r.status_code == 200:
-                    soup = BeautifulSoup(r.text, 'html.parser')
-                    file_name = None
-                    name_tag = soup.find('p', class_='file-name')
-                    if name_tag:
-                        file_name = name_tag.text.strip()
+                for base_domain in ["https://buzzheavier.com", "https://bzzhr.to"]:
+                    target_url = f"{base_domain}/{file_id}"
+                    r = s.get(target_url, headers=headers, timeout=12)
+                    if r.status_code == 200:
+                        soup = BeautifulSoup(r.text, 'html.parser')
+                        file_name = None
+                        name_tag = soup.find('p', class_='file-name')
+                        if not name_tag:
+                            meta_title = soup.find('meta', {'name': 'title'})
+                            if meta_title and meta_title.get('content'):
+                                file_name = meta_title['content'].strip()
+                        else:
+                            file_name = name_tag.text.strip()
 
-                    dl_btn = soup.find('a', class_='download-btn')
-                    if dl_btn:
-                        hx_get = dl_btn.get('hx-get')
-                        if hx_get:
-                            trigger_url = f"https://bzzhr.to{hx_get}"
-                            headers_dl = {
-                                'HX-Request': 'true',
-                                'HX-Current-URL': target_url,
-                                'Referer': target_url,
-                            }
-                            r_dl = s.get(trigger_url, headers=headers_dl, allow_redirects=False, timeout=12)
-                            direct_url = r_dl.headers.get('hx-redirect') or r_dl.headers.get('location')
-                            if direct_url:
-                                log(f"BuzzHeavier direct stream resolved: {direct_url[:80]}... Filename: '{file_name}'")
-                                return direct_url, file_name or f"buzzheavier_{file_id}.zip", s.cookies.get_dict()
+                        dl_btn = soup.find('a', class_='download-btn')
+                        if dl_btn:
+                            hx_get = dl_btn.get('hx-get')
+                            if hx_get:
+                                trigger_url = f"{base_domain}{hx_get}" if hx_get.startswith("/") else hx_get
+                                headers_dl = {
+                                    'HX-Request': 'true',
+                                    'HX-Current-URL': target_url,
+                                    'Referer': target_url,
+                                }
+                                r_dl = s.get(trigger_url, headers=headers_dl, allow_redirects=False, timeout=12)
+                                direct_url = r_dl.headers.get('hx-redirect') or r_dl.headers.get('location')
+                                if direct_url:
+                                    log(f"BuzzHeavier direct stream resolved: {direct_url[:80]}... Filename: '{file_name}'")
+                                    return direct_url, file_name or f"buzzheavier_{file_id}.zip", s.cookies.get_dict()
             except Exception as cffi_err:
                 log(f"BuzzHeavier fast resolver notice: {cffi_err}")
 
@@ -527,16 +532,16 @@ class LinkResolver:
                 log("Launching background browser (Brave priority) for BuzzHeavier fallback...")
                 session, is_chromium = create_scraper_driver()
                 driver = session.driver
-                driver.get("https://steamrip.com/")
+                driver.get("https://buzzheavier.com/")
                 time.sleep(1.5)
-                driver.execute_script(f"window.location.href = '{target_url}';")
+                driver.execute_script(f"window.location.href = 'https://buzzheavier.com/{file_id}';")
                 time.sleep(3)
                 
                 dl_btn = driver.find_element(By.CSS_SELECTOR, "a.download-btn, [hx-get*='download']")
                 hx_get = dl_btn.get_attribute("hx-get")
                 if hx_get:
                     cookies = {c['name']: c['value'] for c in driver.get_cookies()}
-                    direct_url = f"https://bzzhr.to{hx_get}"
+                    direct_url = f"https://buzzheavier.com{hx_get}" if hx_get.startswith("/") else hx_get
                     log(f"Browser captured BuzzHeavier stream endpoint: {direct_url}")
                     return direct_url, f"buzzheavier_{file_id}.zip", cookies
             except Exception as browser_err:
@@ -547,7 +552,7 @@ class LinkResolver:
 
             # Fallback for BuzzHeavier direct download endpoint
             if file_id and not file_id.endswith("/download"):
-                direct_url = f"https://bzzhr.to/{file_id}/download"
+                direct_url = f"https://buzzheavier.com/{file_id}/download"
                 return direct_url, f"buzzheavier_{file_id}.zip", None
 
 

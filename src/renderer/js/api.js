@@ -118,9 +118,17 @@ class ApiClient {
     removeGame(payload) { return this.request('/api/games/remove', { method: 'POST', body: payload }); }
     removeSteamLink(payload) { return this.request('/api/games/remove-steam', { method: 'POST', body: payload }); }
     launchGame(payload) { return this.request('/api/games/launch', { method: 'POST', body: payload }); }
+    getGameRunners(id, title) {
+        const q = new URLSearchParams({ id: id || '', title: title || '' }).toString();
+        return this.request(`/api/games/runners?${q}`);
+    }
+    installGameRunner(id, title, runnerId) {
+        return this.request('/api/games/runners/install', { method: 'POST', body: { id, title, runner_id: runnerId } });
+    }
 
     // Downloads
     getDownloads() { return this.request('/api/downloads'); }
+    checkDiskSpace(payload) { return this.request('/api/downloads/disk_space', { method: 'POST', body: payload }); }
     addDownload(url, filename, meta = {}) {
         return this.request('/api/downloads/add', { method: 'POST', body: { url, filename, meta } });
     }

@@ -314,16 +314,14 @@ class Extractor:
         az_root = None
         if os.path.exists(os.path.join(game_dir, "azimuth.exe")):
             az_root = game_dir
-        elif os.path.exists(os.path.join(extract_dir, "azimuth.exe")):
-            az_root = extract_dir
 
         if az_root:
             game_dir = az_root
             exe_path = os.path.join(az_root, "azimuth.exe")
             self._ensure_azimuth_config(az_root)
         else:
-            # Scan for game executable
-            exe_path = self._find_game_exe(game_dir) or self._find_game_exe(extract_dir)
+            # Scan for game executable inside game_dir only (never fall back to root extract_dir to avoid cross-game pollution)
+            exe_path = self._find_game_exe(game_dir, game_title=game_title)
 
         # Automatic cleanup of raw archive file after extraction
         if delete_after and os.path.exists(archive_path):
@@ -440,43 +438,104 @@ class Extractor:
             print(f"[Extractor] Notice setting up azimuth.ini: {e}", flush=True)
 
     @staticmethod
-    def _find_game_exe(game_dir: str) -> Optional[str]:
+    def _find_game_exe(game_dir: str, game_title: Optional[str] = None) -> Optional[str]:
         if not os.path.exists(game_dir) or not os.path.isdir(game_dir):
             return None
 
-        # Direct Azimuth launcher check
-        azimuth_exe = os.path.join(game_dir, "azimuth.exe")
-        if os.path.isfile(azimuth_exe):
-            return azimuth_exe
+        # Protection: NEVER search a drive root or root games library directory
+        norm_dir = os.path.normpath(game_dir).rstrip("\\/").upper()
+        if norm_dir in ("C:", "D:", "E:", "F:", "C:\\GAMES", "D:\\GAMES", "D:\\GAMES2"):
+            return None
+
+        # Protection: Check if game_dir looks like a shared library folder (has many independent folders with exes)
+        try:
+            subdirs = [d for d in os.listdir(game_dir) if os.path.isdir(os.path.join(game_dir, d)) and not d.startswith((".", "_"))]
+            if len(subdirs) > 10:
+                return None
+        except Exception:
+            pass
+
+        # Direct Azimuth launcher check (specifically for Forza Horizon 2)
+        is_forza = bool((game_title and "forza" in game_title.lower()) or ("forza" in game_dir.lower()))
+        if is_forza:
+            azimuth_exe = os.path.join(game_dir, "azimuth.exe")
+            if os.path.isfile(azimuth_exe):
+                return azimuth_exe
 
         candidates = []
         ignored_names = {
             "unitycrashhandler64.exe", "unitycrashhandler32.exe", "dxwebsetup.exe",
-            "unins000.exe", "uninstall.exe", "forza_durango_release_final.exe"
+            "unins000.exe", "uninstall.exe", "forza_durango_release_final.exe",
+            "crashreport.exe", "crashreportclient.exe", "epicgameslauncher.exe",
+            "steamservice.exe", "vcredist_x64.exe", "vcredist_x86.exe"
         }
+        ignored_dirs = {"_redist", "redist", "commonredist", "_commonredist", "directx", "support", "dependencies", "tools", "crashreports"}
 
         for root, dirs, files in os.walk(game_dir):
-            dirs[:] = [d for d in dirs if not d.startswith("_") and "redist" not in d.lower()]
+            dirs[:] = [d for d in dirs if not d.startswith("_") and d.lower() not in ignored_dirs and "redist" not in d.lower()]
             for f in files:
                 f_lower = f.lower()
                 if (
                     f_lower.endswith(".exe")
                     and f_lower not in ignored_names
                     and not f_lower.startswith("vcredist")
+                    and not f_lower.startswith("unins")
                     and "_durango_" not in f_lower
                 ):
                     full = os.path.join(root, f)
                     candidates.append(full)
 
-        if candidates:
-            # If azimuth.exe is located inside any subfolder, prioritize it!
-            for c in candidates:
-                if os.path.basename(c).lower() == "azimuth.exe":
-                    return c
-            candidates.sort(key=lambda p: os.path.getsize(p) if os.path.exists(p) else 0, reverse=True)
-            return candidates[0]
+        if not candidates:
+            return None
 
-        return None
+        # Score candidates to select the true game executable
+        norm_title = re.sub(r'[^a-zA-Z0-9]', '', game_title).lower() if game_title else ""
+        norm_folder = re.sub(r'[^a-zA-Z0-9]', '', os.path.basename(game_dir)).lower()
+
+        def score_candidate(path: str) -> float:
+            base_name = os.path.basename(path).lower()
+            stem = os.path.splitext(base_name)[0]
+            norm_stem = re.sub(r'[^a-zA-Z0-9]', '', stem).lower()
+            score = 0.0
+
+            # 1. Exact title match
+            if norm_title and norm_stem == norm_title:
+                score += 1000.0
+            elif norm_title and norm_title in norm_stem:
+                score += 500.0
+            elif norm_title and norm_stem in norm_title and len(norm_stem) >= 4:
+                score += 300.0
+
+            # 2. Folder name match
+            if norm_folder and norm_stem == norm_folder:
+                score += 400.0
+            elif norm_folder and norm_folder in norm_stem:
+                score += 200.0
+
+            # 3. Known main executable stems
+            if stem in ("launcher", "game", "play", "start", "shipping", "client", "boot"):
+                score += 250.0
+
+            # 4. Azimuth (only for Forza Horizon 2)
+            if is_forza and base_name == "azimuth.exe":
+                score += 1500.0
+
+            # 5. Depth penalty (favor files closer to game root)
+            rel_path = os.path.relpath(path, game_dir)
+            depth = len(rel_path.split(os.sep)) - 1
+            score -= (depth * 50.0)
+
+            # 6. File size tie-breaker (prefer larger binaries over helper stubs)
+            try:
+                sz = os.path.getsize(path)
+                score += min(50.0, sz / (1024 * 1024))
+            except Exception:
+                pass
+
+            return score
+
+        candidates.sort(key=score_candidate, reverse=True)
+        return candidates[0]
 
     def apply_fix(
         self,

@@ -3273,5 +3273,68 @@
         ],
         "fix_url": "https://gofile.io/d/gceEKq0a",
         "category": "General"
+    },
+    "The Legend of Zelda: Ocarina of Time": {
+        "version": "1.1.1",
+        "host": "PixelDrain",
+        "approx_size": "24GB",
+        "description": "The Legend of Zelda: Ocarina of Time (Switch Remake PC Edition). Features 3 built-in community launch options: Recomp Option 1 (NX2navi), Recomp Option 2 (Hookshot), and Emulator (Fritchii).",
+        "thumbnail": "https://cdn.loaded.com/500x706/media/catalog/product/t/h/the_legend_of_zelda_-_ocarina_of_time_switch_2_1.png",
+        "origin_url": "https://github.com/tangerineturtle1/NX2navi",
+        "parts": [
+            "https://pixeldrain.com/u/FFAi5WW3",
+            "https://pixeldrain.com/u/K9t1iV5M",
+            "https://pixeldrain.com/u/TSgspGjQ"
+        ],
+        "mirrors": {
+            "BuzzHeavier": {
+                "parts": [
+                    "https://buzzheavier.com/g6zjtkxy3toa",
+                    "https://buzzheavier.com/2nzj4l1avsa8",
+                    "https://buzzheavier.com/jbwl3xnqnqm0"
+                ]
+            },
+            "GoFile": {
+                "parts": [
+                    "https://gofile.io/d/9c5abf7d-60ac-4736-9883-9608ad670817",
+                    "https://gofile.io/d/e373315f-8e6f-4bb7-9e83-8c7e5c26ff20",
+                    "https://gofile.io/d/801c60ff-a463-49ad-8c6c-5a97a4ee493a"
+                ]
+            }
+        },
+        "fix_url": "",
+        "category": "Action-Adventure",
+        "runners": [
+            {
+                "id": "nx2navi",
+                "name": "NX2navi",
+                "subtitle": "(Recomp 1)",
+                "repo": "tangerineturtle1/NX2navi",
+                "asset_pattern": "NX2navi-app.*\\.zip",
+                "folder": "NX2navi",
+                "rel_path": "NX2navi/ocarina.exe"
+            },
+            {
+                "id": "hookshot",
+                "name": "Hookshot",
+                "subtitle": "(Recomp 2)",
+                "repo": "NotRexed/Hookshot",
+                "asset_pattern": "Hookshot-.*Windows-x64\\.zip",
+                "folder": "HookShot",
+                "rel_path": "HookShot/hookshot.exe"
+            },
+            {
+                "id": "fritchii",
+                "name": "Fritchii",
+                "subtitle": "(Emulator)",
+                "repo": "Frizti/Fritchii",
+                "asset_pattern": "Fritchii-.*Windows-x64\\.zip",
+                "folder": "Fritchii",
+                "rel_path": "Fritchii/lichii.exe",
+                "args": [
+                    "games/The_Legend_of_Zelda_Ocarina_of_Time_U1.1.1.nup"
+                ]
+            }
+        ]
     }
 }

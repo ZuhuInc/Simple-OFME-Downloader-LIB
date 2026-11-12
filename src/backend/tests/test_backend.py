@@ -713,6 +713,20 @@ Fix:
             }
         }
         resp = client.post('/api/cloud/credentials', json=creds_payload)
+
+        # Test deduplication: ensure "desktop defender" and alias "desktopdefender" never result in duplicate cards
+        config.data["desktop defender"] = {"downloaded": True, "location": os.path.join(self.temp_dir, "desktop defender")}
+        orig_list_all = cloud_sync.list_all_cloud_saves
+        cloud_sync.list_all_cloud_saves = lambda: {
+            "desktop defender": {"exists": True, "title": "desktop defender", "provider": "gdrive_api"},
+            "desktopdefender": {"exists": True, "title": "desktop defender", "is_alias": True, "provider": "gdrive_api"}
+        }
+        resp = client.get('/api/cloud/games')
+        self.assertEqual(resp.status_code, 200)
+        dd_games = [g for g in resp.get_json().get("games", []) if "desktop" in g.get("title", "").lower()]
+        self.assertEqual(len(dd_games), 1)
+        self.assertEqual(dd_games[0]["title"], "desktop defender")
+        cloud_sync.list_all_cloud_saves = orig_list_all
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(cloud_sync.has_gdrive_credentials())
         self.assertEqual(cloud_sync.settings.get("gdrive_client_id"), "test_client_id_123.apps.googleusercontent.com")
@@ -929,6 +943,142 @@ Fix:
             b_fish = client.post('/api/cloud/backup', json={"title": "Fish Hunters Most Lethal Fishing Simulator"})
             self.assertEqual(b_fish.status_code, 200)
             self.assertTrue(b_fish.get_json().get("success"))
+
+    def test_runners_system(self):
+        import json
+        from src.backend.runners_manager import RunnersManager
+        from src.backend.controllers.games_controller import create_games_blueprint
+        from flask import Flask
+
+        # 1. Setup mock game folder with 3 runners
+        mock_game_dir = os.path.join(self.temp_dir, "Zelda_Test")
+        nx_dir = os.path.join(mock_game_dir, "NX2navi")
+        hook_dir = os.path.join(mock_game_dir, "HookShot")
+        os.makedirs(nx_dir, exist_ok=True)
+        os.makedirs(hook_dir, exist_ok=True)
+
+        nx_exe = os.path.join(nx_dir, "ocarina.exe")
+        hook_exe = os.path.join(hook_dir, "hookshot.exe")
+        with open(nx_exe, "w") as f: f.write("mock_nx")
+        with open(hook_exe, "w") as f: f.write("mock_hook")
+
+        runners_def = [
+            {"id": "nx2navi", "name": "Recomp Option 1 (NX2navi)", "repo": "tangerineturtle1/NX2navi", "rel_path": "NX2navi/ocarina.exe", "folder": "NX2navi"},
+            {"id": "hookshot", "name": "Recomp Option 2 (Hookshot)", "repo": "NotRexed/Hookshot", "rel_path": "HookShot/hookshot.exe", "folder": "HookShot"},
+            {"id": "fritchii", "name": "Emulator (Fritchii)", "repo": "Frizti/Fritchii", "rel_path": "Fritchii/lichii.exe", "folder": "Fritchii", "args": ["games/rom.nup"]}
+        ]
+
+        # 2. Test get_runners_status
+        statuses = RunnersManager.get_runners_status(mock_game_dir, runners_def)
+        self.assertEqual(len(statuses), 3)
+        self.assertTrue(statuses[0]["installed"])
+        self.assertEqual(statuses[0]["id"], "nx2navi")
+        self.assertTrue(statuses[1]["installed"])
+        self.assertFalse(statuses[2]["installed"])
+
+        # 3. Test Games Blueprint /runners endpoint
+        app = Flask(__name__)
+        config = Config(data_folder=self.temp_dir)
+        temp_data_file = os.path.join(self.temp_dir, "TestGames.json")
+        db_mgr = DatabaseManager(self.temp_dir, "https://example.com/db", config=config)
+        db_mgr.get_active_db_path = lambda: temp_data_file
+        test_game = {
+            "title": "Zelda Test",
+            "version": "1.1.1",
+            "host": "PixelDrain",
+            "runners": runners_def
+        }
+        db_mgr.add_or_update_game(test_game, installed_data=config.data)
+        config.data["ZELDA TEST"] = {"location": mock_game_dir, "downloaded": True}
+        config.save()
+
+        bp = create_games_blueprint(db_mgr, config)
+        app.register_blueprint(bp)
+        client = app.test_client()
+
+        resp = client.get('/api/games/runners?title=Zelda Test')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(len(data["runners"]), 3)
+
+        # 4. Test Launch with chosen runner
+        with unittest.mock.patch('subprocess.Popen') as mock_popen:
+            mock_proc = unittest.mock.MagicMock()
+            mock_proc.pid = 7777
+            mock_popen.return_value = mock_proc
+
+            launch_res = client.post('/api/games/launch', json={
+                "title": "Zelda Test",
+                "runner_id": "hookshot"
+            })
+            self.assertEqual(launch_res.status_code, 200)
+            launch_data = launch_res.get_json()
+            self.assertTrue(launch_data["success"])
+            self.assertEqual(launch_data["pid"], 7777)
+            # Verify hookshot exe was called
+            self.assertIn("hookshot.exe", mock_popen.call_args[0][0][0])
+            # Verify preferred runner saved
+            self.assertEqual(config.data["ZELDA TEST"].get("preferred_runner"), "hookshot")
+
+        # 5. Test runner update detection with .runner_version.json
+        with open(os.path.join(nx_dir, ".runner_version.json"), "w") as vf:
+            json.dump({"version": "v0.0.1"}, vf)
+        
+        with unittest.mock.patch.object(RunnersManager, 'get_latest_github_release', return_value={"tag_name": "v0.9.1", "assets": []}):
+            statuses_updated = RunnersManager.get_runners_status(mock_game_dir, runners_def)
+            nx_status = next(s for s in statuses_updated if s["id"] == "nx2navi")
+            self.assertTrue(nx_status["update_available"])
+            self.assertEqual(nx_status["installed_version"], "v0.0.1")
+            self.assertEqual(nx_status["latest_version"], "v0.9.1")
+
+    def test_disk_space_checker(self):
+        """Test /api/downloads/disk_space endpoint with same vs split drives and space warnings"""
+        from src.backend.controllers.downloads_controller import create_downloads_blueprint
+        from flask import Flask
+
+        app = Flask(__name__)
+        config = Config(data_folder=self.temp_dir)
+        
+        # Mocks for downloader and extractor
+        mock_downloader = unittest.mock.MagicMock()
+        mock_downloader.download_path = os.path.join(self.temp_dir, "DownloadCache")
+        os.makedirs(mock_downloader.download_path, exist_ok=True)
+        mock_extractor = unittest.mock.MagicMock()
+        mock_socketio = unittest.mock.MagicMock()
+
+        bp = create_downloads_blueprint(mock_downloader, mock_extractor, config, mock_socketio)
+        app.register_blueprint(bp)
+        client = app.test_client()
+
+        # 1. Test check with sufficient space
+        target_install = os.path.join(self.temp_dir, "GameInstall")
+        os.makedirs(target_install, exist_ok=True)
+
+        resp = client.post('/api/downloads/disk_space', json={
+            "install_path": target_install,
+            "download_path": mock_downloader.download_path,
+            "game_size": "2GB"
+        })
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertTrue(data["success"])
+        self.assertIn("download", data)
+        self.assertIn("install", data)
+        self.assertEqual(data["download"]["needed_str"], "2.0 GB")
+
+        # 2. Test insufficient space simulation
+        with unittest.mock.patch('shutil.disk_usage', return_value=unittest.mock.MagicMock(total=100*1024**3, used=99*1024**3, free=1024**3)):  # 1 GB free
+            resp_low = client.post('/api/downloads/disk_space', json={
+                "install_path": target_install,
+                "download_path": mock_downloader.download_path,
+                "game_size": "24GB"
+            })
+            self.assertEqual(resp_low.status_code, 200)
+            low_data = resp_low.get_json()
+            self.assertFalse(low_data["has_sufficient_space"])
+            self.assertIsNotNone(low_data["warning"])
+            self.assertIn("Drive", low_data["warning"])
 
 
 if __name__ == "__main__":

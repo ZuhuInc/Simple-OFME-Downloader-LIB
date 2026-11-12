@@ -7,9 +7,24 @@ and real-time event broadcasting.
 import os
 import re
 import time
+import shutil
 import threading
 import requests
 from typing import Callable, Optional, Dict, Any, List
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitizes filename for Windows filesystems, preventing illegal characters and NTFS alternate data streams."""
+    if not filename:
+        return "download.bin"
+    # Replace colon with ' -' to preserve readable game titles (e.g. 'Zelda: Ocarina of Time' -> 'Zelda - Ocarina of Time')
+    clean = re.sub(r'[:]+', ' -', filename)
+    # Remove illegal Windows characters < > " / \ | ? *
+    clean = re.sub(r'[<>"/\\|?*]', '_', clean)
+    # Collapse multiple spaces and trim invalid trailing dots/spaces
+    clean = re.sub(r'\s+', ' ', clean)
+    clean = clean.strip('. ')
+    return clean or "download.bin"
 
 
 class DownloadJob:
@@ -90,7 +105,7 @@ class Downloader:
                 print(f"[Downloader] Callback error: {e}", flush=True)
 
     def add_job(self, url: str, filename: Optional[str] = None, meta: Optional[Dict[str, Any]] = None) -> str:
-        filename = filename or os.path.basename(url.split("?")[0]) or "download.bin"
+        filename = sanitize_filename(filename or os.path.basename(url.split("?")[0]) or "download.bin")
         dest_file = os.path.join(self.download_path, filename)
         with self._lock:
             job_id = f"job_{self._job_counter}"
@@ -233,6 +248,24 @@ class Downloader:
                     running_count += 1
 
     def _download_worker(self, job: DownloadJob):
+        # 0. Ensure filename and destination path are safe for Windows filesystems
+        clean_fn = sanitize_filename(job.filename)
+        clean_dest = os.path.join(os.path.dirname(job.dest_file) or self.download_path, clean_fn)
+        old_part = job.dest_file + ".part"
+        new_part = clean_dest + ".part"
+
+        if job.dest_file != clean_dest:
+            if os.path.exists(old_part) and old_part != new_part:
+                try:
+                    print(f"[Downloader] [{job.id}] Migrating partial download stream from {old_part} -> {new_part}", flush=True)
+                    shutil.copyfile(old_part, new_part)
+                    try: os.remove(old_part)
+                    except Exception: pass
+                except Exception as mig_err:
+                    print(f"[Downloader] [{job.id}] Stream migration notice: {mig_err}", flush=True)
+            job.filename = clean_fn
+            job.dest_file = clean_dest
+
         title = job.meta.get("title", job.filename)
         print(f"\n[Downloader] [{job.id}] ==========================================", flush=True)
         print(f"[Downloader] [{job.id}] Starting download process for '{title}'", flush=True)
@@ -275,8 +308,8 @@ class Downloader:
                     or not any(job.filename.lower().endswith(ext) for ext in [".rar", ".zip", ".7z", ".iso", ".tar", ".gz", ".exe"])
                     or job.filename == os.path.basename(job.url.split("?")[0])
                 ):
-                    job.filename = resolved_name
-                    job.dest_file = os.path.join(self.download_path, resolved_name)
+                    job.filename = sanitize_filename(resolved_name)
+                    job.dest_file = os.path.join(self.download_path, job.filename)
             except Exception as res_err:
                 print(f"[Downloader] [{job.id}] Link resolution notice: {res_err}", flush=True)
 
@@ -326,21 +359,52 @@ class Downloader:
                         resolved_cookies = {}
                     resolved_cookies["accountToken"] = token
 
-            if os.path.exists(part_path):
-                existing_size = os.path.getsize(part_path)
-                if existing_size > 0:
-                    headers["Range"] = f"bytes={existing_size}-"
-                    job.downloaded_bytes = existing_size
-                    print(f"[Downloader] [{job.id}] Resuming from existing partial file: {existing_size} bytes ({existing_size / (1024*1024):.2f} MB)", flush=True)
+            # Fast check: If destination file already exists and is complete (e.g. previously downloaded), skip re-downloading!
+            if os.path.exists(job.dest_file) and os.path.getsize(job.dest_file) > 1024 * 1024:
+                dest_sz = os.path.getsize(job.dest_file)
+                part_sz = os.path.getsize(part_path) if os.path.exists(part_path) else 0
+                if dest_sz > part_sz:
+                    if os.path.exists(part_path):
+                        try: os.remove(part_path)
+                        except Exception: pass
+                    job.downloaded_bytes = dest_sz
+                    job.total_bytes = dest_sz
+                    job.progress = 100.0
+                    job.speed_bytes = 0
+                    job.status = "completed"
+                    job.eta = "Done"
+                    print(f"[Downloader] [{job.id}] Finalized archive already present ({dest_sz / (1024*1024):.2f} MB), skipping re-download to finalize.", flush=True)
+                    self._notify(job)
 
-            with requests.get(download_url, headers=headers, cookies=resolved_cookies, stream=True, timeout=30) as resp:
-                if resp.status_code in (200, 206):
+            if job.progress < 100.0:
+                if os.path.exists(part_path):
+                    existing_size = os.path.getsize(part_path)
+                    if existing_size > 0:
+                        headers["Range"] = f"bytes={existing_size}-"
+                        job.downloaded_bytes = existing_size
+                        print(f"[Downloader] [{job.id}] Resuming from existing partial file: {existing_size} bytes ({existing_size / (1024*1024):.2f} MB)", flush=True)
+
+                with requests.get(download_url, headers=headers, cookies=resolved_cookies, stream=True, timeout=30) as resp:
+                    if resp.status_code not in (200, 206):
+                        job.status = "error"
+                        if resp.status_code == 403 and (
+                            "cloudflare" in resp.headers.get("server", "").lower()
+                            or resp.headers.get("cf-mitigated") == "challenge"
+                            or "fileditch" in download_url.lower()
+                        ):
+                            job.error_msg = "Host blocked direct download (Cloudflare Challenge 403). Try PixelDrain or GoFile, or click 'Open Link'."
+                        else:
+                            job.error_msg = f"Server returned HTTP {resp.status_code}"
+                        print(f"[Downloader] [{job.id}] ERROR: {job.error_msg}", flush=True)
+                        self._notify(job)
+                        return
+
                     # Check Content-Disposition for server-provided filename if not already an archive
                     cd = resp.headers.get("content-disposition", "")
                     if cd and "filename" in cd:
                         cd_m = re.search(r'filename\*?=(?:UTF-8\'\')?["\']?([^"\';]+)["\']?', cd, re.IGNORECASE)
                         if cd_m:
-                            cd_fn = cd_m.group(1).strip()
+                            cd_fn = sanitize_filename(cd_m.group(1).strip())
                             if cd_fn and not job.filename.lower().endswith((".rar", ".zip", ".7z", ".iso")):
                                 job.filename = cd_fn
                                 job.dest_file = os.path.join(self.download_path, cd_fn)
@@ -412,279 +476,273 @@ class Downloader:
 
                                     self._notify(job)
 
+                try:
                     if os.path.exists(job.dest_file):
                         try: os.remove(job.dest_file)
                         except Exception: pass
                     os.replace(part_path, job.dest_file)
-                    print(f"[Downloader] [{job.id}] Download SUCCESS: {job.dest_file} (100%)", flush=True)
+                except OSError as rename_err:
+                    print(f"[Downloader] [{job.id}] os.replace notice ({rename_err}), falling back to safe file copy...", flush=True)
+                    shutil.copyfile(part_path, job.dest_file)
+                    try: os.remove(part_path)
+                    except Exception: pass
+                print(f"[Downloader] [{job.id}] Download SUCCESS: {job.dest_file} (100%)", flush=True)
 
-                    # Automated Extraction Workflow
-                    auto_extract = job.meta.get("auto_extract")
-                    if auto_extract is None:
-                        auto_extract = self.config.get("auto_extract", True) if self.config else True
-                    is_archive = job.dest_file.lower().endswith((".rar", ".zip", ".7z"))
+            # Automated Extraction Workflow
+            auto_extract = job.meta.get("auto_extract")
+            if auto_extract is None:
+                auto_extract = self.config.get("auto_extract", True) if self.config else True
+            is_archive = job.dest_file.lower().endswith((".rar", ".zip", ".7z"))
 
-                    if not (auto_extract and self.extractor and is_archive):
-                        job.status = "completed"
-                        job.progress = 100.0
-                        job.speed_bytes = 0
-                        job.eta = "Done"
-                        print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
-                        self._notify(job)
-                    else:
-                        is_multipart = self._is_multipart_job(job)
-                        sibling_jobs = [job]
-                        should_proceed_extraction = True
+            if not (auto_extract and self.extractor and is_archive):
+                job.status = "completed"
+                job.progress = 100.0
+                job.speed_bytes = 0
+                job.eta = "Done"
+                print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
+                self._notify(job)
+            else:
+                is_multipart = self._is_multipart_job(job)
+                sibling_jobs = [job]
+                should_proceed_extraction = True
 
-                        if is_multipart:
-                            with self._lock:
-                                sibling_jobs = self._get_sibling_part_jobs_locked(job)
-                                if len(sibling_jobs) > 1:
-                                    # Check if another thread is already extracting this set
-                                    if any(sj.status == "extracting" for sj in sibling_jobs):
+                if is_multipart:
+                    with self._lock:
+                        sibling_jobs = self._get_sibling_part_jobs_locked(job)
+                        if len(sibling_jobs) > 1:
+                            # Check if another thread is already extracting this set
+                            if any(sj.status == "extracting" for sj in sibling_jobs):
+                                should_proceed_extraction = False
+                            else:
+                                failed_siblings = [
+                                    sj for sj in sibling_jobs
+                                    if sj.id != job.id and sj.status in ("error", "cancelled")
+                                ]
+                                if failed_siblings:
+                                    job.status = "completed"
+                                    job.progress = 100.0
+                                    job.speed_bytes = 0
+                                    job.eta = "Downloaded (Sibling part failed)"
+                                    job.error_msg = "Cannot extract: one or more parts failed to download."
+                                    print(f"[Downloader] [{job.id}] Sibling part failed. Extraction aborted for multi-part set.", flush=True)
+                                    self._notify(job)
+                                    should_proceed_extraction = False
+                                else:
+                                    pending_siblings = [
+                                        sj for sj in sibling_jobs
+                                        if sj.id != job.id and (
+                                            (sj.status in ("queued", "resolving", "connecting", "downloading", "paused") and sj.progress < 100.0) or not os.path.exists(sj.dest_file)
+                                        )
+                                    ]
+                                    if pending_siblings:
+                                        job.status = "completed"
+                                        job.progress = 100.0
+                                        job.speed_bytes = 0
+                                        job.eta = f"Downloaded (Waiting for {len(pending_siblings)} part(s))"
+                                        print(f"[Downloader] [{job.id}] Part downloaded. Waiting for {len(pending_siblings)} other part(s) before extraction...", flush=True)
+                                        self._notify(job)
                                         should_proceed_extraction = False
                                     else:
-                                        failed_siblings = [
-                                            sj for sj in sibling_jobs
-                                            if sj.id != job.id and sj.status in ("error", "cancelled")
-                                        ]
-                                        if failed_siblings:
-                                            job.status = "completed"
-                                            job.progress = 100.0
-                                            job.speed_bytes = 0
-                                            job.eta = "Downloaded (Sibling part failed)"
-                                            job.error_msg = "Cannot extract: one or more parts failed to download."
-                                            print(f"[Downloader] [{job.id}] Sibling part failed. Extraction aborted for multi-part set.", flush=True)
-                                            self._notify(job)
-                                            should_proceed_extraction = False
-                                        else:
-                                            pending_siblings = [
-                                                sj for sj in sibling_jobs
-                                                if sj.id != job.id and (
-                                                    sj.status in ("queued", "resolving", "connecting", "downloading", "paused")
-                                                    or not os.path.exists(sj.dest_file)
-                                                )
-                                            ]
-                                            if pending_siblings:
-                                                job.status = "completed"
-                                                job.progress = 100.0
-                                                job.speed_bytes = 0
-                                                job.eta = f"Downloaded (Waiting for {len(pending_siblings)} part(s))"
-                                                print(f"[Downloader] [{job.id}] Part downloaded. Waiting for {len(pending_siblings)} other part(s) before extraction...", flush=True)
-                                                self._notify(job)
-                                                should_proceed_extraction = False
-                                            else:
-                                                # All parts are downloaded! Lock in extraction state for all siblings
-                                                for sj in sibling_jobs:
-                                                    sj.status = "extracting"
-                                                    sj.progress = 100.0
-                                                    sj.speed_bytes = 0
-                                                    sj.eta = "Extracting multi-part archive..."
-                                                    self._notify(sj)
+                                        # All parts are downloaded! Lock in extraction state for all siblings
+                                        for sj in sibling_jobs:
+                                            sj.status = "extracting"
+                                            sj.progress = 100.0
+                                            sj.speed_bytes = 0
+                                            sj.eta = "Extracting multi-part archive..."
+                                            self._notify(sj)
 
-                        if not should_proceed_extraction:
-                            return
+                if not should_proceed_extraction:
+                    return
 
-                        if not is_multipart or len(sibling_jobs) <= 1:
-                            job.status = "extracting"
-                            job.progress = 100.0
-                            job.speed_bytes = 0
-                            job.eta = "Extracting..."
-                            print(f"[Downloader] [{job.id}] Starting automated archive extraction for '{title}'...", flush=True)
-                            self._notify(job)
-                        else:
-                            print(f"[Downloader] [{job.id}] All {len(sibling_jobs)} parts downloaded! Starting extraction for '{title}'...", flush=True)
+                if not is_multipart or len(sibling_jobs) <= 1:
+                    job.status = "extracting"
+                    job.progress = 100.0
+                    job.speed_bytes = 0
+                    job.eta = "Extracting..."
+                    print(f"[Downloader] [{job.id}] Starting automated archive extraction for '{title}'...", flush=True)
+                    self._notify(job)
+                else:
+                    print(f"[Downloader] [{job.id}] All {len(sibling_jobs)} parts downloaded! Starting extraction for '{title}'...", flush=True)
 
-                        # Determine if this is a fix or main game
-                        job_type = job.meta.get("type", "main")
-                        is_fix = (job_type == "fix") or ("fix" in job.filename.lower()) or ("_fix." in job.dest_file.lower())
+                # Determine if this is a fix or main game
+                job_type = job.meta.get("type", "main")
+                is_fix = (job_type == "fix") or ("fix" in job.filename.lower()) or ("_fix." in job.dest_file.lower())
 
-                        custom_extract_dir = job.meta.get("extract_dir") or job.meta.get("custom_location")
+                custom_extract_dir = job.meta.get("extract_dir") or job.meta.get("custom_location")
 
-                        # Check existing game install location from Data.json
-                        existing_location = None
-                        if self.config and hasattr(self.config, "data") and title:
-                            norm_title = re.sub(r'[^a-zA-Z0-9]', '', title).lower()
-                            for k, v in self.config.data.items():
-                                k_norm = re.sub(r'[^a-zA-Z0-9]', '', k).lower()
-                                if k.upper() == title.upper() or k_norm == norm_title:
-                                    existing_location = v.get("location")
-                                    break
+                # Check existing game install location from Data.json
+                existing_location = None
+                if self.config and hasattr(self.config, "data") and title:
+                    norm_title = re.sub(r'[^a-zA-Z0-9]', '', title).lower()
+                    for k, v in self.config.data.items():
+                        k_norm = re.sub(r'[^a-zA-Z0-9]', '', k).lower()
+                        if k.upper() == title.upper() or k_norm == norm_title:
+                            existing_location = v.get("location")
+                            break
 
-                        if not existing_location:
-                            existing_location = job.meta.get("location")
+                if not existing_location:
+                    existing_location = job.meta.get("location")
 
-                        default_base = (
-                            self.config.get("default_download_path") or
-                            self.config.get("extract_path") or
-                            os.path.join(os.path.expanduser("~"), "Games")
-                        ) if self.config else os.path.join(os.path.expanduser("~"), "Games")
+                default_base = (
+                    self.config.get("default_download_path") or
+                    self.config.get("extract_path") or
+                    os.path.join(os.path.expanduser("~"), "Games")
+                ) if self.config else os.path.join(os.path.expanduser("~"), "Games")
 
-                        if custom_extract_dir:
-                            extract_dir = custom_extract_dir
-                        elif is_fix:
-                            # Patch must unpack directly inside the existing game directory
-                            if existing_location and os.path.isdir(existing_location):
-                                extract_dir = existing_location
-                            else:
-                                extract_dir = os.path.join(default_base, title)
-                        else:
-                            # Main game / update:
-                            if existing_location and os.path.isdir(existing_location):
-                                parent_dir = os.path.dirname(os.path.normpath(existing_location))
-                                extract_dir = parent_dir if (parent_dir and (os.path.exists(parent_dir) or len(parent_dir) <= 3)) else existing_location
-                            else:
-                                extract_dir = default_base
+                if custom_extract_dir:
+                    extract_dir = custom_extract_dir
+                elif is_fix:
+                    # Patch must unpack directly inside the existing game directory
+                    if existing_location and os.path.isdir(existing_location):
+                        extract_dir = existing_location
+                    else:
+                        extract_dir = os.path.join(default_base, title)
+                else:
+                    # Main game / update:
+                    if existing_location and os.path.isdir(existing_location):
+                        parent_dir = os.path.dirname(os.path.normpath(existing_location))
+                        extract_dir = parent_dir if (parent_dir and (os.path.exists(parent_dir) or len(parent_dir) <= 3)) else existing_location
+                    else:
+                        extract_dir = default_base
 
-                        # Multi-archive encapsulation for games requiring a unified folder (e.g. Forza Horizon 2 with Azimuth)
-                        if title and ("forza horizon 2" in title.lower() or "azimuth" in title.lower()):
-                            norm_ed = os.path.normpath(extract_dir).lower()
-                            if not (norm_ed.endswith("forza horizon 2") or norm_ed.endswith("forzahorizon2")):
-                                extract_dir = os.path.join(extract_dir, title)
+                # Multi-archive encapsulation for games requiring a unified folder (e.g. Forza Horizon 2 with Azimuth)
+                if title and ("forza horizon 2" in title.lower() or "azimuth" in title.lower()):
+                    norm_ed = os.path.normpath(extract_dir).lower()
+                    if not (norm_ed.endswith("forza horizon 2") or norm_ed.endswith("forzahorizon2")):
+                        extract_dir = os.path.join(extract_dir, title)
 
-                        origin_url_lower = str(job.meta.get("origin_url") or "").lower()
-                        archive_pwd = job.meta.get("archive_password")
-                        if not archive_pwd:
-                            if "cracked-games.org" in origin_url_lower:
-                                archive_pwd = "cracked-games.org"
-                            elif "steamrip.com" in origin_url_lower:
-                                archive_pwd = ""
-                            elif (
-                                "archive.org" in origin_url_lower
-                                or "archive.org" in str(job.url).lower()
-                                or "dropbox" in origin_url_lower
-                                or "dropbox" in str(job.url).lower()
-                                or (title and "forza horizon 2" in title.lower())
-                            ):
-                                archive_pwd = ""
-                            else:
-                                archive_pwd = self.config.get("rar_password", "online-fix.me") if self.config else "online-fix.me"
+                origin_url_lower = str(job.meta.get("origin_url") or "").lower()
+                archive_pwd = job.meta.get("archive_password")
+                if not archive_pwd:
+                    if "cracked-games.org" in origin_url_lower:
+                        archive_pwd = "cracked-games.org"
+                    elif "steamrip.com" in origin_url_lower:
+                        archive_pwd = ""
+                    elif (
+                        "archive.org" in origin_url_lower
+                        or "archive.org" in str(job.url).lower()
+                        or "dropbox" in origin_url_lower
+                        or "dropbox" in str(job.url).lower()
+                        or (title and "forza horizon 2" in title.lower())
+                    ):
+                        archive_pwd = ""
+                    else:
+                        archive_pwd = self.config.get("rar_password", "online-fix.me") if self.config else "online-fix.me"
 
-                        delete_after = job.meta.get("auto_delete_archive")
-                        if delete_after is None:
-                            delete_after = self.config.get("auto_delete_archive", True) if self.config else True
+                delete_after = job.meta.get("auto_delete_archive")
+                if delete_after is None:
+                    delete_after = self.config.get("auto_delete_archive", True) if self.config else True
 
-                        print(f"[Downloader] [{job.id}] Destination folder: {extract_dir} (is_fix={is_fix}, delete_after={delete_after})", flush=True)
+                print(f"[Downloader] [{job.id}] Destination folder: {extract_dir} (is_fix={is_fix}, delete_after={delete_after})", flush=True)
 
-                        def on_extract_progress(info):
-                            pass
+                def on_extract_progress(info):
+                    pass
 
-                        is_fh2 = bool(job.meta.get("is_fh2") or (title and ("forza horizon 2" in title.lower() or "azimuth" in title.lower())))
+                is_fh2 = bool(job.meta.get("is_fh2") or (title and ("forza horizon 2" in title.lower() or "azimuth" in title.lower())))
 
-                        all_success = False
-                        last_res = {}
+                all_success = False
+                last_res = {}
 
-                        if is_multipart and len(sibling_jobs) > 1:
-                            if is_fh2:
-                                # Extract each sibling archive sequentially
-                                all_success = True
-                                for sj in sibling_jobs:
-                                    sj.status = "extracting"
-                                    sj.eta = f"Extracting {sj.filename}..."
-                                    self._notify(sj)
-                                    res = self.extractor.extract_archive(
-                                        archive_path=sj.dest_file,
-                                        extract_dir=extract_dir,
-                                        password=archive_pwd,
-                                        delete_after=delete_after,
-                                        game_title=title,
-                                        is_fix=False,
-                                        progress_cb=on_extract_progress
-                                    )
-                                    last_res = res
-                                    if not res.get("success"):
-                                        all_success = False
-                                        break
-                            else:
-                                # Standard multi-part game: extract ONLY Part 1
-                                part1_job = sibling_jobs[0]
-                                print(f"[Downloader] [{job.id}] Extracting primary volume: {part1_job.dest_file} (handles all parts)", flush=True)
-                                res = self.extractor.extract_archive(
-                                    archive_path=part1_job.dest_file,
-                                    extract_dir=extract_dir,
-                                    password=archive_pwd,
-                                    delete_after=delete_after,
-                                    game_title=title,
-                                    is_fix=is_fix,
-                                    progress_cb=on_extract_progress
-                                )
-                                last_res = res
-                                all_success = bool(res.get("success"))
-
-                                # Multi-part cleanup: delete all remaining part archives if delete_after is enabled
-                                if all_success and delete_after:
-                                    for sj in sibling_jobs:
-                                        if os.path.exists(sj.dest_file):
-                                            try:
-                                                os.remove(sj.dest_file)
-                                                print(f"[Downloader] Cleaned up multi-part archive: {sj.dest_file}", flush=True)
-                                            except Exception as del_err:
-                                                print(f"[Downloader] Notice: Could not remove archive {sj.dest_file}: {del_err}", flush=True)
-                        else:
-                            # Single archive extraction
+                if is_multipart and len(sibling_jobs) > 1:
+                    if is_fh2:
+                        # Extract each sibling archive sequentially
+                        all_success = True
+                        for sj in sibling_jobs:
+                            sj.status = "extracting"
+                            sj.eta = f"Extracting {sj.filename}..."
+                            self._notify(sj)
                             res = self.extractor.extract_archive(
-                                archive_path=job.dest_file,
+                                archive_path=sj.dest_file,
                                 extract_dir=extract_dir,
                                 password=archive_pwd,
                                 delete_after=delete_after,
                                 game_title=title,
-                                is_fix=is_fix,
+                                is_fix=False,
                                 progress_cb=on_extract_progress
                             )
                             last_res = res
-                            all_success = bool(res.get("success"))
-
-                        if all_success:
-                            target_game_dir = last_res.get("game_dir") or last_res.get("extract_dir")
-                            exe_path = last_res.get("exe_path")
-                            for sj in sibling_jobs:
-                                sj.status = "completed"
-                                sj.progress = 100.0
-                                sj.speed_bytes = 0
-                                sj.eta = "Installed / Ready"
-                                sj.meta["extracted_dir"] = target_game_dir
-                                sj.meta["exe_path"] = exe_path
-                                self._notify(sj)
-
-                            # Automatically record in installed games catalog
-                            if self.config and hasattr(self.config, "data") and title:
-                                key = title.upper()
-                                existing_record = self.config.data.get(key, {})
-                                existing_record["downloaded"] = True
-                                existing_record["location"] = target_game_dir
-                                if job.meta.get("version"):
-                                    existing_record["version"] = job.meta.get("version")
-                                if exe_path:
-                                    existing_record["exe_path"] = exe_path
-                                self.config.data[key] = existing_record
-                                self.config.save()
-                                print(f"[Downloader] [{job.id}] Game '{title}' marked as installed at: {target_game_dir}", flush=True)
-
-                            print(f"[Downloader] [{job.id}] Extraction SUCCESS: {target_game_dir}", flush=True)
-                            print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
-                        else:
-                            for sj in sibling_jobs:
-                                sj.status = "completed"
-                                sj.progress = 100.0
-                                sj.speed_bytes = 0
-                                sj.eta = "Done (Extraction Failed)"
-                                sj.error_msg = f"Extraction notice: {last_res.get('error')}"
-                                self._notify(sj)
-                            print(f"[Downloader] [{job.id}] Extraction error: {last_res.get('error')}", flush=True)
-                            print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
-
-                else:
-                    job.status = "error"
-                    if resp.status_code == 403 and (
-                        "cloudflare" in resp.headers.get("server", "").lower()
-                        or resp.headers.get("cf-mitigated") == "challenge"
-                        or "fileditch" in download_url.lower()
-                    ):
-                        job.error_msg = "Host blocked direct download (Cloudflare Challenge 403). Try PixelDrain or GoFile, or click 'Open Link'."
+                            if not res.get("success"):
+                                all_success = False
+                                break
                     else:
-                        job.error_msg = f"Server returned HTTP {resp.status_code}"
-                    print(f"[Downloader] [{job.id}] ERROR: {job.error_msg}", flush=True)
-                    self._notify(job)
+                        # Standard multi-part game: extract ONLY Part 1
+                        part1_job = sibling_jobs[0]
+                        print(f"[Downloader] [{job.id}] Extracting primary volume: {part1_job.dest_file} (handles all parts)", flush=True)
+                        res = self.extractor.extract_archive(
+                            archive_path=part1_job.dest_file,
+                            extract_dir=extract_dir,
+                            password=archive_pwd,
+                            delete_after=delete_after,
+                            game_title=title,
+                            is_fix=is_fix,
+                            progress_cb=on_extract_progress
+                        )
+                        last_res = res
+                        all_success = bool(res.get("success"))
+
+                        # Multi-part cleanup: delete all remaining part archives if delete_after is enabled
+                        if all_success and delete_after:
+                            for sj in sibling_jobs:
+                                if os.path.exists(sj.dest_file):
+                                    try:
+                                        os.remove(sj.dest_file)
+                                        print(f"[Downloader] Cleaned up multi-part archive: {sj.dest_file}", flush=True)
+                                    except Exception as del_err:
+                                        print(f"[Downloader] Notice: Could not remove archive {sj.dest_file}: {del_err}", flush=True)
+                else:
+                    # Single archive extraction
+                    res = self.extractor.extract_archive(
+                        archive_path=job.dest_file,
+                        extract_dir=extract_dir,
+                        password=archive_pwd,
+                        delete_after=delete_after,
+                        game_title=title,
+                        is_fix=is_fix,
+                        progress_cb=on_extract_progress
+                    )
+                    last_res = res
+                    all_success = bool(res.get("success"))
+
+                if all_success:
+                    target_game_dir = last_res.get("game_dir") or last_res.get("extract_dir")
+                    exe_path = last_res.get("exe_path")
+                    for sj in sibling_jobs:
+                        sj.status = "completed"
+                        sj.progress = 100.0
+                        sj.speed_bytes = 0
+                        sj.eta = "Installed / Ready"
+                        sj.meta["extracted_dir"] = target_game_dir
+                        sj.meta["exe_path"] = exe_path
+                        self._notify(sj)
+
+                    # Automatically record in installed games catalog
+                    if self.config and hasattr(self.config, "data") and title:
+                        key = title.upper()
+                        existing_record = self.config.data.get(key, {})
+                        existing_record["downloaded"] = True
+                        existing_record["location"] = target_game_dir
+                        if job.meta.get("version"):
+                            existing_record["version"] = job.meta.get("version")
+                        if exe_path:
+                            existing_record["exe_path"] = exe_path
+                        self.config.data[key] = existing_record
+                        self.config.save()
+                        print(f"[Downloader] [{job.id}] Game '{title}' marked as installed at: {target_game_dir}", flush=True)
+
+                    print(f"[Downloader] [{job.id}] Extraction SUCCESS: {target_game_dir}", flush=True)
+                    print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
+                else:
+                    for sj in sibling_jobs:
+                        sj.status = "completed"
+                        sj.progress = 100.0
+                        sj.speed_bytes = 0
+                        sj.eta = "Done (Extraction Failed)"
+                        sj.error_msg = f"Extraction notice: {last_res.get('error')}"
+                        self._notify(sj)
+                    print(f"[Downloader] [{job.id}] Extraction error: {last_res.get('error')}", flush=True)
+                    print(f"[Downloader] [{job.id}] ==========================================\n", flush=True)
+
+
 
         except Exception as e:
             job.status = "error"

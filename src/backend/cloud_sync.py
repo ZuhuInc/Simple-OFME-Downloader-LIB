@@ -635,16 +635,28 @@ class CloudSyncManager:
                                 item_data = {
                                     "exists": True,
                                     "provider": "local_folder",
+                                    "safe_name": game_folder,
+                                    "title": game_folder,
                                     "size_bytes": st.st_size,
                                     "mtime": mtime,
                                     "mtime_str": datetime.fromtimestamp(mtime).strftime("%b %d, %Y • %I:%M %p"),
                                     "path": zip_path
                                 }
+                                if os.path.exists(meta_path):
+                                    try:
+                                        with open(meta_path, "r", encoding="utf-8") as mf:
+                                            m_data = json.load(mf)
+                                            if m_data.get("title"):
+                                                item_data["title"] = m_data.get("title")
+                                    except Exception:
+                                        pass
                                 index[game_folder] = item_data
                                 index[game_folder.lower()] = item_data
                                 norm_key = re.sub(r'[^a-zA-Z0-9]', '', game_folder).lower()
                                 if norm_key:
-                                    index[norm_key] = item_data
+                                    alias_item = dict(item_data)
+                                    alias_item["is_alias"] = True
+                                    index[norm_key] = alias_item
                 except Exception as e:
                     print(f"[CloudSync] Error scanning local cloud directory: {e}", flush=True)
 
@@ -674,6 +686,7 @@ class CloudSyncManager:
                             item_data = {
                                 "exists": True,
                                 "safe_name": safe_name,
+                                "title": s.get("title") or safe_name,
                                 "provider": "self_hosted",
                                 "size_bytes": size,
                                 "mtime": mtime,
@@ -683,7 +696,9 @@ class CloudSyncManager:
                             index[safe_name.lower()] = item_data
                             norm_key = re.sub(r'[^a-zA-Z0-9]', '', safe_name).lower()
                             if norm_key:
-                                index[norm_key] = item_data
+                                alias_item = dict(item_data)
+                                alias_item["is_alias"] = True
+                                index[norm_key] = alias_item
                 except Exception as e:
                     print(f"[CloudSync] Error indexing self-hosted cloud saves: {e}", flush=True)
 
@@ -722,9 +737,18 @@ class CloudSyncManager:
                                             mtime = dt.timestamp()
                                         except Exception:
                                             mtime = time.time()
+                                    real_title = safe_name
+                                    if desc and "Fanta OFME Save Backup for " in desc:
+                                        try:
+                                            real_title = desc.split("Fanta OFME Save Backup for ")[1].split(";")[0].strip()
+                                        except Exception:
+                                            pass
+
                                     item_data = {
                                         "exists": True,
                                         "file_id": f["id"],
+                                        "safe_name": safe_name,
+                                        "title": real_title,
                                         "provider": "gdrive_api",
                                         "size_bytes": size,
                                         "mtime": mtime,
@@ -734,7 +758,9 @@ class CloudSyncManager:
                                     index[safe_name.lower()] = item_data
                                     norm_key = re.sub(r'[^a-zA-Z0-9]', '', safe_name).lower()
                                     if norm_key:
-                                        index[norm_key] = item_data
+                                        alias_item = dict(item_data)
+                                        alias_item["is_alias"] = True
+                                        index[norm_key] = alias_item
                     except Exception as e:
                         print(f"[CloudSync] Error indexing Google Drive files: {e}", flush=True)
 

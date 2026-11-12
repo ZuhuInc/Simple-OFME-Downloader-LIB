@@ -39,7 +39,8 @@ class GameEntry:
         parts: Optional[List[str]] = None,
         steam_url: Optional[str] = None,
         source: Optional[str] = None,
-        mirrors: Optional[Dict[str, Any]] = None
+        mirrors: Optional[Dict[str, Any]] = None,
+        runners: Optional[List[Dict[str, Any]]] = None
     ):
         self.id = raw_id
         self.index = index
@@ -61,6 +62,7 @@ class GameEntry:
         self.steam_url = steam_url
         self.source = self._determine_source(origin_url, host, source)
         self.mirrors = mirrors or {}
+        self.runners = runners or []
 
     @staticmethod
     def _determine_source(origin_url: str, host: str = "", raw_source: Optional[str] = None) -> str:
@@ -160,7 +162,8 @@ class GameEntry:
             "location": self.location,
             "steam_url": self.steam_url,
             "source": self.source,
-            "mirrors": self.mirrors or {}
+            "mirrors": self.mirrors or {},
+            "runners": self.runners or []
         }
 
 
@@ -410,6 +413,11 @@ class DatabaseManager:
         if clean_mirrors:
             entry_payload["mirrors"] = clean_mirrors
 
+        if "runners" in game_dict:
+            entry_payload["runners"] = game_dict["runners"]
+        elif existing_entry.get("runners"):
+            entry_payload["runners"] = existing_entry.get("runners")
+
         # Update or add game under target_key
         current_data[target_key] = entry_payload
 
@@ -487,7 +495,8 @@ class DatabaseManager:
                             location=loc,
                             parts=parts_list if parts_list else None,
                             steam_url=game_state.get("steam_url"),
-                            mirrors=info.get("mirrors") or {}
+                            mirrors=info.get("mirrors") or {},
+                            runners=info.get("runners") or []
                         )
                         entries.append(entry)
                     return entries
@@ -526,7 +535,8 @@ class DatabaseManager:
                             location=loc,
                             parts=parts_list if parts_list else None,
                             steam_url=game_state.get("steam_url"),
-                            mirrors=item.get("mirrors") or {}
+                            mirrors=item.get("mirrors") or {},
+                            runners=item.get("runners") or []
                         )
                         entries.append(entry)
                     return entries

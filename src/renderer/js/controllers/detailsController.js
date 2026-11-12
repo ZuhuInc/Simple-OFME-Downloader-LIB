@@ -20,6 +20,8 @@ class DetailsController {
         this.statusEl = document.getElementById('detailsStatus');
         this.locationEl = document.getElementById('detailsLocation');
         this.originLinkEl = document.getElementById('detailsOriginLink');
+        this.originLabelEl = document.getElementById('detailsOriginLabel');
+        this.originLinkTextEl = document.getElementById('detailsOriginLinkText');
         this.downloadGroup = document.getElementById('detailsDownloadGroup');
         this.downloadMainBtn = document.getElementById('detailsDownloadMainBtn');
         this.downloadBtnText = document.getElementById('detailsDownloadBtnText');
@@ -33,6 +35,13 @@ class DetailsController {
         this.playIcon = document.getElementById('detailsPlayIcon');
         this.playBtnText = document.getElementById('detailsPlayBtnText');
         this.removeGameBtn = document.getElementById('detailsRemoveGameBtn');
+
+        // Multi-Runner Elements
+        this.runnersContainer = document.getElementById('detailsRunnersContainer');
+        this.runnersList = document.getElementById('detailsRunnersList');
+        this.runnerStatusHint = document.getElementById('detailsRunnerStatusHint');
+        this.selectedRunnerId = null;
+        this.currentRunners = [];
 
         // Bypass Elements
         this.bypassBtn = document.getElementById('detailsBypassBtn');
@@ -63,6 +72,24 @@ class DetailsController {
         this.confirmSetupDownloadBtn = document.getElementById('confirmSetupDownloadBtn');
         this.cancelSetupDownloadBtn = document.getElementById('cancelSetupDownloadBtn');
         this.closeDownloadSetupBtn = document.getElementById('closeDownloadSetupBtn');
+
+        // Disk Space Elements
+        this.diskSpaceWidget = document.getElementById('setupDiskSpaceWidget');
+        this.diskStatusBadge = document.getElementById('setupDiskStatusBadge');
+        this.dlDriveLetter = document.getElementById('setupDlDriveLetter');
+        this.dlDriveFree = document.getElementById('setupDlDriveFree');
+        this.dlDriveNeeded = document.getElementById('setupDlDriveNeeded');
+        this.dlDriveStatus = document.getElementById('setupDlDriveStatus');
+        this.dlDriveCard = document.getElementById('setupDlDriveCard');
+        this.instDriveLetter = document.getElementById('setupInstDriveLetter');
+        this.instDriveFree = document.getElementById('setupInstDriveFree');
+        this.instDriveNeeded = document.getElementById('setupInstDriveNeeded');
+        this.instDriveStatus = document.getElementById('setupInstDriveStatus');
+        this.instDriveCard = document.getElementById('setupInstDriveCard');
+        this.diskWarningBanner = document.getElementById('setupDiskWarningBanner');
+        this.diskWarningText = document.getElementById('setupDiskWarningText');
+        this.lastDiskCheck = null;
+        this.diskCheckTimer = null;
     }
 
     init() {
@@ -87,11 +114,12 @@ class DetailsController {
         if (this.originLinkEl) {
             this.originLinkEl.addEventListener('click', (e) => {
                 e.preventDefault();
-                if (this.currentGame && this.currentGame.origin_url) {
+                const targetUrl = this.originLinkEl.getAttribute('href') || (this.currentGame && this.currentGame.origin_url);
+                if (targetUrl && targetUrl !== '#' && !targetUrl.startsWith('javascript:')) {
                     if (window.api && window.api.openExternal) {
-                        window.api.openExternal(this.currentGame.origin_url);
+                        window.api.openExternal(targetUrl);
                     } else {
-                        window.open(this.currentGame.origin_url, '_blank');
+                        window.open(targetUrl, '_blank');
                     }
                 }
             });
@@ -160,11 +188,23 @@ class DetailsController {
                     const chosen = await window.api?.selectDirectory();
                     if (chosen && this.setupInstallPathInput) {
                         this.setupInstallPathInput.value = chosen;
+                        this.checkDiskSpace();
                     }
                 } catch (err) {
                     console.error('[DetailsController] Directory selection failed:', err);
                 }
             });
+        }
+
+        if (this.setupInstallPathInput) {
+            this.setupInstallPathInput.addEventListener('input', () => {
+                clearTimeout(this.diskCheckTimer);
+                this.diskCheckTimer = setTimeout(() => this.checkDiskSpace(), 350);
+            });
+        }
+
+        if (this.setupDeleteArchiveCheck) {
+            this.setupDeleteArchiveCheck.addEventListener('change', () => this.checkDiskSpace());
         }
 
         if (this.confirmSetupDownloadBtn) {
@@ -230,16 +270,9 @@ class DetailsController {
                 this.locationEl.style.color = 'var(--text-secondary)';
             }
         }
-
-        if (this.originLinkEl) {
-            if (game.origin_url) {
-                this.originLinkEl.href = game.origin_url;
-                this.originLinkEl.style.display = 'inline-flex';
-            } else {
-                this.originLinkEl.style.display = 'none';
-            }
-        }
-
+ 
+        this.updateOriginUI(null, game);
+ 
         // Setup Play Game / Play on Steam button
         const isInstalled = Boolean(game.status === 1 || game.status === 2 || game.is_downloaded || game.location);
         if (this.playBtn) {
@@ -316,6 +349,9 @@ class DetailsController {
                 this.updateBypassUI(this.bypassList.has(titleKey));
             }
         });
+
+        // Multi-runner management
+        this.renderRunners(game);
 
         this.modal.classList.add('active');
     }
@@ -516,6 +552,7 @@ class DetailsController {
         }
 
         this.setupModal.classList.add('active');
+        this.checkDiskSpace();
     }
 
     closeDownloadSetup() {
@@ -524,6 +561,13 @@ class DetailsController {
 
     async executeDownload() {
         if (!this.currentGame) return;
+
+        if (this.lastDiskCheck && !this.lastDiskCheck.has_sufficient_space) {
+            const proceed = window.confirm(
+                `Warning: Low Disk Space!\n\n${this.lastDiskCheck.warning || 'Target drive(s) appear to lack sufficient free space.'}\n\nDo you still wish to proceed with the download?`
+            );
+            if (!proceed) return;
+        }
 
         const type = this.pendingDownloadType || 'main';
         const defaultBase = window.settingsController?.settings?.extract_path || window.settingsController?.settings?.default_download_path || '';
@@ -563,7 +607,8 @@ class DetailsController {
                         else if (i === 2) partLabel = 'Azimuth_Launcher';
                     }
 
-                    const filename = `${this.currentGame.title}_${partLabel}${ext}`;
+                    const safeTitle = (this.currentGame.title || 'Game').replace(/[:]+/g, ' -').replace(/[/\\?%*|"<>]/g, '_').replace(/\s+/g, ' ').trim();
+                    const filename = `${safeTitle}_${partLabel}${ext}`;
                     await window.apiClient.addDownload(partUrl, filename, {
                         game_id: this.currentGame.id,
                         title: this.currentGame.title,
@@ -602,7 +647,8 @@ class DetailsController {
             else if (cleanTargetUrl.endsWith('.7z')) singleExt = '.7z';
             else if (cleanTargetUrl.endsWith('.iso')) singleExt = '.iso';
 
-            const filename = `${this.currentGame.title}_${type === 'fix' ? 'Fix' : 'Game'}${singleExt}`;
+            const safeSingleTitle = (this.currentGame.title || 'Game').replace(/[:]+/g, ' -').replace(/[/\\?%*|"<>]/g, '_').replace(/\s+/g, ' ').trim();
+            const filename = `${safeSingleTitle}_${type === 'fix' ? 'Fix' : 'Game'}${singleExt}`;
             const res = await window.apiClient.addDownload(targetUrl, filename, {
                 game_id: this.currentGame.id,
                 title: this.currentGame.title,
@@ -623,6 +669,91 @@ class DetailsController {
             }
         } catch (err) {
             window.uiController.showToast(`Download failed: ${err.message}`, 'danger');
+        }
+    }
+
+    async checkDiskSpace() {
+        if (!this.currentGame || !this.diskSpaceWidget) return;
+
+        const installPath = this.setupInstallPathInput ? this.setupInstallPathInput.value.trim() : '';
+        const gameSize = this.currentGame.approx_size || this.currentGame.size || '10GB';
+        const autoDelete = this.setupDeleteArchiveCheck ? Boolean(this.setupDeleteArchiveCheck.checked) : true;
+
+        if (this.diskStatusBadge) {
+            this.diskStatusBadge.className = 'status-pill';
+            this.diskStatusBadge.style.cssText = 'font-size: 9px; padding: 2px 8px; background: rgba(255,255,255,0.08); color: var(--text-muted);';
+            this.diskStatusBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
+        }
+
+        try {
+            const res = await window.apiClient.checkDiskSpace({
+                install_path: installPath,
+                game_size: gameSize,
+                auto_delete: autoDelete
+            });
+
+            if (res && res.success) {
+                this.lastDiskCheck = res;
+                const dl = res.download;
+                const inst = res.install;
+
+                // Update Download Drive UI
+                if (this.dlDriveLetter) this.dlDriveLetter.textContent = dl.drive;
+                if (this.dlDriveFree) this.dlDriveFree.textContent = dl.free_str;
+                if (this.dlDriveNeeded) this.dlDriveNeeded.textContent = dl.needed_str;
+                if (this.dlDriveStatus) {
+                    this.dlDriveStatus.innerHTML = dl.ok
+                        ? `<i class="fa-solid fa-circle-check" style="color: #3ecf8e;"></i>`
+                        : `<i class="fa-solid fa-circle-xmark" style="color: #f85149;"></i>`;
+                }
+
+                // Update Install Drive UI
+                if (this.instDriveLetter) this.instDriveLetter.textContent = inst.drive;
+                if (this.instDriveFree) this.instDriveFree.textContent = inst.free_str;
+                if (this.instDriveNeeded) this.instDriveNeeded.textContent = inst.needed_str;
+                if (this.instDriveStatus) {
+                    this.instDriveStatus.innerHTML = inst.ok
+                        ? `<i class="fa-solid fa-circle-check" style="color: #3ecf8e;"></i>`
+                        : `<i class="fa-solid fa-circle-xmark" style="color: #f85149;"></i>`;
+                }
+
+                // If on same drive, style cards to indicate shared drive
+                const sameDrive = res.same_drive;
+                if (sameDrive) {
+                    if (this.dlDriveCard) this.dlDriveCard.style.borderColor = 'rgba(212, 168, 83, 0.3)';
+                    if (this.instDriveCard) this.instDriveCard.style.borderColor = 'rgba(212, 168, 83, 0.3)';
+                } else {
+                    if (this.dlDriveCard) this.dlDriveCard.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                    if (this.instDriveCard) this.instDriveCard.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                }
+
+                // Badge & Warnings
+                if (res.has_sufficient_space) {
+                    if (this.diskStatusBadge) {
+                        this.diskStatusBadge.className = 'status-pill status-installed';
+                        this.diskStatusBadge.style.cssText = 'font-size: 9px; padding: 2px 8px;';
+                        this.diskStatusBadge.innerHTML = `<i class="fa-solid fa-check"></i> ${sameDrive ? 'Same Drive OK' : 'Storage OK'}`;
+                    }
+                    if (this.diskWarningBanner) this.diskWarningBanner.style.display = 'none';
+                } else {
+                    if (this.diskStatusBadge) {
+                        this.diskStatusBadge.className = 'status-pill';
+                        this.diskStatusBadge.style.cssText = 'font-size: 9px; padding: 2px 8px; background: rgba(248, 81, 73, 0.2); color: #ff7b72; border: 1px solid rgba(248, 81, 73, 0.4);';
+                        this.diskStatusBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Low Space`;
+                    }
+                    if (this.diskWarningBanner) {
+                        this.diskWarningBanner.style.display = 'flex';
+                        if (this.diskWarningText) {
+                            this.diskWarningText.textContent = res.warning || 'Insufficient storage space on selected drive(s).';
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('[DetailsController] Disk space check error:', err);
+            if (this.diskStatusBadge) {
+                this.diskStatusBadge.textContent = 'Storage Ready';
+            }
         }
     }
 
@@ -837,7 +968,279 @@ class DetailsController {
             // Already added to Steam; button functions as "Launch Direct"
             this.launchGame(this.currentGame, true);
         } else {
-            window.steamController.openAddShortcutDialog(this.currentGame);
+            const activeRunner = this.currentRunners?.find(r => r.id === this.selectedRunnerId);
+            const gameObj = { ...this.currentGame };
+            if (activeRunner && activeRunner.target_exe) {
+                gameObj.exe_path = activeRunner.target_exe;
+            }
+            window.steamController.openAddShortcutDialog(gameObj);
+        }
+    }
+
+    getOriginDetails(game = this.currentGame, selectedRunner = null) {
+        if (!game) return { label: 'Source Post', url: '', text: 'View Page' };
+
+        // If game has runners and a runner is active/selected
+        if (game.runners && game.runners.length > 0) {
+            const runner = selectedRunner || (this.currentRunners ? this.currentRunners.find(r => r.id === this.selectedRunnerId) : null) || game.runners[0];
+            const repo = runner?.repo;
+            const shortName = runner?.name ? (runner.name.match(/\(([^)]+)\)/)?.[1] || runner.name) : 'Releases';
+            const url = repo ? `https://github.com/${repo}/releases` : (game.origin_url || '');
+            return {
+                label: `GitHub Release (${shortName})`,
+                url: url,
+                text: `View ${shortName}`
+            };
+        }
+
+        const url = (game.origin_url || '').toLowerCase();
+        let label = 'Source Post';
+        let text = 'View Page';
+
+        if (url.includes('online-fix.me')) {
+            label = 'Online-Fix Post';
+            text = 'View Page';
+        } else if (url.includes('steamrip.com')) {
+            label = 'SteamRIP Post';
+            text = 'View Page';
+        } else if (url.includes('cracked-games.org')) {
+            label = 'Cracked-Games Post';
+            text = 'View Page';
+        } else if (url.includes('github.com')) {
+            label = 'GitHub Project';
+            text = 'View Repository';
+        } else if (url.includes('freedlc.net')) {
+            label = 'FreeDLC Post';
+            text = 'View Page';
+        } else if (url.includes('cs.rin.ru')) {
+            label = 'CS.RIN.RU Thread';
+            text = 'View Thread';
+        } else if (game.host && String(game.host).toLowerCase() !== 'unknown') {
+            label = `${game.host} Post`;
+            text = 'View Page';
+        }
+
+        return { label, url: game.origin_url || '', text };
+    }
+
+    updateOriginUI(selectedRunner = null, game = this.currentGame) {
+        if (!this.originLinkEl) return;
+        const info = this.getOriginDetails(game, selectedRunner);
+        if (this.originLabelEl) {
+            this.originLabelEl.textContent = info.label;
+        }
+        if (info.url) {
+            this.originLinkEl.href = info.url;
+            this.originLinkEl.style.display = 'inline-flex';
+            if (this.originLinkTextEl) {
+                this.originLinkTextEl.textContent = info.text;
+            }
+        } else {
+            this.originLinkEl.style.display = 'none';
+        }
+    }
+
+    async renderRunners(game) {
+        if (!this.runnersContainer || !this.runnersList) return;
+
+        const runnersDef = game?.runners || [];
+        if (!runnersDef || runnersDef.length === 0) {
+            this.runnersContainer.style.display = 'none';
+            this.selectedRunnerId = null;
+            this.currentRunners = [];
+            return;
+        }
+
+        this.runnersContainer.style.display = 'block';
+        if (this.runnerStatusHint) {
+            this.runnerStatusHint.textContent = 'Checking options...';
+        }
+
+        // Render initial skeleton / loading placeholder
+        this.runnersList.innerHTML = runnersDef.map(r => `
+            <div class="runner-card" style="opacity: 0.6;">
+                <div class="runner-card-top">
+                    <span class="runner-card-name">${r.name || r.id}</span>
+                    <span class="runner-tag tag-missing">Checking...</span>
+                </div>
+            </div>
+        `).join('');
+
+        try {
+            const res = await window.apiClient.getGameRunners(game.id, game.title);
+            if (res && res.runners && res.runners.length > 0) {
+                this.currentRunners = res.runners;
+                // Determine selected runner: preferred > first installed > first available
+                const preferred = res.preferred_runner;
+                const installedOne = this.currentRunners.find(r => r.installed);
+                if (preferred && this.currentRunners.some(r => r.id === preferred)) {
+                    this.selectedRunnerId = preferred;
+                } else if (installedOne) {
+                    this.selectedRunnerId = installedOne.id;
+                } else {
+                    this.selectedRunnerId = this.currentRunners[0]?.id || null;
+                }
+                this.updateRunnersUI();
+            } else {
+                this.runnersContainer.style.display = 'none';
+            }
+        } catch (e) {
+            console.error('[DetailsController] Error loading runners:', e);
+            if (this.runnerStatusHint) this.runnerStatusHint.textContent = 'Status unavailable';
+        }
+    }
+
+    updateRunnersUI() {
+        if (!this.runnersList || !this.currentRunners || this.currentRunners.length === 0) return;
+
+        const activeRunner = this.currentRunners.find(r => r.id === this.selectedRunnerId);
+        this.updateOriginUI(activeRunner);
+        if (this.runnerStatusHint) {
+            if (activeRunner && activeRunner.update_available) {
+                this.runnerStatusHint.textContent = `Update available (${activeRunner.latest_version})`;
+            } else if (activeRunner && activeRunner.installed) {
+                this.runnerStatusHint.textContent = 'Ready to launch';
+            } else if (activeRunner) {
+                this.runnerStatusHint.textContent = 'Download runner to play';
+            }
+        }
+
+        // Update Play Game button text if a runner is selected
+        if (this.playBtnText) {
+            if (activeRunner && (this.currentGame?.status === 1 || this.currentGame?.status === 2 || this.currentGame?.is_downloaded)) {
+                const match = activeRunner.name.match(/\(([^)]+)\)/);
+                const shortLabel = match ? match[1] : activeRunner.name;
+                this.playBtnText.textContent = `Play (${shortLabel})`;
+            } else if (!this.currentGame?.steam_url) {
+                this.playBtnText.textContent = 'Play Game';
+            }
+        }
+
+        this.runnersList.innerHTML = this.currentRunners.map(r => {
+            const isSelected = (r.id === this.selectedRunnerId);
+            const isInstalled = Boolean(r.installed);
+            const isUpdate = Boolean(r.update_available);
+
+            let tagHtml = '';
+            if (isUpdate) {
+                tagHtml = `<span class="runner-tag tag-update" title="Newer version available on GitHub: ${r.latest_version}"><i class="fa-solid fa-arrows-rotate"></i> Update</span>`;
+            } else if (isInstalled) {
+                tagHtml = `<span class="runner-tag tag-installed"><i class="fa-solid fa-check"></i> Ready</span>`;
+            } else {
+                tagHtml = `<span class="runner-tag tag-missing">Not Installed</span>`;
+            }
+
+            const githubLinkHtml = r.repo
+                ? `<a href="https://github.com/${r.repo}/releases" target="_blank" class="runner-github-link" title="Open ${r.name} releases on GitHub" onclick="event.stopPropagation();"><i class="fa-brands fa-github"></i></a>`
+                : '';
+
+            let actionHtml = '';
+            if (isUpdate) {
+                actionHtml = `<button class="runner-action-btn btn-update" data-install-runner="${r.id}" title="Update to latest GitHub release (${r.latest_version})"><i class="fa-solid fa-cloud-arrow-down"></i> Update (${r.latest_version})</button>`;
+            } else if (isInstalled) {
+                if (isSelected) {
+                    actionHtml = `<span class="runner-action-btn btn-active-indicator"><i class="fa-solid fa-circle-dot"></i> Active</span>`;
+                } else {
+                    actionHtml = `<button class="runner-action-btn" style="background: rgba(255,255,255,0.06); color: #ccc;" data-select-runner="${r.id}">Select</button>`;
+                }
+            } else {
+                let sizeStr = 'GitHub';
+                if (r.asset_size && r.asset_size > 0) {
+                    if (r.asset_size >= 1024 * 1024) {
+                        sizeStr = `${(r.asset_size / (1024 * 1024)).toFixed(0)} MB`;
+                    } else {
+                        sizeStr = `${Math.round(r.asset_size / 1024)} KB`;
+                    }
+                }
+                actionHtml = `<button class="runner-action-btn btn-dl" data-install-runner="${r.id}" title="Download latest release from GitHub"><i class="fa-solid fa-download"></i> Get (${sizeStr})</button>`;
+            }
+
+            // Format runner name (e.g. NX2navi) and subtitle (e.g. (Recomp 1))
+            let mainTitle = r.name || r.id;
+            let subLabel = r.subtitle || '';
+            const match = r.name ? r.name.match(/^(.*?)\s*\(([^)]+)\)$/) : null;
+            if (!subLabel && match) {
+                mainTitle = match[2].trim();
+                const cleanType = match[1].replace(/Option\s*/i, '').trim();
+                subLabel = `(${cleanType})`;
+            }
+
+            return `
+                <div class="runner-card ${isSelected ? 'active' : ''}" data-runner-card="${r.id}">
+                    <div class="runner-card-top">
+                        <div class="runner-card-title-group">
+                            <span class="runner-card-name">${mainTitle}</span>
+                            ${subLabel ? `<span class="runner-card-subtitle">${subLabel}</span>` : ''}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${githubLinkHtml}
+                            ${tagHtml}
+                        </div>
+                    </div>
+                    <div class="runner-card-bottom">
+                        <span class="runner-version-label">${r.latest_version || ''}</span>
+                        ${actionHtml}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Bind clicks on runner cards and action buttons
+        this.runnersList.querySelectorAll('.runner-card').forEach(card => {
+            const rid = card.getAttribute('data-runner-card');
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('[data-install-runner]')) return;
+                this.selectedRunnerId = rid;
+                this.updateRunnersUI();
+            });
+        });
+
+        this.runnersList.querySelectorAll('[data-install-runner]').forEach(btn => {
+            const rid = btn.getAttribute('data-install-runner');
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const runner = this.currentRunners.find(r => r.id === rid);
+                if (runner) this.installRunner(this.currentGame, runner, btn);
+            });
+        });
+    }
+
+    async installRunner(game, runner, btnEl) {
+        if (!game || !runner) return;
+        const originalHtml = btnEl ? btnEl.innerHTML : '';
+
+        if (!game.location && game.status !== 1 && !game.is_downloaded) {
+            window.uiController?.showToast('Please download the game first before installing runners.', 'warning');
+            return;
+        }
+
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Downloading...`;
+        }
+
+        window.uiController?.showToast(`Downloading ${runner.name} from GitHub...`, 'info');
+
+        try {
+            const res = await window.apiClient.installGameRunner(game.id, game.title, runner.id);
+            if (res && res.success) {
+                window.uiController?.showToast(res.message || `Installed ${runner.name} successfully!`, 'success');
+                this.selectedRunnerId = runner.id;
+                await this.renderRunners(game);
+            } else {
+                window.uiController?.showToast(res?.error || `Failed to install ${runner.name}`, 'danger');
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = originalHtml;
+                }
+            }
+        } catch (err) {
+            console.error('[DetailsController] Runner installation failed:', err);
+            window.uiController?.showToast(`Installation failed: ${err.message || err}`, 'danger');
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = originalHtml;
+            }
         }
     }
 
@@ -865,7 +1268,8 @@ class DetailsController {
                 title: title,
                 location: game.location,
                 steam_url: directOnly ? null : game.steam_url,
-                direct_only: directOnly
+                direct_only: directOnly,
+                runner_id: this.selectedRunnerId
             });
 
             if (res && res.success) {
