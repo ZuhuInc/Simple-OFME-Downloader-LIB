@@ -3336,5 +3336,31 @@
                 ]
             }
         ]
+    },
+    "Finals Week": {
+        "version": "2810_12_2.3",
+        "host": "GoFile",
+        "approx_size": "2 GB",
+        "description": "A 1-4 player co-op cheating simulator where you and your friends try to survive the final week of exams. Steal answers, elude the teacher, and use every tool in your cheating arsenal to graduate from school without studying a single page.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4715160/af6057415ac205d16a4ed76cf96b13a1dccbd2cd/library_capsule_2x.jpg?t=1793289959",
+        "origin_url": "https://online-fix.me/games/adventures/18295-finals-week-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/I5pvZ4XN"
+        ],
+        "fix_url": "https://gofile.io/d/Vg5HAkH3",
+        "category": "General"
+    },
+    "Lucid Cats Online": {
+        "version": "2.4",
+        "host": "GoFile",
+        "approx_size": "2 GB",
+        "description": "An online co-op horror extraction game. Fall asleep, loot a shared nightmare, and find the escape to keep your valuables",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4778540/7375f997bb7731e0d10a9fc7ef8f2edecb528216/hero_capsule_2x.jpg?t=1793210943",
+        "origin_url": "https://online-fix.me/games/horror/18282-lucid-cats-online.html",
+        "parts": [
+            "https://gofile.io/d/Yv6w8Fya"
+        ],
+        "fix_url": "https://gofile.io/d/QbFF9UpV",
+        "category": "General"
     }
 }
