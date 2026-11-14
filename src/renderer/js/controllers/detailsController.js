@@ -799,7 +799,8 @@ class DetailsController {
         const parts = this.getActiveParts();
 
         if (this.hostEl) {
-            this.hostEl.textContent = parts.length > 1 ? `${activeHost} (${parts.length} Parts)` : activeHost;
+            const hostPartsStr = parts.length > 1 ? `${activeHost} (${parts.length} Parts)` : activeHost;
+            this.hostEl.textContent = this.currentGame?.source ? `${this.currentGame.source} (${hostPartsStr})` : hostPartsStr;
         }
 
         const actionLabel = this.currentGame?.status === 2 ? 'Update Game' : (this.currentGame?.status === 1 ? 'Re-download' : 'Download Game');
@@ -936,11 +937,12 @@ class DetailsController {
         const activeHost = this.getActiveHost();
         const activeParts = this.getActiveParts();
         const type = this.pendingDownloadType || 'main';
-        if (activeParts.length > 1 && type === 'main') {
-            this.setupGameHost.textContent = `${activeHost} (${activeParts.length} Parts)`;
-        } else {
-            this.setupGameHost.textContent = activeHost;
-        }
+        const baseHostStr = (activeParts.length > 1 && type === 'main')
+            ? `${activeHost} (${activeParts.length} Parts)`
+            : activeHost;
+        this.setupGameHost.textContent = this.currentGame.source
+            ? `${this.currentGame.source} (${baseHostStr})`
+            : baseHostStr;
     }
 
     updateSetupPillsActive() {
@@ -977,17 +979,28 @@ class DetailsController {
         }
     }
 
+    getRunnerReleaseUrl(runner) {
+        if (!runner) return '';
+        if (runner.release_url) return runner.release_url;
+        const repo = (runner.repo || '').trim();
+        if (!repo) return '';
+        if (repo.startsWith('http://') || repo.startsWith('https://')) {
+            return `${repo.replace(/\/+$/, '').replace(/\/releases$/, '')}/releases`;
+        }
+        return `https://github.com/${repo}/releases`;
+    }
+
     getOriginDetails(game = this.currentGame, selectedRunner = null) {
         if (!game) return { label: 'Source Post', url: '', text: 'View Page' };
 
         // If game has runners and a runner is active/selected
         if (game.runners && game.runners.length > 0) {
             const runner = selectedRunner || (this.currentRunners ? this.currentRunners.find(r => r.id === this.selectedRunnerId) : null) || game.runners[0];
-            const repo = runner?.repo;
             const shortName = runner?.name ? (runner.name.match(/\(([^)]+)\)/)?.[1] || runner.name) : 'Releases';
-            const url = repo ? `https://github.com/${repo}/releases` : (game.origin_url || '');
+            const url = this.getRunnerReleaseUrl(runner) || (game.origin_url || '');
+            const isGitHub = url.toLowerCase().includes('github.com');
             return {
-                label: `GitHub Release (${shortName})`,
+                label: `${isGitHub ? 'GitHub' : 'Git'} Release (${shortName})`,
                 url: url,
                 text: `View ${shortName}`
             };
@@ -1009,12 +1022,24 @@ class DetailsController {
         } else if (url.includes('github.com')) {
             label = 'GitHub Project';
             text = 'View Repository';
+        } else if (url.includes('git.notrexed.dev') || url.includes('git.magicbean.dev')) {
+            label = 'Git Project';
+            text = 'View Repository';
         } else if (url.includes('freedlc.net')) {
             label = 'FreeDLC Post';
             text = 'View Page';
         } else if (url.includes('cs.rin.ru')) {
             label = 'CS.RIN.RU Thread';
             text = 'View Thread';
+        } else if (game.source === 'SR') {
+            label = 'SteamRIP Post';
+            text = 'View Page';
+        } else if (game.source === 'CG') {
+            label = 'Cracked-Games Post';
+            text = 'View Page';
+        } else if (game.source === 'OFME') {
+            label = 'Online-Fix Post';
+            text = 'View Page';
         } else if (game.host && String(game.host).toLowerCase() !== 'unknown') {
             label = `${game.host} Post`;
             text = 'View Page';
@@ -1120,23 +1145,27 @@ class DetailsController {
             const isSelected = (r.id === this.selectedRunnerId);
             const isInstalled = Boolean(r.installed);
             const isUpdate = Boolean(r.update_available);
+            const releaseUrl = this.getRunnerReleaseUrl(r);
+            const isGitHub = releaseUrl.toLowerCase().includes('github.com');
+            const hostLabel = isGitHub ? 'GitHub' : 'Git';
+            const iconClass = isGitHub ? 'fa-brands fa-github' : 'fa-brands fa-git-alt';
 
             let tagHtml = '';
             if (isUpdate) {
-                tagHtml = `<span class="runner-tag tag-update" title="Newer version available on GitHub: ${r.latest_version}"><i class="fa-solid fa-arrows-rotate"></i> Update</span>`;
+                tagHtml = `<span class="runner-tag tag-update" title="Newer version available on ${hostLabel}: ${r.latest_version}"><i class="fa-solid fa-arrows-rotate"></i> Update</span>`;
             } else if (isInstalled) {
                 tagHtml = `<span class="runner-tag tag-installed"><i class="fa-solid fa-check"></i> Ready</span>`;
             } else {
                 tagHtml = `<span class="runner-tag tag-missing">Not Installed</span>`;
             }
 
-            const githubLinkHtml = r.repo
-                ? `<a href="https://github.com/${r.repo}/releases" target="_blank" class="runner-github-link" title="Open ${r.name} releases on GitHub" onclick="event.stopPropagation();"><i class="fa-brands fa-github"></i></a>`
+            const githubLinkHtml = releaseUrl
+                ? `<a href="${releaseUrl}" target="_blank" class="runner-github-link" title="Open ${r.name} releases on ${hostLabel}" onclick="event.stopPropagation();"><i class="${iconClass}"></i></a>`
                 : '';
 
             let actionHtml = '';
             if (isUpdate) {
-                actionHtml = `<button class="runner-action-btn btn-update" data-install-runner="${r.id}" title="Update to latest GitHub release (${r.latest_version})"><i class="fa-solid fa-cloud-arrow-down"></i> Update (${r.latest_version})</button>`;
+                actionHtml = `<button class="runner-action-btn btn-update" data-install-runner="${r.id}" title="Update to latest ${hostLabel} release (${r.latest_version})"><i class="fa-solid fa-cloud-arrow-down"></i> Update (${r.latest_version})</button>`;
             } else if (isInstalled) {
                 if (isSelected) {
                     actionHtml = `<span class="runner-action-btn btn-active-indicator"><i class="fa-solid fa-circle-dot"></i> Active</span>`;
@@ -1144,7 +1173,7 @@ class DetailsController {
                     actionHtml = `<button class="runner-action-btn" style="background: rgba(255,255,255,0.06); color: #ccc;" data-select-runner="${r.id}">Select</button>`;
                 }
             } else {
-                let sizeStr = 'GitHub';
+                let sizeStr = hostLabel;
                 if (r.asset_size && r.asset_size > 0) {
                     if (r.asset_size >= 1024 * 1024) {
                         sizeStr = `${(r.asset_size / (1024 * 1024)).toFixed(0)} MB`;
@@ -1152,7 +1181,7 @@ class DetailsController {
                         sizeStr = `${Math.round(r.asset_size / 1024)} KB`;
                     }
                 }
-                actionHtml = `<button class="runner-action-btn btn-dl" data-install-runner="${r.id}" title="Download latest release from GitHub"><i class="fa-solid fa-download"></i> Get (${sizeStr})</button>`;
+                actionHtml = `<button class="runner-action-btn btn-dl" data-install-runner="${r.id}" title="Download latest release from ${hostLabel}"><i class="fa-solid fa-download"></i> Get (${sizeStr})</button>`;
             }
 
             // Format runner name (e.g. NX2navi) and subtitle (e.g. (Recomp 1))
@@ -1219,7 +1248,9 @@ class DetailsController {
             btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Downloading...`;
         }
 
-        window.uiController?.showToast(`Downloading ${runner.name} from GitHub...`, 'info');
+        const releaseUrl = this.getRunnerReleaseUrl(runner);
+        const hostLabel = releaseUrl.toLowerCase().includes('github.com') ? 'GitHub' : 'Git';
+        window.uiController?.showToast(`Downloading ${runner.name} from ${hostLabel}...`, 'info');
 
         try {
             const res = await window.apiClient.installGameRunner(game.id, game.title, runner.id);

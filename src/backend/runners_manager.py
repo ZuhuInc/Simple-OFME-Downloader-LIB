@@ -21,27 +21,111 @@ CACHE_TTL_SECONDS = 900
 
 
 class RunnersManager:
+    PRIMARY_EXE_CANDIDATES = (
+        "hookshot.exe",
+        os.path.join("bin", "hookshot.exe"),
+        "longshot.exe",
+        "Longshot.exe",
+        os.path.join("bin", "longshot.exe"),
+        "ocarina.exe",
+        "lichii.exe",
+    )
+    BUILDER_EXE_CANDIDATES = (
+        "HookshotBuilder.exe",
+        "LongshotBuilder.exe",
+        "LongshotLauncher.exe",
+    )
+    FALLBACK_EXE_KEYWORDS = (
+        "builder",
+        "launcher",
+        "setup",
+        "installer",
+        "nx2navi",
+        "longshot",
+        "hookshot",
+    )
+
     @staticmethod
-    def get_latest_github_release(repo: str) -> Optional[Dict[str, Any]]:
+    def get_release_page_url(repo: str) -> str:
+        """Builds the human-facing releases page URL for GitHub or self-hosted Gitea/Forgejo repos."""
+        clean = (repo or "").strip().rstrip("/")
+        if not clean:
+            return ""
+        if clean.startswith(("http://", "https://")):
+            clean = re.sub(r"/releases/?$", "", clean, flags=re.IGNORECASE).rstrip("/")
+            return f"{clean}/releases"
+        clean = clean.lstrip("/")
+        return f"https://github.com/{clean}/releases"
+
+    @staticmethod
+    def _build_api_urls(repo: str):
+        """Returns (api_urls, headers) for GitHub or Gitea/Forgejo release APIs."""
+        clean = (repo or "").strip().rstrip("/")
+        if clean.startswith(("http://", "https://")):
+            parsed = urllib.parse.urlparse(clean)
+            netloc = parsed.netloc.lower()
+            repo_path = re.sub(r"/releases/?$", "", parsed.path, flags=re.IGNORECASE).strip("/")
+            if "github.com" in netloc:
+                return (
+                    [
+                        f"https://api.github.com/repos/{repo_path}/releases/latest",
+                        f"https://api.github.com/repos/{repo_path}/releases",
+                    ],
+                    {
+                        "User-Agent": "Fanta-OFME-Downloader",
+                        "Accept": "application/vnd.github.v3+json",
+                    },
+                )
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+            return (
+                [
+                    f"{base_url}/api/v1/repos/{repo_path}/releases",
+                    f"{base_url}/api/v1/repos/{repo_path}/releases/latest",
+                ],
+                {
+                    "User-Agent": "Fanta-OFME-Downloader",
+                    "Accept": "application/json",
+                },
+            )
+
+        repo_path = clean.strip("/")
+        return (
+            [
+                f"https://api.github.com/repos/{repo_path}/releases/latest",
+                f"https://api.github.com/repos/{repo_path}/releases",
+            ],
+            {
+                "User-Agent": "Fanta-OFME-Downloader",
+                "Accept": "application/vnd.github.v3+json",
+            },
+        )
+
+    @staticmethod
+    def _select_release_from_list(releases: List[Dict[str, Any]], asset_pattern: Optional[str]) -> Optional[Dict[str, Any]]:
+        """Picks the first release matching asset_pattern, falling back to non-empty assets or raw[0]."""
+        if asset_pattern:
+            for rel in releases:
+                for asset in rel.get("assets", []) or []:
+                    if re.search(asset_pattern, asset.get("name", ""), re.IGNORECASE):
+                        return rel
+        for rel in releases:
+            if rel.get("assets"):
+                return rel
+        return releases[0] if releases else None
+
+    @staticmethod
+    def get_latest_github_release(repo: str, asset_pattern: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        Fetches the latest release info for a GitHub repo (owner/repo).
-        Uses memory caching to stay well under GitHub API rate limits.
+        Fetches the latest release info for a GitHub or self-hosted Gitea/Forgejo repo.
+        Uses memory caching to stay well under API rate limits.
         """
         now = time.time()
-        cached = _GITHUB_RELEASE_CACHE.get(repo)
+        cache_key = f"{repo}::{asset_pattern or ''}"
+        cached = _GITHUB_RELEASE_CACHE.get(cache_key)
         if cached and (now - cached["timestamp"] < CACHE_TTL_SECONDS):
             return cached["data"]
 
-        headers = {
-            "User-Agent": "Fanta-OFME-Downloader",
-            "Accept": "application/vnd.github.v3+json"
-        }
-
-        # Try /releases/latest first, fallback to /releases if no latest tag
-        urls = [
-            f"https://api.github.com/repos/{repo}/releases/latest",
-            f"https://api.github.com/repos/{repo}/releases"
-        ]
+        urls, headers = RunnersManager._build_api_urls(repo)
 
         release_data = None
         for url in urls:
@@ -51,22 +135,86 @@ class RunnersManager:
                     if resp.status == 200:
                         raw = json.loads(resp.read().decode("utf-8"))
                         if isinstance(raw, list) and len(raw) > 0:
-                            release_data = raw[0]
+                            release_data = RunnersManager._select_release_from_list(raw, asset_pattern)
                         elif isinstance(raw, dict) and "tag_name" in raw:
-                            release_data = raw
+                            if asset_pattern:
+                                has_match = any(
+                                    re.search(asset_pattern, a.get("name", ""), re.IGNORECASE)
+                                    for a in (raw.get("assets", []) or [])
+                                )
+                                if has_match:
+                                    release_data = raw
+                            else:
+                                release_data = raw
                         if release_data:
                             break
             except Exception as e:
                 print(f"[RunnersManager] Release check notice for {repo} ({url}): {e}", flush=True)
 
         if release_data:
-            _GITHUB_RELEASE_CACHE[repo] = {
+            _GITHUB_RELEASE_CACHE[cache_key] = {
                 "timestamp": now,
                 "data": release_data
             }
             return release_data
 
         return None
+
+    @classmethod
+    def find_runner_executable(cls, game_location: str, runner_def: Dict[str, Any]) -> str:
+        """
+        Resolves the best launchable executable for a runner within game_location.
+        Prioritizes built/primary game executables over builder/launcher/setup binaries,
+        searching both the runner folder and 1-level nested subdirectories.
+        """
+        if not game_location or not runner_def:
+            return ""
+
+        rel_path = runner_def.get("rel_path", "")
+        folder = runner_def.get("folder", "")
+        raw_exe = os.path.normpath(os.path.join(game_location, rel_path)) if rel_path else ""
+        if raw_exe and os.path.isfile(raw_exe):
+            return raw_exe
+
+        folder_dir = os.path.normpath(os.path.join(game_location, folder)) if folder else (
+            os.path.dirname(raw_exe) if raw_exe else ""
+        )
+        if not folder_dir or not os.path.isdir(folder_dir):
+            return ""
+
+        search_dirs = [folder_dir]
+        try:
+            for entry in sorted(os.listdir(folder_dir)):
+                sub = os.path.join(folder_dir, entry)
+                if os.path.isdir(sub):
+                    search_dirs.append(sub)
+        except Exception:
+            pass
+
+        for sdir in search_dirs:
+            for cand in cls.PRIMARY_EXE_CANDIDATES:
+                p = os.path.normpath(os.path.join(sdir, cand))
+                if os.path.isfile(p):
+                    return p
+
+        for sdir in search_dirs:
+            for cand in cls.BUILDER_EXE_CANDIDATES:
+                p = os.path.normpath(os.path.join(sdir, cand))
+                if os.path.isfile(p):
+                    return p
+
+        for sdir in search_dirs:
+            try:
+                for f in sorted(os.listdir(sdir), reverse=True):
+                    fl = f.lower()
+                    if fl.endswith(".exe") and any(k in fl for k in cls.FALLBACK_EXE_KEYWORDS):
+                        p = os.path.join(sdir, f)
+                        if os.path.isfile(p):
+                            return p
+            except Exception:
+                pass
+
+        return ""
 
     @classmethod
     def get_runners_status(
@@ -88,37 +236,8 @@ class RunnersManager:
             args = r.get("args", [])
 
             # Check local install state
-            raw_exe = os.path.join(game_location, rel_path) if game_location and rel_path else ""
-            target_exe = os.path.normpath(raw_exe) if raw_exe else ""
+            target_exe = cls.find_runner_executable(game_location, r)
             is_installed = bool(target_exe and os.path.isfile(target_exe))
-
-            # Check alternative executable candidates in runner folder (e.g. HookshotBuilder.exe, bin/hookshot.exe)
-            if not is_installed and game_location and folder:
-                folder_dir = os.path.join(game_location, folder)
-                alt_candidates = [
-                    os.path.join(folder_dir, "hookshot.exe"),
-                    os.path.join(folder_dir, "HookshotBuilder.exe"),
-                    os.path.join(folder_dir, "bin", "hookshot.exe"),
-                    os.path.join(folder_dir, "ocarina.exe"),
-                    os.path.join(folder_dir, "lichii.exe")
-                ]
-                for alt in alt_candidates:
-                    if os.path.isfile(alt):
-                        target_exe = alt
-                        is_installed = True
-                        break
-
-                if not is_installed and os.path.isdir(folder_dir):
-                    # Check for any Setup, Builder, or Installer executables (e.g. NX2navi-Setup-x.x.x.exe)
-                    try:
-                        for f in sorted(os.listdir(folder_dir), reverse=True):
-                            fl = f.lower()
-                            if fl.endswith(".exe") and any(k in fl for k in ("setup", "builder", "installer", "nx2navi")):
-                                target_exe = os.path.join(folder_dir, f)
-                                is_installed = True
-                                break
-                    except Exception:
-                        pass
 
             # Check installed version from .runner_version.json in runner folder
             folder_dir = os.path.join(game_location, folder) if game_location and folder else ""
@@ -132,17 +251,17 @@ class RunnersManager:
                 except Exception:
                     pass
 
-            # Query GitHub latest version
+            # Query latest release version
             latest_version = ""
             download_url = ""
             asset_name = ""
             asset_size = 0
+            pattern = r.get("asset_pattern", r"windows.*\.zip|\.zip$")
 
             if repo:
-                rel_info = cls.get_latest_github_release(repo)
+                rel_info = cls.get_latest_github_release(repo, asset_pattern=pattern)
                 if rel_info:
                     latest_version = rel_info.get("tag_name", "")
-                    pattern = r.get("asset_pattern", r"windows.*\.zip|\.zip$")
                     for asset in rel_info.get("assets", []):
                         aname = asset.get("name", "")
                         if re.search(pattern, aname, re.IGNORECASE):
@@ -166,6 +285,7 @@ class RunnersManager:
                 "name": rname,
                 "subtitle": subtitle,
                 "repo": repo,
+                "release_url": cls.get_release_page_url(repo) if repo else "",
                 "rel_path": rel_path,
                 "folder": folder,
                 "args": args,
@@ -189,25 +309,25 @@ class RunnersManager:
         progress_callback: Optional[Callable[[str, int], None]] = None
     ) -> Dict[str, Any]:
         """
-        Downloads the runner's latest GitHub release zip and extracts it into the runner's subfolder.
+        Downloads the runner's latest release zip/installer and extracts it into the runner's subfolder.
         """
         if not game_location or not os.path.isdir(game_location):
             return {"success": False, "error": f"Game directory '{game_location}' does not exist"}
 
         repo = runner_def.get("repo")
         if not repo:
-            return {"success": False, "error": "Runner definition missing GitHub repository"}
+            return {"success": False, "error": "Runner definition missing Git repository"}
 
         folder_name = runner_def.get("folder") or runner_def.get("id")
         target_dir = os.path.join(game_location, folder_name)
         os.makedirs(target_dir, exist_ok=True)
 
-        rel_info = cls.get_latest_github_release(repo)
+        pattern = runner_def.get("asset_pattern", r"windows.*\.zip|\.zip$")
+        rel_info = cls.get_latest_github_release(repo, asset_pattern=pattern)
         if not rel_info:
             return {"success": False, "error": f"Could not fetch releases for {repo}"}
 
         tag_name = rel_info.get("tag_name", "latest")
-        pattern = runner_def.get("asset_pattern", r"windows.*\.zip|\.zip$")
         matched_asset = None
         for asset in rel_info.get("assets", []):
             aname = asset.get("name", "")

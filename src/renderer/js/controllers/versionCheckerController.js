@@ -404,6 +404,16 @@ class VersionCheckerController {
         }
     }
 
+    getSourceLabel(url) {
+        const u = (url || '').toLowerCase();
+        if (u.includes('online-fix.me')) return 'Online-Fix';
+        if (u.includes('steamrip.com')) return 'SteamRIP';
+        if (u.includes('cracked-games.org')) return 'Cracked-Games';
+        if (u.includes('github.com')) return 'GitHub';
+        if (u.includes('git.notrexed.dev') || u.includes('git.magicbean.dev')) return 'Git';
+        return 'Source';
+    }
+
     formatVersionBadge(ver) {
         if (!ver || ver === '---' || ver === 'Not Installed') {
             return '<span class="text-muted">---</span>';
@@ -437,6 +447,7 @@ class VersionCheckerController {
 
         const safeTitle = (data.game || 'Game').replace(/'/g, "\\'");
         const safeUrl = (data.origin_url || '').replace(/'/g, "\\'");
+        const sourceLabel = this.getSourceLabel(data.origin_url);
 
         tr.innerHTML = `
             <td><strong>${data.game || 'Unknown'}</strong></td>
@@ -446,10 +457,10 @@ class VersionCheckerController {
             <td>${statusBadge}</td>
             <td>
                 <div style="display: flex; gap: 6px; align-items: center;">
-                    <button class="btn btn-sm btn-secondary btn-icon" onclick="window.versionCheckerController.openUpdateUrl('${safeUrl}', '${data.game_id || ''}')" title="Open online release in browser">
+                    <button class="btn btn-sm btn-secondary btn-icon" onclick="window.versionCheckerController.openUpdateUrl('${safeUrl}', '${data.game_id || ''}')" title="Open ${sourceLabel} release in browser">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                     </button>
-                    <button class="btn btn-sm btn-primary btn-icon" onclick="window.versionCheckerController.openAssistedUpdater('${safeUrl}', '${safeTitle}')" title="Assisted Auto-Fill from Online-Fix">
+                    <button class="btn btn-sm btn-primary btn-icon" onclick="window.versionCheckerController.openAssistedUpdater('${safeUrl}', '${safeTitle}')" title="Assisted Auto-Fill from ${sourceLabel}">
                         <i class="fa-solid fa-robot"></i>
                     </button>
                     <button class="btn btn-sm btn-secondary btn-icon" onclick="window.versionCheckerController.toggleBypassForGame('${safeTitle}', this)" title="Bypass this game from future audits">
@@ -729,7 +740,8 @@ class VersionCheckerController {
         const modal = document.getElementById('assistedUpdaterModal');
         if (!modal) return;
 
-        window.uiController.showToast(`Scraping Online-Fix release data for ${gameTitle || 'game'}...`, 'info');
+        const sourceLabel = this.getSourceLabel(originUrl);
+        window.uiController.showToast(`Scraping ${sourceLabel} release data for ${gameTitle || 'game'}...`, 'info');
 
         try {
             const prefHost = window.settingsController?.settings?.preferred_host || 'GoFile';
@@ -785,8 +797,14 @@ class VersionCheckerController {
         }
         if (sizeInput) sizeInput.value = resolvedSize;
 
+        const resolvedOriginUrl = data.origin_url || fallbackUrl || existingGame?.origin_url || '';
+        const originLabelEl = document.getElementById('assistedOriginUrlLabel');
+        if (originLabelEl) {
+            const srcLabel = this.getSourceLabel(resolvedOriginUrl);
+            originLabelEl.textContent = srcLabel !== 'Source' ? `${srcLabel} Post URL` : 'Source Release URL';
+        }
         if (fixInput) fixInput.value = data.fix_url || existingGame?.fix_url || '';
-        if (originInput) originInput.value = data.origin_url || fallbackUrl || existingGame?.origin_url || '';
+        if (originInput) originInput.value = resolvedOriginUrl;
         if (catInput) catInput.value = data.category || existingGame?.category || 'General';
 
         // Populate available hosts in dropdown if scraped

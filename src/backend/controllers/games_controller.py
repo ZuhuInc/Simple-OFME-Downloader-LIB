@@ -366,33 +366,9 @@ def create_games_blueprint(db_manager, config, cloud_sync=None):
 
         if chosen_runner and location:
             rel_p = chosen_runner.get('rel_path', '')
-            folder = chosen_runner.get('folder', '')
-            cand_p = os.path.normpath(os.path.join(location, rel_p))
-
-            # 1. Check if the primary runner executable exists
-            if os.path.isfile(cand_p):
-                target_exe = cand_p
-            else:
-                # 2. Check alternative runner executables or builder (e.g. HookshotBuilder.exe)
-                folder_dir = os.path.normpath(os.path.join(location, folder)) if folder else os.path.dirname(cand_p)
-                if os.path.isdir(folder_dir):
-                    alt_candidates = [
-                        os.path.join(folder_dir, "hookshot.exe"),
-                        os.path.join(folder_dir, "HookshotBuilder.exe"),
-                        os.path.join(folder_dir, "bin", "hookshot.exe"),
-                        os.path.join(folder_dir, "ocarina.exe"),
-                        os.path.join(folder_dir, "lichii.exe")
-                    ]
-                    for alt in alt_candidates:
-                        if os.path.isfile(alt):
-                            target_exe = alt
-                            break
-                    if not target_exe:
-                        for f in sorted(os.listdir(folder_dir), reverse=True):
-                            fl = f.lower()
-                            if fl.endswith(".exe") and any(k in fl for k in ("builder", "setup", "installer", "nx2navi")):
-                                target_exe = os.path.join(folder_dir, f)
-                                break
+            resolved_runner_exe = RunnersManager.find_runner_executable(location, chosen_runner)
+            if resolved_runner_exe:
+                target_exe = resolved_runner_exe
 
             if target_exe:
                 # Resolve any launch arguments
