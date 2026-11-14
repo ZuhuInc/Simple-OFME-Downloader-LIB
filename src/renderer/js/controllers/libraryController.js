@@ -17,6 +17,41 @@ class LibraryController {
         this.sortSelectEl = document.getElementById('sortFilterSelect');
         this.filterPills = document.querySelectorAll('.filter-pill');
         this.gameCountEl = document.getElementById('libraryGameCount');
+        this.favorites = new Set();
+        this.loadFavorites();
+    }
+
+    loadFavorites() {
+        try {
+            const raw = localStorage.getItem('fanta_favorite_games');
+            const arr = raw ? JSON.parse(raw) : [];
+            this.favorites = new Set(Array.isArray(arr) ? arr.map(s => String(s).toLowerCase()) : []);
+        } catch (e) {
+            this.favorites = new Set();
+        }
+    }
+
+    saveFavorites() {
+        try {
+            localStorage.setItem('fanta_favorite_games', JSON.stringify(Array.from(this.favorites)));
+        } catch (e) {}
+    }
+
+    isFavorite(game) {
+        if (!game || !game.title) return false;
+        return this.favorites.has(game.title.trim().toLowerCase());
+    }
+
+    toggleFavorite(game) {
+        if (!game || !game.title) return;
+        const key = game.title.trim().toLowerCase();
+        if (this.favorites.has(key)) {
+            this.favorites.delete(key);
+        } else {
+            this.favorites.add(key);
+        }
+        this.saveFavorites();
+        this.applyFilters();
     }
 
     init() {
@@ -94,7 +129,7 @@ class LibraryController {
 
         try {
             const data = await window.apiClient.getGames();
-            this.games = data.games || [];
+            this.games = (data.games || []).map((g, idx) => ({ ...g, _catalogIndex: idx }));
             this.populateHostFilter(data.hosts || []);
             this.applyFilters();
         } catch (err) {
@@ -150,6 +185,9 @@ class LibraryController {
 
     applyFilters() {
         this.filteredGames = this.games.filter(game => {
+            // Favorites filter check
+            if (this.currentFilter === 'favorites' && !this.isFavorite(game)) return false;
+
             // Status check (0: missing, 1: up-to-date, 2: update available)
             if (this.currentFilter === '1' && game.status !== 1) return false;
             if (this.currentFilter === '2' && game.status !== 2) return false;
@@ -175,14 +213,32 @@ class LibraryController {
             return true;
         });
 
-        // Sorting
-        if (this.sortBy === 'name-asc') {
-            this.filteredGames.sort((a, b) => a.title.localeCompare(b.title));
-        } else if (this.sortBy === 'name-desc') {
-            this.filteredGames.sort((a, b) => b.title.localeCompare(a.title));
-        } else if (this.sortBy === 'size') {
-            this.filteredGames.sort((a, b) => (b.size || '').localeCompare(a.size || ''));
-        }
+        // Sorting (favorites always pinned to top)
+        this.filteredGames.sort((a, b) => {
+            const aFav = this.isFavorite(a) ? 1 : 0;
+            const bFav = this.isFavorite(b) ? 1 : 0;
+            if (aFav !== bFav) return bFav - aFav;
+
+            if (this.sortBy === 'newest') {
+                return (b._catalogIndex ?? 0) - (a._catalogIndex ?? 0);
+            }
+            if (this.sortBy === 'installed-first') {
+                const aInst = (a.status === 1 || a.status === 2 || a.is_downloaded || a.location) ? 1 : 0;
+                const bInst = (b.status === 1 || b.status === 2 || b.is_downloaded || b.location) ? 1 : 0;
+                if (aInst !== bInst) return bInst - aInst;
+                return (a._catalogIndex ?? 0) - (b._catalogIndex ?? 0);
+            }
+            if (this.sortBy === 'name-asc') {
+                return a.title.localeCompare(b.title);
+            }
+            if (this.sortBy === 'name-desc') {
+                return b.title.localeCompare(a.title);
+            }
+            if (this.sortBy === 'size') {
+                return (b.size_bytes || 0) - (a.size_bytes || 0);
+            }
+            return (a._catalogIndex ?? 0) - (b._catalogIndex ?? 0);
+        });
 
         this.renderGrid();
     }
@@ -247,9 +303,17 @@ class LibraryController {
                 </div>
             `;
 
+            const isFav = this.isFavorite(game);
+            const favBtnHtml = `
+                <button type="button" class="card-fav-btn ${isFav ? 'active' : ''}" title="${isFav ? 'Remove from Favorites' : 'Pin to Favorites'}">
+                    <i class="${isFav ? 'fa-solid' : 'fa-regular'} fa-star"></i>
+                </button>
+            `;
+
             card.innerHTML = `
                 <div class="card-cover-wrapper">
                     <img class="card-cover-img" src="${thumbSrc}" alt="${game.title}" loading="lazy" onerror="this.src='assets/OFME-DWND-ICO.ico'">
+                    ${favBtnHtml}
                     <span class="card-status-badge ${statusClass}">${statusLabel}</span>
                     <div class="card-overlay">
                         ${overlayBtnHtml}
@@ -266,6 +330,14 @@ class LibraryController {
                     </div>
                 </div>
             `;
+
+            const favBtn = card.querySelector('.card-fav-btn');
+            if (favBtn) {
+                favBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleFavorite(game);
+                });
+            }
 
             const playBtn = card.querySelector('.card-play-btn');
             if (playBtn) {

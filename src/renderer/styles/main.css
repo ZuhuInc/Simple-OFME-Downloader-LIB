@@ -414,6 +414,10 @@ html, body {
     color: #111;
 }
 
+.filter-pill.active i {
+    color: #111 !important;
+}
+
 select,
 .select-dropdown,
 .form-select {
@@ -773,6 +777,46 @@ select option,
 .status-uptodate { background: rgba(62, 207, 142, 0.2); color: var(--success); border: 1px solid rgba(62, 207, 142, 0.4); }
 .status-update { background: rgba(245, 166, 35, 0.2); color: var(--warning); border: 1px solid rgba(245, 166, 35, 0.4); }
 .status-missing { background: rgba(224, 82, 82, 0.2); color: var(--danger); border: 1px solid rgba(224, 82, 82, 0.4); }
+
+.card-fav-btn {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: rgba(14, 14, 18, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    z-index: 4;
+    backdrop-filter: blur(8px);
+    transition: var(--transition);
+    opacity: 0;
+}
+
+.game-card:hover .card-fav-btn,
+.card-fav-btn.active {
+    opacity: 1;
+}
+
+.card-fav-btn:hover {
+    transform: scale(1.1);
+    color: var(--accent);
+    border-color: rgba(212, 168, 83, 0.5);
+    background: rgba(20, 20, 28, 0.9);
+}
+
+.card-fav-btn.active {
+    color: var(--accent);
+    background: rgba(212, 168, 83, 0.2);
+    border-color: rgba(212, 168, 83, 0.5);
+    box-shadow: 0 0 10px rgba(212, 168, 83, 0.25);
+}
 
 .card-overlay {
     position: absolute;
