@@ -3370,5 +3370,18 @@
         ],
         "fix_url": "https://gofile.io/d/QbFF9UpV",
         "category": "General"
+    },
+    "Opus Magnum": {
+        "version": "13340657",
+        "host": "BuzzHeavier",
+        "approx_size": "318.3MB",
+        "description": "“It is not an exaggeration to say that without alchemical engineering, civilization would not exist.”",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/558990/library_600x900_2x.jpg?t=1667070343",
+        "origin_url": "https://steamrip.com/opus-magnum-free-download/",
+        "parts": [
+            "https://bzzhr.to/efa7ipteqexk"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }
