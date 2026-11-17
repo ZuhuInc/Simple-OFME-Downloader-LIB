@@ -3242,6 +3242,12 @@ input[type="number"] {
     border: 1px solid rgba(247, 163, 28, 0.4);
 }
 
+.runner-tag.tag-build {
+    background: rgba(96, 165, 250, 0.18);
+    color: #60a5fa;
+    border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
 .runner-card-bottom {
     display: flex;
     justify-content: space-between;

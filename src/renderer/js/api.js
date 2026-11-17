@@ -126,6 +126,7 @@ class ApiClient {
         return this.request('/api/games/runners/install', { method: 'POST', body: { id, title, runner_id: runnerId } });
     }
     selectGameRunner(payload) { return this.request('/api/games/runners/select', { method: 'POST', body: payload }); }
+    runGameRunnerBuilder(payload) { return this.request('/api/games/runners/run-builder', { method: 'POST', body: payload }); }
 
     // Downloads
     getDownloads() { return this.request('/api/downloads'); }

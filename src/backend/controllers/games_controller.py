@@ -409,13 +409,95 @@ def create_games_blueprint(db_manager, config, cloud_sync=None):
             return jsonify({"success": False, "error": f"Runner '{runner_id}' not found for game"}), 404
 
         _, detected_location = _find_config_key_and_location(matched_game.title, matched_game.id, matched_game)
+        found_key, _ = _find_config_key_and_location(matched_game.title, matched_game.id, matched_game)
         location = data.get('location') or detected_location or matched_game.location or ''
 
         if not location or not os.path.exists(location):
             return jsonify({"success": False, "error": "Game installation folder not found. Please download the game first before installing runners."}), 404
 
         res = RunnersManager.install_or_update_runner(location, runner_def)
+        if res.get("success") and found_key and res.get("primary_exe"):
+            rec = config.data.get(found_key)
+            if isinstance(rec, dict):
+                r_exes = rec.get("runner_exes") if isinstance(rec.get("runner_exes"), dict) else {}
+                r_exes[runner_id] = res["primary_exe"]
+                rec["runner_exes"] = r_exes
+                config.save()
         return jsonify(res)
+
+    def _launch_builder_and_track(builder_exe: str, location: str, runner_def: dict, found_key: str, runner_id: str):
+        import threading
+        builder_dir = os.path.dirname(builder_exe)
+        flags = subprocess.CREATE_NEW_CONSOLE if (sys.platform == 'win32' and hasattr(subprocess, 'CREATE_NEW_CONSOLE')) else 0
+        proc = subprocess.Popen(
+            [builder_exe],
+            cwd=builder_dir,
+            creationflags=flags
+        )
+        print(f"[Games] Runner builder launched: {builder_exe} (PID: {proc.pid})", flush=True)
+
+        def wait_and_mark_built():
+            try:
+                proc.wait()
+                built_exe = RunnersManager.mark_builder_completed(location, runner_def)
+                if built_exe and found_key and isinstance(config.data.get(found_key), dict):
+                    r_exes = config.data[found_key].get("runner_exes")
+                    if not isinstance(r_exes, dict):
+                        r_exes = {}
+                    r_exes[runner_id] = built_exe
+                    config.data[found_key]["runner_exes"] = r_exes
+                    config.data[found_key]["exe_path"] = built_exe
+                    config.save()
+                    if hasattr(db_manager, "update_installed_states"):
+                        db_manager.update_installed_states(config.data)
+            except Exception as exc:
+                print(f"[Games] Builder watcher notice: {exc}", flush=True)
+
+        threading.Thread(target=wait_and_mark_built, daemon=True).start()
+        return proc
+
+    @bp.route('/runners/run-builder', methods=['POST'])
+    def run_runner_builder():
+        data = request.get_json(silent=True) or {}
+        game_id = data.get('id', '')
+        title = data.get('title', '')
+        runner_id = str(data.get('runner_id') or '').strip()
+
+        if not runner_id:
+            return jsonify({"success": False, "error": "Missing runner_id"}), 400
+
+        matched_game = None
+        for g in db_manager.games:
+            if (game_id and g.id == game_id) or (title and g.title.lower() == title.lower()):
+                matched_game = g
+                break
+
+        if not matched_game:
+            return jsonify({"success": False, "error": "Game not found"}), 404
+
+        runners_def = getattr(matched_game, 'runners', []) or []
+        runner_def = next((r for r in runners_def if r.get('id') == runner_id), None)
+        if not runner_def:
+            return jsonify({"success": False, "error": f"Runner '{runner_id}' not found for game"}), 404
+
+        found_key, location = _find_config_key_and_location(matched_game.title, matched_game.id, matched_game)
+        if not location or not os.path.isdir(location):
+            return jsonify({"success": False, "error": "Game installation folder not found."}), 404
+
+        builder_exe = RunnersManager.find_builder_executable(location, runner_def)
+        if not builder_exe or not os.path.isfile(builder_exe):
+            return jsonify({"success": False, "error": f"No builder executable found for {runner_def.get('name', runner_id)}."}), 404
+
+        try:
+            proc = _launch_builder_and_track(builder_exe, location, runner_def, found_key, runner_id)
+            return jsonify({
+                "success": True,
+                "builder_exe": builder_exe,
+                "pid": proc.pid,
+                "message": f"Launched {os.path.basename(builder_exe)}! Complete the build step to finish updating {runner_def.get('name', runner_id)}."
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Failed to launch builder: {e}"}), 500
 
     @bp.route('/launch', methods=['POST'])
     def launch_game():
@@ -483,7 +565,26 @@ def create_games_blueprint(db_manager, config, cloud_sync=None):
 
         if chosen_runner and location:
             rel_p = chosen_runner.get('rel_path', '')
-            saved_runner_exe = (game_data.get('runner_exes') or {}).get(chosen_runner.get('id'), '') if isinstance(game_data.get('runner_exes'), dict) else ''
+            saved_runner_exes = game_data.get('runner_exes') if isinstance(game_data.get('runner_exes'), dict) else {}
+            runner_statuses = RunnersManager.get_runners_status(location, [chosen_runner], saved_runner_exes=saved_runner_exes, check_remote=False)
+            r_st = runner_statuses[0] if runner_statuses else {}
+
+            if r_st.get("needs_build") and r_st.get("builder_exe") and os.path.isfile(r_st["builder_exe"]):
+                try:
+                    builder_exe = r_st["builder_exe"]
+                    proc = _launch_builder_and_track(builder_exe, location, chosen_runner, found_key, chosen_runner.get('id', ''))
+                    return jsonify({
+                        "success": True,
+                        "method": "builder",
+                        "builder_launched": True,
+                        "exe_path": builder_exe,
+                        "pid": proc.pid,
+                        "message": f"Launched {os.path.basename(builder_exe)} (required once after update). Finish building, then click Play!"
+                    })
+                except Exception as b_err:
+                    return jsonify({"success": False, "error": f"Failed to launch builder: {b_err}"}), 500
+
+            saved_runner_exe = saved_runner_exes.get(chosen_runner.get('id'), '')
             resolved_runner_exe = RunnersManager.find_runner_executable(location, chosen_runner, saved_exe=saved_runner_exe)
             if resolved_runner_exe:
                 target_exe = resolved_runner_exe

@@ -1284,6 +1284,120 @@ Fix:
         self.assertTrue(dl.cancel_job(part_ids[0]))
         self.assertEqual(len(dl.get_all_jobs()), 2)
 
+    def test_runner_version_comparison_and_builder_once(self):
+        """Test pre-bundled version comparison (Bundled vs remote tag) and Run Builder Once workflow after runner updates."""
+        import json
+        import zipfile
+        import io
+        from flask import Flask
+        from src.backend.runners_manager import RunnersManager
+        from src.backend.controllers.games_controller import create_games_blueprint
+
+        game_dir = os.path.join(self.temp_dir, "Zelda_Builder_Test")
+        hook_dir = os.path.join(game_dir, "HookShot")
+        os.makedirs(hook_dir, exist_ok=True)
+        hook_exe = os.path.join(hook_dir, "hookshot.exe")
+        with open(hook_exe, "wb") as f:
+            f.write(b"old_hookshot")
+        # Set older timestamp on bundled hookshot.exe
+        old_ts = 1700000000.0
+        os.utime(hook_exe, (old_ts, old_ts))
+
+        runners_def = [
+            {
+                "id": "hookshot",
+                "name": "Hookshot",
+                "subtitle": "(Recomp 2)",
+                "repo": "https://git.notrexed.dev/Hookshot/Hookshot",
+                "asset_pattern": "Hookshot-.*Windows-x64\\.zip|HookshotBuilder\\.exe",
+                "folder": "HookShot",
+                "rel_path": "HookShot/hookshot.exe"
+            }
+        ]
+
+        # 1. Pre-bundled runner (no .runner_version.json) reports 'Bundled' and flags update_available=True
+        fake_release = {
+            "tag_name": "v0.2.0",
+            "assets": [{
+                "name": "Hookshot-0.2.0-Windows-x64.zip",
+                "browser_download_url": "https://git.notrexed.dev/Hookshot/Hookshot/releases/download/v0.2.0/Hookshot-0.2.0-Windows-x64.zip",
+                "size": 1024
+            }]
+        }
+        with unittest.mock.patch.object(RunnersManager, 'get_latest_github_release', return_value=fake_release):
+            statuses = RunnersManager.get_runners_status(game_dir, runners_def)
+            self.assertEqual(len(statuses), 1)
+            self.assertTrue(statuses[0]["installed"])
+            self.assertEqual(statuses[0]["installed_version"], "Bundled")
+            self.assertEqual(statuses[0]["latest_version"], "v0.2.0")
+            self.assertTrue(statuses[0]["update_available"])
+
+        # 2. Updating runner extracts HookshotBuilder.exe without replacing old hookshot.exe -> needs_build=True
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("HookshotBuilder.exe", b"new_builder_binary")
+        zip_bytes = buf.getvalue()
+
+        class FakeHTTPResp:
+            def __init__(self, data):
+                self._stream = io.BytesIO(data)
+            def read(self, n=-1):
+                return self._stream.read(n)
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+
+        with unittest.mock.patch.object(RunnersManager, 'get_latest_github_release', return_value=fake_release), \
+             unittest.mock.patch('urllib.request.urlopen', return_value=FakeHTTPResp(zip_bytes)):
+            res_upd = RunnersManager.install_or_update_runner(game_dir, runners_def[0])
+            self.assertTrue(res_upd["success"])
+            self.assertTrue(res_upd["needs_build"])
+            self.assertIn("HookshotBuilder.exe", res_upd["builder_exe"])
+
+        with unittest.mock.patch.object(RunnersManager, 'get_latest_github_release', return_value=fake_release):
+            st_after = RunnersManager.get_runners_status(game_dir, runners_def)[0]
+            self.assertEqual(st_after["installed_version"], "v0.2.0")
+            self.assertFalse(st_after["update_available"])
+            self.assertTrue(st_after["needs_build"])
+            self.assertTrue(st_after["has_builder"])
+
+        # 3. Calling /api/games/launch or /api/games/runners/run-builder launches the Builder when needs_build=True
+        app = Flask(__name__)
+        cfg = Config(data_folder=self.temp_dir)
+        cfg.data["ZELDA BUILDER"] = {"downloaded": True, "location": game_dir}
+        cfg.save()
+        db_mgr = DatabaseManager(self.temp_dir, "", config=cfg)
+        db_mgr.games = [GameEntry(
+            raw_id="zelda_builder", index=0, title="Zelda Builder", version="1.0",
+            host="GoFile", approx_size="1GB", description="", thumbnail="",
+            origin_url="", main_game_url="", fix_url="", runners=runners_def
+        )]
+        app.register_blueprint(create_games_blueprint(db_mgr, cfg))
+        client = app.test_client()
+
+        with unittest.mock.patch('subprocess.Popen') as mock_popen:
+            mock_proc = unittest.mock.MagicMock()
+            mock_proc.pid = 4242
+            mock_proc.wait.return_value = 0
+            mock_popen.return_value = mock_proc
+
+            resp_launch = client.post('/api/games/launch', json={"title": "Zelda Builder", "runner_id": "hookshot"})
+            self.assertEqual(resp_launch.status_code, 200)
+            launch_json = resp_launch.get_json()
+            self.assertTrue(launch_json["success"])
+            self.assertEqual(launch_json["method"], "builder")
+            self.assertTrue(launch_json["builder_launched"])
+            self.assertIn("HookshotBuilder.exe", launch_json["exe_path"])
+
+        # 4. Simulate builder producing a fresh hookshot.exe -> needs_build clears automatically
+        new_ts = old_ts + 100.0
+        os.utime(hook_exe, (new_ts, new_ts))
+        RunnersManager.mark_builder_completed(game_dir, runners_def[0])
+        st_built = RunnersManager.get_runners_status(game_dir, runners_def, check_remote=False)[0]
+        self.assertFalse(st_built["needs_build"])
+        self.assertEqual(os.path.normpath(st_built["primary_exe"]), os.path.normpath(hook_exe))
+
 
 if __name__ == "__main__":
     unittest.main()

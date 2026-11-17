@@ -240,6 +240,16 @@ class DetailsController {
         if (cancelRemoveBtn) {
             cancelRemoveBtn.addEventListener('click', () => this.closeRemoveModal());
         }
+
+        window.addEventListener('focus', () => {
+            if (
+                this.modal?.classList.contains('active') &&
+                this.currentGame?.runners?.length > 0 &&
+                this.currentRunners?.some(r => r.needs_build)
+            ) {
+                this.renderRunners(this.currentGame);
+            }
+        });
     }
 
     openGame(game) {
@@ -1203,9 +1213,11 @@ class DetailsController {
         this.updateOriginUI(activeRunner);
         if (this.runnerStatusHint) {
             if (activeRunner && activeRunner.update_available) {
-                this.runnerStatusHint.textContent = `Update available (${activeRunner.latest_version})`;
+                this.runnerStatusHint.textContent = `Update available (${activeRunner.installed_version || 'Bundled'} → ${activeRunner.latest_version})`;
+            } else if (activeRunner && activeRunner.needs_build) {
+                this.runnerStatusHint.textContent = 'Builder required (run once before playing)';
             } else if (activeRunner && activeRunner.installed) {
-                this.runnerStatusHint.textContent = 'Ready to launch';
+                this.runnerStatusHint.textContent = `Ready to launch (${activeRunner.installed_version || 'Installed'})`;
             } else if (activeRunner) {
                 this.runnerStatusHint.textContent = 'Download runner to play';
             }
@@ -1218,9 +1230,15 @@ class DetailsController {
 
         if (this.playBtnText) {
             if (activeRunner && isInstalledGame) {
-                this.playBtnText.textContent = `Play (${activeShortLabel})`;
+                this.playBtnText.textContent = activeRunner.needs_build
+                    ? `Build (${activeShortLabel})`
+                    : `Play (${activeShortLabel})`;
+                if (this.playIcon) {
+                    this.playIcon.className = activeRunner.needs_build ? 'fa-solid fa-hammer' : 'fa-solid fa-play';
+                }
             } else if (!this.currentGame?.steam_url) {
                 this.playBtnText.textContent = 'Play Game';
+                if (this.playIcon) this.playIcon.className = 'fa-solid fa-play';
             }
         }
 
@@ -1238,6 +1256,7 @@ class DetailsController {
             const isSelected = (r.id === this.selectedRunnerId);
             const isInstalled = Boolean(r.installed);
             const isUpdate = Boolean(r.update_available);
+            const needsBuild = Boolean(r.needs_build && isInstalled);
             const releaseUrl = this.getRunnerReleaseUrl(r);
             const isGitHub = releaseUrl.toLowerCase().includes('github.com');
             const hostLabel = isGitHub ? 'GitHub' : 'Git';
@@ -1245,7 +1264,9 @@ class DetailsController {
 
             let tagHtml = '';
             if (isUpdate) {
-                tagHtml = `<span class="runner-tag tag-update" title="Newer version available on ${hostLabel}: ${r.latest_version}"><i class="fa-solid fa-arrows-rotate"></i> Update</span>`;
+                tagHtml = `<span class="runner-tag tag-update" title="Newer version available on ${hostLabel}: ${r.installed_version || 'Bundled'} → ${r.latest_version}"><i class="fa-solid fa-arrows-rotate"></i> Update</span>`;
+            } else if (needsBuild) {
+                tagHtml = `<span class="runner-tag tag-build" title="Run the builder once to compile/update the game executable"><i class="fa-solid fa-hammer"></i> Build Needed</span>`;
             } else if (isInstalled) {
                 tagHtml = `<span class="runner-tag tag-installed"><i class="fa-solid fa-check"></i> Ready</span>`;
             } else {
@@ -1261,9 +1282,24 @@ class DetailsController {
                 ? `<button type="button" class="runner-github-link" data-browse-runner-exe="${r.id}" title="${exeTooltip.replace(/"/g, '&quot;')}" style="background: transparent; border: none; cursor: pointer;"><i class="fa-solid fa-folder-open"></i></button>`
                 : '';
 
+            const builderName = r.builder_exe ? r.builder_exe.split(/[\\/]/).pop() : 'Builder';
+            const builderIconBtnHtml = (isInstalled && r.has_builder)
+                ? `<button type="button" class="runner-github-link" data-run-builder="${r.id}" title="Run ${r.name} Builder (${builderName})" style="background: transparent; border: none; cursor: pointer;"><i class="fa-solid fa-hammer"></i></button>`
+                : '';
+
+            let versionLabelHtml = `<span class="runner-version-label">${r.latest_version || ''}</span>`;
+            if (isInstalled && isUpdate) {
+                const instDisplay = r.installed_version || 'Bundled';
+                versionLabelHtml = `<span class="runner-version-label" style="color: var(--warning); font-weight: 600;" title="Installed: ${instDisplay} | Latest on ${hostLabel}: ${r.latest_version}">${instDisplay} &rarr; ${r.latest_version}</span>`;
+            } else if (isInstalled && r.installed_version) {
+                versionLabelHtml = `<span class="runner-version-label" title="Installed version">${r.installed_version}</span>`;
+            }
+
             let actionHtml = '';
             if (isUpdate) {
                 actionHtml = `<button class="runner-action-btn btn-update" data-install-runner="${r.id}" title="Update to latest ${hostLabel} release (${r.latest_version})"><i class="fa-solid fa-cloud-arrow-down"></i> Update (${r.latest_version})</button>`;
+            } else if (needsBuild) {
+                actionHtml = `<button class="runner-action-btn btn-update" data-run-builder="${r.id}" title="Run ${r.name} Builder once to build the updated game"><i class="fa-solid fa-hammer"></i> Run Builder</button>`;
             } else if (isInstalled) {
                 if (isSelected) {
                     actionHtml = `<span class="runner-action-btn btn-active-indicator"><i class="fa-solid fa-circle-dot"></i> Active</span>`;
@@ -1300,13 +1336,14 @@ class DetailsController {
                             ${subLabel ? `<span class="runner-card-subtitle">${subLabel}</span>` : ''}
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px;">
+                            ${builderIconBtnHtml}
                             ${browseExeBtnHtml}
                             ${githubLinkHtml}
                             ${tagHtml}
                         </div>
                     </div>
                     <div class="runner-card-bottom">
-                        <span class="runner-version-label">${r.latest_version || ''}</span>
+                        ${versionLabelHtml}
                         ${actionHtml}
                     </div>
                 </div>
@@ -1317,8 +1354,20 @@ class DetailsController {
         this.runnersList.querySelectorAll('.runner-card').forEach(card => {
             const rid = card.getAttribute('data-runner-card');
             card.addEventListener('click', (e) => {
-                if (e.target.closest('[data-install-runner]') || e.target.closest('[data-browse-runner-exe]')) return;
+                if (
+                    e.target.closest('[data-install-runner]') ||
+                    e.target.closest('[data-browse-runner-exe]') ||
+                    e.target.closest('[data-run-builder]')
+                ) return;
                 this.selectRunner(rid);
+            });
+        });
+
+        this.runnersList.querySelectorAll('[data-run-builder]').forEach(btn => {
+            const rid = btn.getAttribute('data-run-builder');
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.runRunnerBuilder(rid, false);
             });
         });
 
@@ -1338,6 +1387,27 @@ class DetailsController {
                 if (runner) this.installRunner(this.currentGame, runner, btn);
             });
         });
+    }
+
+    async runRunnerBuilder(runnerId, isAuto = false) {
+        if (!this.currentGame || !runnerId) return;
+        try {
+            const res = await window.apiClient.runGameRunnerBuilder({
+                id: this.currentGame.id,
+                title: this.currentGame.title,
+                runner_id: runnerId
+            });
+            if (res && res.success) {
+                if (!isAuto) {
+                    window.uiController?.showToast(res.message || 'Launched Builder!', 'info', 6000);
+                }
+            } else {
+                window.uiController?.showToast(res?.error || 'Could not launch Builder.', 'danger');
+            }
+        } catch (err) {
+            console.error('[DetailsController] runRunnerBuilder failed:', err);
+            window.uiController?.showToast(`Failed to launch Builder: ${err.message || err}`, 'danger');
+        }
     }
 
     async installRunner(game, runner, btnEl) {
@@ -1361,9 +1431,18 @@ class DetailsController {
         try {
             const res = await window.apiClient.installGameRunner(game.id, game.title, runner.id);
             if (res && res.success) {
-                window.uiController?.showToast(res.message || `Installed ${runner.name} successfully!`, 'success');
                 this.selectedRunnerId = runner.id;
                 await this.renderRunners(game);
+                if (res.needs_build && res.builder_exe) {
+                    window.uiController?.showToast(
+                        `Installed ${runner.name} (${res.version})! Starting Builder once to update game files...`,
+                        'info',
+                        6500
+                    );
+                    await this.runRunnerBuilder(runner.id, true);
+                } else {
+                    window.uiController?.showToast(res.message || `Installed ${runner.name} successfully!`, 'success');
+                }
             } else {
                 window.uiController?.showToast(res?.error || `Failed to install ${runner.name}`, 'danger');
                 if (btnEl) {
@@ -1388,9 +1467,10 @@ class DetailsController {
         const activeRunner = hasRunners
             ? (this.currentRunners?.find(r => r.id === this.selectedRunnerId) || null)
             : null;
+        const forceBuilder = Boolean(hasRunners && activeRunner?.needs_build);
         const targetSteamUrl = hasRunners ? (activeRunner?.steam_url || '') : (game.steam_url || '');
 
-        if (!directOnly && targetSteamUrl) {
+        if (!directOnly && !forceBuilder && targetSteamUrl) {
             window.uiController?.showToast(`Launching ${title} on Steam...`, 'info');
             try {
                 if (window.api && window.api.openExternal) {
