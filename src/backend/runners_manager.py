@@ -161,58 +161,114 @@ class RunnersManager:
         return None
 
     @classmethod
-    def find_runner_executable(cls, game_location: str, runner_def: Dict[str, Any]) -> str:
+    def _candidate_game_bases(cls, game_location: str) -> List[str]:
+        if not game_location or not os.path.isdir(game_location):
+            return []
+        bases = [os.path.normpath(game_location)]
+        games2_sub = os.path.join(game_location, "GAMES2")
+        if os.path.isdir(games2_sub):
+            bases.append(os.path.normpath(games2_sub))
+        for b in list(bases):
+            try:
+                for entry in sorted(os.listdir(b)):
+                    sub = os.path.join(b, entry)
+                    if os.path.isdir(sub) and not entry.startswith((".", "_")):
+                        norm_sub = os.path.normpath(sub)
+                        if norm_sub not in bases:
+                            bases.append(norm_sub)
+            except Exception:
+                pass
+        return bases
+
+    @classmethod
+    def resolve_runner_launch_options(cls, game_location: str, runner_def: Dict[str, Any]) -> str:
+        raw_args = runner_def.get("args", []) or []
+        if not raw_args:
+            return ""
+        bases = cls._candidate_game_bases(game_location) if game_location else []
+        resolved_parts: List[str] = []
+        for arg in raw_args:
+            arg_str = str(arg)
+            if isinstance(arg, str) and not arg.startswith("-") and not os.path.isabs(arg) and bases:
+                found = ""
+                for base in bases:
+                    cand = os.path.normpath(os.path.join(base, arg))
+                    if os.path.exists(cand):
+                        found = cand
+                        break
+                if not found:
+                    found = os.path.normpath(os.path.join(bases[0], arg))
+                resolved_parts.append(f'"{found}"' if " " in found else found)
+            else:
+                resolved_parts.append(f'"{arg_str}"' if (" " in arg_str and not arg_str.startswith("-")) else arg_str)
+        return " ".join(resolved_parts)
+
+    @classmethod
+    def find_runner_executable(cls, game_location: str, runner_def: Dict[str, Any], saved_exe: str = "") -> str:
         """
         Resolves the best launchable executable for a runner within game_location.
-        Prioritizes built/primary game executables over builder/launcher/setup binaries,
-        searching both the runner folder and 1-level nested subdirectories.
+        Prioritizes saved custom path, then primary/built executables over builder/launcher/setup binaries,
+        searching the runner folder up to depth 3.
         """
+        if saved_exe and os.path.isfile(saved_exe):
+            return os.path.normpath(saved_exe)
+
         if not game_location or not runner_def:
             return ""
 
         rel_path = runner_def.get("rel_path", "")
         folder = runner_def.get("folder", "")
-        raw_exe = os.path.normpath(os.path.join(game_location, rel_path)) if rel_path else ""
-        if raw_exe and os.path.isfile(raw_exe):
-            return raw_exe
+        target_basename = os.path.basename(rel_path).lower() if rel_path else ""
+        bases = cls._candidate_game_bases(game_location)
 
-        folder_dir = os.path.normpath(os.path.join(game_location, folder)) if folder else (
-            os.path.dirname(raw_exe) if raw_exe else ""
-        )
-        if not folder_dir or not os.path.isdir(folder_dir):
-            return ""
+        for base_loc in bases:
+            raw_exe = os.path.normpath(os.path.join(base_loc, rel_path)) if rel_path else ""
+            if raw_exe and os.path.isfile(raw_exe):
+                return raw_exe
 
-        search_dirs = [folder_dir]
-        try:
-            for entry in sorted(os.listdir(folder_dir)):
-                sub = os.path.join(folder_dir, entry)
-                if os.path.isdir(sub):
-                    search_dirs.append(sub)
-        except Exception:
-            pass
+            folder_dir = os.path.normpath(os.path.join(base_loc, folder)) if folder else (
+                os.path.dirname(raw_exe) if raw_exe else ""
+            )
+            if not folder_dir or not os.path.isdir(folder_dir):
+                continue
 
-        for sdir in search_dirs:
-            for cand in cls.PRIMARY_EXE_CANDIDATES:
-                p = os.path.normpath(os.path.join(sdir, cand))
-                if os.path.isfile(p):
-                    return p
-
-        for sdir in search_dirs:
-            for cand in cls.BUILDER_EXE_CANDIDATES:
-                p = os.path.normpath(os.path.join(sdir, cand))
-                if os.path.isfile(p):
-                    return p
-
-        for sdir in search_dirs:
-            try:
-                for f in sorted(os.listdir(sdir), reverse=True):
+            discovered_exes: List[str] = []
+            base_depth = folder_dir.rstrip(os.sep).count(os.sep)
+            for root, dirs, files in os.walk(folder_dir):
+                dirs[:] = sorted([d for d in dirs if not d.startswith((".", "_"))])
+                cur_depth = root.rstrip(os.sep).count(os.sep) - base_depth
+                if cur_depth > 3:
+                    dirs[:] = []
+                    continue
+                for f in sorted(files):
                     fl = f.lower()
-                    if fl.endswith(".exe") and any(k in fl for k in cls.FALLBACK_EXE_KEYWORDS):
-                        p = os.path.join(sdir, f)
-                        if os.path.isfile(p):
-                            return p
-            except Exception:
-                pass
+                    if fl.endswith(".exe") and not fl.startswith(("unins", "vcredist")) and "crash" not in fl:
+                        discovered_exes.append(os.path.normpath(os.path.join(root, f)))
+
+            if not discovered_exes:
+                continue
+
+            if target_basename:
+                for p in discovered_exes:
+                    if os.path.basename(p).lower() == target_basename:
+                        return p
+
+            primary_names = [os.path.basename(c).lower() for c in cls.PRIMARY_EXE_CANDIDATES]
+            for pname in primary_names:
+                for p in discovered_exes:
+                    if os.path.basename(p).lower() == pname:
+                        return p
+
+            builder_names = [os.path.basename(c).lower() for c in cls.BUILDER_EXE_CANDIDATES]
+            for bname in builder_names:
+                for p in discovered_exes:
+                    if os.path.basename(p).lower() == bname:
+                        return p
+
+            for p in discovered_exes:
+                fl = os.path.basename(p).lower()
+                if any(k in fl for k in cls.FALLBACK_EXE_KEYWORDS):
+                    return p
 
         return ""
 
@@ -220,13 +276,17 @@ class RunnersManager:
     def get_runners_status(
         cls,
         game_location: str,
-        runners_def: List[Dict[str, Any]]
+        runners_def: List[Dict[str, Any]],
+        saved_runner_exes: Optional[Dict[str, str]] = None,
+        saved_runner_steam_urls: Optional[Dict[str, str]] = None
     ) -> List[Dict[str, Any]]:
         """
         Returns status for each runner defined for a game:
-        Whether it is installed, executable exists, and latest available version.
+        Whether it is installed, executable exists, saved per-runner paths, and latest available version.
         """
         statuses = []
+        saved_exes_map = saved_runner_exes if isinstance(saved_runner_exes, dict) else {}
+        saved_steam_map = saved_runner_steam_urls if isinstance(saved_runner_steam_urls, dict) else {}
         for r in runners_def:
             rid = r.get("id", "")
             rname = r.get("name", rid)
@@ -235,9 +295,12 @@ class RunnersManager:
             folder = r.get("folder", "")
             args = r.get("args", [])
 
+            saved_exe = str(saved_exes_map.get(rid) or "")
             # Check local install state
-            target_exe = cls.find_runner_executable(game_location, r)
+            target_exe = cls.find_runner_executable(game_location, r, saved_exe=saved_exe)
             is_installed = bool(target_exe and os.path.isfile(target_exe))
+            default_exe = os.path.normpath(os.path.join(game_location, rel_path)) if (game_location and rel_path) else ""
+            launch_options = cls.resolve_runner_launch_options(game_location, r) if game_location else ""
 
             # Check installed version from .runner_version.json in runner folder
             folder_dir = os.path.join(game_location, folder) if game_location and folder else ""
@@ -289,9 +352,13 @@ class RunnersManager:
                 "rel_path": rel_path,
                 "folder": folder,
                 "args": args,
+                "launch_options": launch_options,
                 "installed": is_installed,
                 "installed_version": installed_version,
                 "target_exe": target_exe if is_installed else "",
+                "default_exe": default_exe,
+                "saved_exe": saved_exe,
+                "steam_url": str(saved_steam_map.get(rid) or ""),
                 "latest_version": latest_version,
                 "update_available": update_available,
                 "download_url": download_url,

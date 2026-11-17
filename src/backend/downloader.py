@@ -104,17 +104,67 @@ class Downloader:
             except Exception as e:
                 print(f"[Downloader] Callback error: {e}", flush=True)
 
+    @staticmethod
+    def _job_match_key(filename: str, meta: Optional[Dict[str, Any]]) -> tuple:
+        m = meta or {}
+        title = re.sub(r'[^a-zA-Z0-9]', '', str(m.get("title") or "").strip().lower())
+        part_index = m.get("part_index")
+        job_type = str(m.get("type") or "main").strip().lower()
+        return (title, str(part_index) if part_index is not None else "", job_type)
+
     def add_job(self, url: str, filename: Optional[str] = None, meta: Optional[Dict[str, Any]] = None) -> str:
         filename = sanitize_filename(filename or os.path.basename(url.split("?")[0]) or "download.bin")
         dest_file = os.path.join(self.download_path, filename)
-        with self._lock:
-            job_id = f"job_{self._job_counter}"
-            self._job_counter += 1
-            job = DownloadJob(job_id, url, dest_file, filename, meta)
-            self.jobs[job_id] = job
-            self._queue.append(job_id)
+        norm_dest = os.path.normpath(dest_file).lower()
+        meta_dict = dict(meta) if meta else {}
+        new_key = self._job_match_key(filename, meta_dict)
 
-        title = (meta or {}).get("title", filename)
+        with self._lock:
+            # First purge any cancelled jobs from self.jobs and self._queue
+            cancelled_ids = [jid for jid, j in self.jobs.items() if j.status == "cancelled" or j._cancel_flag]
+            for cid in cancelled_ids:
+                self.jobs.pop(cid, None)
+                self._queue = [qid for qid in self._queue if qid != cid]
+
+            # Prevent duplicate jobs when switching sources or re-queueing the same game/part
+            existing_job = None
+            for j in self.jobs.values():
+                j_dest = os.path.normpath(j.dest_file).lower() if j.dest_file else ""
+                if j_dest == norm_dest:
+                    existing_job = j
+                    break
+                if new_key[0]:  # Only match by metadata key when title is present
+                    if self._job_match_key(j.filename, j.meta) == new_key:
+                        existing_job = j
+                        break
+
+            if existing_job is not None:
+                job_id = existing_job.id
+                if existing_job.url != url and existing_job.status != "completed":
+                    existing_job._cancel_flag = True
+                    existing_job._pause_event.set()
+                    old_part = existing_job.dest_file + ".part"
+                    if os.path.exists(old_part):
+                        try:
+                            os.remove(old_part)
+                        except Exception:
+                            pass
+                elif existing_job.status != "completed":
+                    existing_job._cancel_flag = True
+                    existing_job._pause_event.set()
+
+                self._queue = [qid for qid in self._queue if qid != job_id]
+                job = DownloadJob(job_id, url, dest_file, filename, meta_dict)
+                self.jobs[job_id] = job
+                self._queue.append(job_id)
+            else:
+                job_id = f"job_{self._job_counter}"
+                self._job_counter += 1
+                job = DownloadJob(job_id, url, dest_file, filename, meta_dict)
+                self.jobs[job_id] = job
+                self._queue.append(job_id)
+
+        title = meta_dict.get("title", filename)
         print(f"[Downloader] [{job_id}] Queued: '{title}' ({filename}) from {url}", flush=True)
 
         self._notify(job)
@@ -146,15 +196,111 @@ class Downloader:
         return False
 
     def cancel_job(self, job_id: Any) -> bool:
-        job = self.jobs.get(str(job_id))
+        with self._lock:
+            job = self.jobs.pop(str(job_id), None)
+            self._queue = [qid for qid in self._queue if qid != str(job_id)]
+            if job:
+                job.status = "cancelled"
+                job._cancel_flag = True
+                job._pause_event.set()
         if job:
-            job.status = "cancelled"
-            job._cancel_flag = True
-            job._pause_event.set()
+            part_file = job.dest_file + ".part"
+            if os.path.exists(part_file):
+                try:
+                    os.remove(part_file)
+                except Exception:
+                    pass
             print(f"[Downloader] [{job_id}] Cancelled by user.", flush=True)
             self._notify(job)
+            self._check_queue()
             return True
         return False
+
+    def switch_job_source(
+        self,
+        job_id: str,
+        new_host: str,
+        part_urls: Optional[List[str]] = None,
+        fix_url: Optional[str] = None,
+        switch_all_parts: bool = True
+    ) -> Dict[str, Any]:
+        """Switches a paused/failed/queued download (or all parts of a multi-part game) to a different mirror host in-place."""
+        switched_jobs: List[DownloadJob] = []
+        with self._lock:
+            target_job = self.jobs.get(str(job_id))
+            if not target_job:
+                return {"success": False, "error": "Download job not found"}
+
+            if switch_all_parts and self._is_multipart_job(target_job):
+                siblings = self._get_sibling_part_jobs_locked(target_job)
+                jobs_to_switch = [sj for sj in siblings if sj.status != "completed"]
+                if not jobs_to_switch:
+                    jobs_to_switch = [target_job]
+            else:
+                jobs_to_switch = [target_job]
+
+            for sj in jobs_to_switch:
+                meta_type = str(sj.meta.get("type") or "").lower()
+                new_url = None
+                if meta_type == "fix":
+                    new_url = fix_url
+                else:
+                    idx = None
+                    if "part_index" in sj.meta:
+                        try:
+                            idx = int(sj.meta["part_index"])
+                        except Exception:
+                            idx = None
+                    if idx is None:
+                        m_type = re.search(r'main_part_(\d+)', meta_type)
+                        if m_type:
+                            idx = int(m_type.group(1))
+                    if idx is None:
+                        idx = 1
+
+                    if isinstance(part_urls, list) and 0 <= (idx - 1) < len(part_urls):
+                        new_url = part_urls[idx - 1]
+                    elif isinstance(part_urls, list) and len(part_urls) == 1:
+                        new_url = part_urls[0]
+                    elif fix_url:
+                        new_url = fix_url
+
+                if not new_url or not str(new_url).strip().startswith("http"):
+                    continue
+
+                # Cancel the old job instance cleanly and remove its partial stream file
+                sj._cancel_flag = True
+                sj._pause_event.set()
+                old_part = sj.dest_file + ".part"
+                if os.path.exists(old_part):
+                    try:
+                        os.remove(old_part)
+                    except Exception:
+                        pass
+
+                new_meta = dict(sj.meta)
+                new_meta["host"] = new_host
+                fresh_job = DownloadJob(sj.id, str(new_url).strip(), sj.dest_file, sj.filename, new_meta)
+                fresh_job.status = "queued"
+                fresh_job.eta = f"Switched to {new_host}"
+                self.jobs[sj.id] = fresh_job
+                if sj.id not in self._queue:
+                    self._queue.append(sj.id)
+                switched_jobs.append(fresh_job)
+
+        for nj in switched_jobs:
+            print(f"[Downloader] [{nj.id}] Switched source -> {new_host} ({nj.url})", flush=True)
+            self._notify(nj)
+
+        self._check_queue()
+        if not switched_jobs:
+            return {"success": False, "error": f"No compatible download URL found on {new_host}"}
+        return {
+            "success": True,
+            "switched_count": len(switched_jobs),
+            "job_ids": [j.id for j in switched_jobs],
+            "host": new_host
+        }
 
     def retry_job(self, job_id: Any, new_url: Optional[str] = None) -> bool:
         with self._lock:
@@ -176,7 +322,7 @@ class Downloader:
 
     def get_all_jobs(self) -> List[Dict[str, Any]]:
         with self._lock:
-            return [job.to_dict() for job in self.jobs.values()]
+            return [job.to_dict() for job in self.jobs.values() if job.status != "cancelled"]
 
     def _is_multipart_job(self, job: DownloadJob) -> bool:
         meta_type = str(job.meta.get("type") or "")
@@ -202,6 +348,8 @@ class Downloader:
 
         siblings = []
         for j in self.jobs.values():
+            if j.status == "cancelled" or j._cancel_flag:
+                continue
             if not self._is_multipart_job(j):
                 continue
             if game_id and j.meta.get("game_id") == game_id:
@@ -231,7 +379,16 @@ class Downloader:
             return 999
 
         siblings.sort(key=sort_key)
-        return siblings
+
+        # Deduplicate siblings by part index / dest_file
+        deduped: List[DownloadJob] = []
+        seen_keys = set()
+        for sj in siblings:
+            pkey = (sort_key(sj), os.path.normpath(sj.dest_file).lower() if sj.dest_file else sj.filename.lower())
+            if pkey not in seen_keys:
+                seen_keys.add(pkey)
+                deduped.append(sj)
+        return deduped
 
     def _check_queue(self):
         with self._lock:
@@ -247,7 +404,12 @@ class Downloader:
                     t.start()
                     running_count += 1
 
+    def _is_job_superseded(self, job: DownloadJob) -> bool:
+        return bool(job._cancel_flag or self.jobs.get(job.id) is not job)
+
     def _download_worker(self, job: DownloadJob):
+        if self._is_job_superseded(job):
+            return
         # 0. Ensure filename and destination path are safe for Windows filesystems
         clean_fn = sanitize_filename(job.filename)
         clean_dest = os.path.join(os.path.dirname(job.dest_file) or self.download_path, clean_fn)
@@ -314,10 +476,14 @@ class Downloader:
                 print(f"[Downloader] [{job.id}] Link resolution notice: {res_err}", flush=True)
 
         if "gofile.io/d/" in download_url:
-            job.status = "error"
-            job.error_msg = "GoFile connection timed out (server unreachable or blocked by ISP/VPN). Try 'Open Mirror'."
-            print(f"[Downloader] [{job.id}] ERROR: {job.error_msg}", flush=True)
-            self._notify(job)
+            if not self._is_job_superseded(job):
+                job.status = "error"
+                job.error_msg = "GoFile connection timed out (server unreachable or blocked by ISP/VPN). Try 'Open Mirror'."
+                print(f"[Downloader] [{job.id}] ERROR: {job.error_msg}", flush=True)
+                self._notify(job)
+            return
+
+        if self._is_job_superseded(job):
             return
 
         job.status = "connecting"
@@ -433,18 +599,25 @@ class Downloader:
                     self._notify(job)
                     print(f"[Downloader] [{job.id}] Step 3/3: Downloading data stream...", flush=True)
 
+                    if self._is_job_superseded(job):
+                        return
+
                     mode = "ab" if resp.status_code == 206 else "wb"
                     if resp.status_code == 200:
                         job.downloaded_bytes = 0
                     with open(part_path, mode) as f:
                         for chunk in resp.iter_content(chunk_size=65536):
-                            if job._cancel_flag:
-                                job.status = "cancelled"
-                                print(f"[Downloader] [{job.id}] Download cancelled.", flush=True)
-                                self._notify(job)
+                            if self._is_job_superseded(job):
+                                if self.jobs.get(job.id) is job:
+                                    job.status = "cancelled"
+                                    self._notify(job)
+                                print(f"[Downloader] [{job.id}] Download cancelled/replaced.", flush=True)
                                 return
 
                             job._pause_event.wait()
+
+                            if self._is_job_superseded(job):
+                                return
 
                             if chunk:
                                 f.write(chunk)
@@ -475,6 +648,9 @@ class Downloader:
                                         print(f"[Downloader] [{job.id}] Progress: {current_milestone}% ({dl_mb:.1f} MB / {total_mb:.1f} MB) @ {sp_mb:.2f} MB/s | ETA: {job.eta}", flush=True)
 
                                     self._notify(job)
+
+                if self._is_job_superseded(job):
+                    return
 
                 try:
                     if os.path.exists(job.dest_file):
@@ -745,9 +921,10 @@ class Downloader:
 
 
         except Exception as e:
-            job.status = "error"
-            job.error_msg = str(e)
-            print(f"[Downloader] [{job.id}] EXCEPTION: {job.error_msg}", flush=True)
-            self._notify(job)
+            if not self._is_job_superseded(job):
+                job.status = "error"
+                job.error_msg = str(e)
+                print(f"[Downloader] [{job.id}] EXCEPTION: {job.error_msg}", flush=True)
+                self._notify(job)
         finally:
             self._check_queue()

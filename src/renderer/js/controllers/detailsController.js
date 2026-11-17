@@ -185,7 +185,8 @@ class DetailsController {
         if (this.browseInstallPathBtn) {
             this.browseInstallPathBtn.addEventListener('click', async () => {
                 try {
-                    const chosen = await window.api?.selectDirectory();
+                    const currentPath = this.setupInstallPathInput?.value || '';
+                    const chosen = await window.api?.selectDirectory(currentPath);
                     if (chosen && this.setupInstallPathInput) {
                         this.setupInstallPathInput.value = chosen;
                         this.checkDiskSpace();
@@ -273,12 +274,14 @@ class DetailsController {
  
         this.updateOriginUI(null, game);
  
+        const hasRunners = Boolean(game.runners && game.runners.length > 0);
+
         // Setup Play Game / Play on Steam button
         const isInstalled = Boolean(game.status === 1 || game.status === 2 || game.is_downloaded || game.location);
         if (this.playBtn) {
             this.playBtn.style.display = isInstalled ? 'inline-flex' : 'none';
             if (isInstalled) {
-                if (game.steam_url) {
+                if (game.steam_url && !hasRunners) {
                     this.playBtn.classList.add('steam-play');
                     if (this.playIcon) this.playIcon.className = 'fa-brands fa-steam';
                     if (this.playBtnText) this.playBtnText.textContent = 'Play on Steam';
@@ -292,14 +295,14 @@ class DetailsController {
             }
         }
 
-        // Steam button state: If already added to Steam (has steam_url), show "Launch Direct" option
+        // Steam button state: For single-exe games already on Steam, show "Launch Direct"; for multi-runner games allow adding/updating the selected runner
         if (this.addSteamBtn) {
-            if (game.steam_url) {
+            if (game.steam_url && !hasRunners) {
                 this.addSteamBtn.innerHTML = '<i class="fa-solid fa-play"></i> Launch Direct';
                 this.addSteamBtn.title = 'Launch game executable directly without Steam';
             } else {
                 this.addSteamBtn.innerHTML = '<i class="fa-brands fa-steam"></i> Add to Steam';
-                this.addSteamBtn.title = 'Create Steam non-game shortcut';
+                this.addSteamBtn.title = 'Create or update Steam shortcut';
             }
         }
 
@@ -608,7 +611,7 @@ class DetailsController {
                     }
 
                     const safeTitle = (this.currentGame.title || 'Game').replace(/[:]+/g, ' -').replace(/[/\\?%*|"<>]/g, '_').replace(/\s+/g, ' ').trim();
-                    const filename = `${safeTitle}_${partLabel}${ext}`;
+                    const filename = isFH2 ? `${safeTitle}_${partLabel}${ext}` : `${safeTitle}.part${i + 1}${ext}`;
                     await window.apiClient.addDownload(partUrl, filename, {
                         game_id: this.currentGame.id,
                         title: this.currentGame.title,
@@ -966,15 +969,31 @@ class DetailsController {
 
     async addToSteam() {
         if (!this.currentGame) return;
+        const hasRunners = Boolean(this.currentGame.runners && this.currentGame.runners.length > 0);
+        if (hasRunners) {
+            if (!this.currentRunners || this.currentRunners.length === 0) {
+                await this.renderRunners(this.currentGame);
+            }
+            const activeRunner = this.currentRunners?.find(r => r.id === this.selectedRunnerId) || this.currentRunners?.[0];
+            const gameObj = { ...this.currentGame };
+            if (activeRunner) {
+                const resolvedExe = activeRunner.target_exe || activeRunner.saved_exe || activeRunner.default_exe || '';
+                if (resolvedExe) gameObj.exe_path = resolvedExe;
+                gameObj.runner_id = activeRunner.id || '';
+                gameObj.runner_name = activeRunner.name || '';
+                if (activeRunner.launch_options) {
+                    gameObj.launch_options = activeRunner.launch_options;
+                }
+            }
+            window.steamController.openAddShortcutDialog(gameObj);
+            return;
+        }
+
         if (this.currentGame.steam_url) {
             // Already added to Steam; button functions as "Launch Direct"
             this.launchGame(this.currentGame, true);
         } else {
-            const activeRunner = this.currentRunners?.find(r => r.id === this.selectedRunnerId);
             const gameObj = { ...this.currentGame };
-            if (activeRunner && activeRunner.target_exe) {
-                gameObj.exe_path = activeRunner.target_exe;
-            }
             window.steamController.openAddShortcutDialog(gameObj);
         }
     }
@@ -1095,6 +1114,13 @@ class DetailsController {
             const res = await window.apiClient.getGameRunners(game.id, game.title);
             if (res && res.runners && res.runners.length > 0) {
                 this.currentRunners = res.runners;
+                if (res.location && this.currentGame && (!this.currentGame.location || this.currentGame.location !== res.location)) {
+                    this.currentGame.location = res.location;
+                    if (this.locationEl) {
+                        this.locationEl.textContent = res.location;
+                        this.locationEl.style.color = '#fff';
+                    }
+                }
                 // Determine selected runner: preferred > first installed > first available
                 const preferred = res.preferred_runner;
                 const installedOne = this.currentRunners.find(r => r.installed);
@@ -1115,6 +1141,61 @@ class DetailsController {
         }
     }
 
+    async selectRunner(runnerId) {
+        if (!runnerId) return;
+        this.selectedRunnerId = runnerId;
+        if (this.currentGame) {
+            this.currentGame.preferred_runner = runnerId;
+        }
+        this.updateRunnersUI();
+        if (this.currentGame) {
+            try {
+                await window.apiClient.selectGameRunner({
+                    id: this.currentGame.id,
+                    title: this.currentGame.title,
+                    runner_id: runnerId
+                });
+            } catch (e) {
+                console.warn('[DetailsController] Failed to persist preferred runner:', e);
+            }
+        }
+    }
+
+    async browseRunnerExe(runnerId) {
+        if (!this.currentGame || !runnerId) return;
+        const runner = this.currentRunners?.find(r => r.id === runnerId);
+        const startPath = runner?.target_exe || runner?.saved_exe || runner?.default_exe || this.currentGame.location || '';
+        try {
+            const chosenExe = await window.api?.selectFile({
+                defaultPath: startPath,
+                filters: [{ name: 'Executable', extensions: ['exe'] }]
+            });
+            if (!chosenExe) return;
+
+            const res = await window.apiClient.selectGameRunner({
+                id: this.currentGame.id,
+                title: this.currentGame.title,
+                runner_id: runnerId,
+                exe_path: chosenExe
+            });
+            if (res && res.success) {
+                if (runner) {
+                    runner.target_exe = chosenExe;
+                    runner.saved_exe = chosenExe;
+                    runner.installed = true;
+                }
+                this.selectedRunnerId = runnerId;
+                this.currentGame.preferred_runner = runnerId;
+                this.currentGame.runner_exes = res.runner_exes || this.currentGame.runner_exes || {};
+                this.updateRunnersUI();
+                window.uiController?.showToast(`Saved ${runner?.name || runnerId} path!`, 'success');
+            }
+        } catch (err) {
+            console.error('[DetailsController] browseRunnerExe failed:', err);
+            window.uiController?.showToast(`Failed to set runner executable: ${err.message || err}`, 'danger');
+        }
+    }
+
     updateRunnersUI() {
         if (!this.runnersList || !this.currentRunners || this.currentRunners.length === 0) return;
 
@@ -1130,14 +1211,26 @@ class DetailsController {
             }
         }
 
-        // Update Play Game button text if a runner is selected
+        // Update Play Game and Add to Steam button text for the selected runner
+        const isInstalledGame = Boolean(this.currentGame?.status === 1 || this.currentGame?.status === 2 || this.currentGame?.is_downloaded || this.currentGame?.location);
+        const activeMatch = activeRunner?.name?.match(/\(([^)]+)\)/);
+        const activeShortLabel = activeMatch ? activeMatch[1] : (activeRunner?.name || '');
+
         if (this.playBtnText) {
-            if (activeRunner && (this.currentGame?.status === 1 || this.currentGame?.status === 2 || this.currentGame?.is_downloaded)) {
-                const match = activeRunner.name.match(/\(([^)]+)\)/);
-                const shortLabel = match ? match[1] : activeRunner.name;
-                this.playBtnText.textContent = `Play (${shortLabel})`;
+            if (activeRunner && isInstalledGame) {
+                this.playBtnText.textContent = `Play (${activeShortLabel})`;
             } else if (!this.currentGame?.steam_url) {
                 this.playBtnText.textContent = 'Play Game';
+            }
+        }
+
+        if (this.addSteamBtn && this.currentGame?.runners?.length > 0 && activeRunner) {
+            if (activeRunner.steam_url) {
+                this.addSteamBtn.innerHTML = `<i class="fa-brands fa-steam"></i> Update Steam (${activeShortLabel})`;
+                this.addSteamBtn.title = `Update Steam shortcut for ${activeRunner.name}`;
+            } else {
+                this.addSteamBtn.innerHTML = `<i class="fa-brands fa-steam"></i> Add (${activeShortLabel}) to Steam`;
+                this.addSteamBtn.title = `Create Steam non-game shortcut for ${activeRunner.name}`;
             }
         }
 
@@ -1161,6 +1254,11 @@ class DetailsController {
 
             const githubLinkHtml = releaseUrl
                 ? `<a href="${releaseUrl}" target="_blank" class="runner-github-link" title="Open ${r.name} releases on ${hostLabel}" onclick="event.stopPropagation();"><i class="${iconClass}"></i></a>`
+                : '';
+
+            const exeTooltip = (r.target_exe || r.saved_exe) ? `Current: ${r.target_exe || r.saved_exe}` : `Set custom .exe path for ${r.name}`;
+            const browseExeBtnHtml = isInstalledGame
+                ? `<button type="button" class="runner-github-link" data-browse-runner-exe="${r.id}" title="${exeTooltip.replace(/"/g, '&quot;')}" style="background: transparent; border: none; cursor: pointer;"><i class="fa-solid fa-folder-open"></i></button>`
                 : '';
 
             let actionHtml = '';
@@ -1202,6 +1300,7 @@ class DetailsController {
                             ${subLabel ? `<span class="runner-card-subtitle">${subLabel}</span>` : ''}
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px;">
+                            ${browseExeBtnHtml}
                             ${githubLinkHtml}
                             ${tagHtml}
                         </div>
@@ -1218,9 +1317,16 @@ class DetailsController {
         this.runnersList.querySelectorAll('.runner-card').forEach(card => {
             const rid = card.getAttribute('data-runner-card');
             card.addEventListener('click', (e) => {
-                if (e.target.closest('[data-install-runner]')) return;
-                this.selectedRunnerId = rid;
-                this.updateRunnersUI();
+                if (e.target.closest('[data-install-runner]') || e.target.closest('[data-browse-runner-exe]')) return;
+                this.selectRunner(rid);
+            });
+        });
+
+        this.runnersList.querySelectorAll('[data-browse-runner-exe]').forEach(btn => {
+            const rid = btn.getAttribute('data-browse-runner-exe');
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.browseRunnerExe(rid);
             });
         });
 
@@ -1278,12 +1384,17 @@ class DetailsController {
     async launchGame(game = this.currentGame, directOnly = false) {
         if (!game) return;
         const title = game.title || 'Game';
+        const hasRunners = Boolean(game.runners && game.runners.length > 0);
+        const activeRunner = hasRunners
+            ? (this.currentRunners?.find(r => r.id === this.selectedRunnerId) || null)
+            : null;
+        const targetSteamUrl = hasRunners ? (activeRunner?.steam_url || '') : (game.steam_url || '');
 
-        if (!directOnly && game.steam_url) {
+        if (!directOnly && targetSteamUrl) {
             window.uiController?.showToast(`Launching ${title} on Steam...`, 'info');
             try {
                 if (window.api && window.api.openExternal) {
-                    const ok = await window.api.openExternal(game.steam_url);
+                    const ok = await window.api.openExternal(targetSteamUrl);
                     if (ok) return;
                 }
             } catch (e) {
@@ -1298,8 +1409,8 @@ class DetailsController {
                 id: game.id,
                 title: title,
                 location: game.location,
-                steam_url: directOnly ? null : game.steam_url,
-                direct_only: directOnly,
+                steam_url: directOnly ? null : (targetSteamUrl || null),
+                direct_only: directOnly || hasRunners,
                 runner_id: this.selectedRunnerId
             });
 

@@ -36,7 +36,10 @@ def create_settings_blueprint(config, extractor, steam_manager, db_manager, down
             new_settings = request.get_json() or {}
             old_use_local = config.get("use_local_db")
             old_local_path = config.get("local_db_path")
-            
+
+            if 'extract_path' in new_settings and str(new_settings.get('extract_path') or '').strip():
+                new_settings['default_download_path'] = str(new_settings['extract_path']).strip()
+
             config.update(new_settings)
             
             # Update live managers

@@ -48,13 +48,26 @@ class DownloadController {
         window.apiClient.on('extraction_status', (data) => {
             this.handleExtractionUpdate(data);
         });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dl-switch-source-wrap')) {
+                document.querySelectorAll('.dl-source-dropdown').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            }
+        });
     }
 
     async loadExistingDownloads() {
         try {
             const data = await window.apiClient.getDownloads();
             if (data.jobs && Array.isArray(data.jobs)) {
-                data.jobs.forEach(job => this.jobs.set(job.id, job));
+                this.jobs.clear();
+                data.jobs.forEach(job => {
+                    if (job.status !== 'cancelled') {
+                        this.jobs.set(job.id, job);
+                    }
+                });
                 this.renderQueue();
             }
         } catch (err) {
@@ -64,6 +77,11 @@ class DownloadController {
 
     handleProgressUpdate(data) {
         if (!data || !data.id) return;
+        if (data.status === 'cancelled') {
+            this.jobs.delete(data.id);
+            this.renderQueue();
+            return;
+        }
         this.jobs.set(data.id, data);
         this.updateJobCard(data);
 
@@ -197,10 +215,119 @@ class DownloadController {
         return parts.join(' &bull; ');
     }
 
+    getAvailableSourcesForJob(job) {
+        if (!job) return [];
+        const games = window.libraryController?.games || [];
+        const gameId = job.meta?.game_id;
+        const jobTitle = (job.meta?.title || '').trim().toLowerCase();
+        const game = games.find(g =>
+            (gameId && g.id === gameId) ||
+            (jobTitle && g.title && g.title.trim().toLowerCase() === jobTitle)
+        );
+        if (!game) return [];
+
+        const isFix = String(job.meta?.type || '').toLowerCase() === 'fix';
+        const sources = [];
+        const primaryParts = Array.isArray(game.parts) && game.parts.length > 0
+            ? game.parts
+            : (game.main_game_url ? [game.main_game_url] : []);
+        const primaryHost = game.host || 'Primary';
+
+        if (isFix ? Boolean(game.fix_url) : primaryParts.length > 0) {
+            sources.push({
+                host: primaryHost,
+                parts: primaryParts,
+                fix_url: game.fix_url || ''
+            });
+        }
+
+        const mirrors = game.mirrors || {};
+        for (const [mHost, mData] of Object.entries(mirrors)) {
+            if (!mData) continue;
+            const mParts = Array.isArray(mData.parts) && mData.parts.length > 0
+                ? mData.parts
+                : (mData.url ? [mData.url] : []);
+            const mFix = mData.fix_url || '';
+            if (isFix ? Boolean(mFix) : mParts.length > 0) {
+                if (!sources.some(s => s.host.toLowerCase() === mHost.toLowerCase())) {
+                    sources.push({
+                        host: mHost,
+                        parts: mParts,
+                        fix_url: mFix
+                    });
+                }
+            }
+        }
+        return sources;
+    }
+
+    toggleSwitchSourceMenu(jobId) {
+        const targetMenu = document.getElementById(`dl-source-menu-${jobId}`);
+        if (!targetMenu) return;
+        const willOpen = targetMenu.style.display !== 'flex';
+        document.querySelectorAll('.dl-source-dropdown').forEach(menu => {
+            menu.style.display = 'none';
+        });
+        targetMenu.style.display = willOpen ? 'flex' : 'none';
+    }
+
+    async switchJobSource(jobId, newHost) {
+        document.querySelectorAll('.dl-source-dropdown').forEach(menu => {
+            menu.style.display = 'none';
+        });
+        const job = this.jobs.get(jobId);
+        if (!job) return;
+        const sources = this.getAvailableSourcesForJob(job);
+        const sourceObj = sources.find(s => s.host.toLowerCase() === String(newHost).toLowerCase());
+        if (!sourceObj) {
+            window.uiController?.showToast(`Mirror '${newHost}' not found for this download.`, 'warning');
+            return;
+        }
+        try {
+            const res = await window.apiClient.switchDownloadSource({
+                job_id: jobId,
+                new_host: sourceObj.host,
+                part_urls: sourceObj.parts,
+                fix_url: sourceObj.fix_url,
+                switch_all_parts: true
+            });
+            if (res && res.success) {
+                window.uiController?.showToast(`Switched download source to ${sourceObj.host}!`, 'success');
+            } else {
+                window.uiController?.showToast(res?.error || 'Could not switch download source.', 'danger');
+            }
+        } catch (err) {
+            window.uiController?.showToast(`Failed to switch source: ${err.message}`, 'danger');
+        }
+    }
+
     renderActionsHtml(job) {
         const percent = (job.progress || 0).toFixed(1);
         const speedFormatted = this.formatSpeed(job.speed_bytes || 0);
         const targetFolder = job.meta?.extracted_dir || job.dest_file;
+        const canSwitchSource = (job.status === 'paused' || job.status === 'error' || job.status === 'queued');
+        const availableSources = canSwitchSource ? this.getAvailableSourcesForJob(job) : [];
+        const currentHost = String(job.meta?.host || '').toLowerCase();
+
+        const switchSourceHtml = (canSwitchSource && availableSources.length > 1) ? `
+            <div class="dl-switch-source-wrap" style="position: relative; display: inline-block;">
+                <button class="btn btn-sm btn-secondary" title="Switch download mirror/source (updates all parts for this game)" onclick="event.stopPropagation(); window.downloadController.toggleSwitchSourceMenu('${job.id}')">
+                    <i class="fa-solid fa-repeat"></i> Switch Source <i class="fa-solid fa-chevron-down" style="font-size: 9px; margin-left: 2px;"></i>
+                </button>
+                <div id="dl-source-menu-${job.id}" class="dl-source-dropdown" style="display: none;">
+                    ${availableSources.map(src => {
+                        const isActive = currentHost && src.host.toLowerCase() === currentHost;
+                        const escapedHost = src.host.replace(/'/g, "\\'");
+                        return `
+                            <button type="button" class="dl-source-option ${isActive ? 'active' : ''}" onclick="event.stopPropagation(); window.downloadController.switchJobSource('${job.id}', '${escapedHost}')">
+                                <span><i class="fa-solid fa-server" style="margin-right: 6px; color: var(--accent);"></i>${src.host}</span>
+                                ${isActive ? '<span class="dl-source-badge">Current</span>' : `<span class="dl-source-badge">${src.parts.length} ${src.parts.length === 1 ? 'part' : 'parts'}</span>`}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        ` : '';
 
         return `
             <span class="download-speed-badge" style="${(this.showSpeed && job.status === 'downloading') ? '' : 'display: none;'}">${speedFormatted}</span>
@@ -217,6 +344,7 @@ class DownloadController {
                     <i class="fa-solid fa-play"></i>
                 </button>
             ` : '')}
+            ${switchSourceHtml}
             ${job.status === 'error' ? `
                 <button class="btn btn-sm btn-primary" title="Retry this download part" onclick="window.downloadController.retryJob('${job.id}')">
                     <i class="fa-solid fa-arrows-rotate"></i> Retry
@@ -393,10 +521,12 @@ class DownloadController {
         }
 
         const targetFolder = job.meta?.extracted_dir || job.dest_file;
-        if (card._lastRenderedStatus !== job.status || card._lastExtractedDir !== targetFolder || card._lastEta !== job.eta) {
+        const currentHost = job.meta?.host || '';
+        if (card._lastRenderedStatus !== job.status || card._lastExtractedDir !== targetFolder || card._lastEta !== job.eta || card._lastHost !== currentHost) {
             card._lastRenderedStatus = job.status;
             card._lastExtractedDir = targetFolder;
             card._lastEta = job.eta;
+            card._lastHost = currentHost;
             const actions = card.querySelector('.download-actions');
             if (actions) {
                 actions.innerHTML = this.renderActionsHtml(job);
@@ -487,7 +617,8 @@ class DownloadController {
             await window.apiClient.extractArchive({
                 job_id: jobId,
                 archive_path: job.dest_file,
-                title: job.meta?.title
+                title: job.meta?.title,
+                extract_dir: job.meta?.extract_dir || ''
             });
         } catch (err) {
             job.status = 'completed';

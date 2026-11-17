@@ -441,11 +441,42 @@ ipcMain.on('close-window', () => {
   }
 });
 
-ipcMain.handle('select-directory', async () => {
+function resolveDialogDefaultPath(rawPath) {
+  if (!rawPath || typeof rawPath !== 'string') return undefined;
+  let clean = rawPath.trim().replace(/^["']|["']$/g, '');
+  if (!clean) return undefined;
+  clean = path.normalize(clean);
+  let cur = clean;
+  while (cur) {
+    try {
+      if (fs.existsSync(cur)) {
+        return cur;
+      }
+    } catch (_) {}
+    const parent = path.dirname(cur);
+    if (!parent || parent === cur) break;
+    cur = parent;
+  }
+  return undefined;
+}
+
+ipcMain.handle('select-directory', async (event, defaultPath) => {
   if (!mainWindow) return null;
-  const result = await dialog.showOpenDialog(mainWindow, {
+  let startPath = resolveDialogDefaultPath(defaultPath);
+  if (startPath) {
+    try {
+      if (fs.statSync(startPath).isFile()) {
+        startPath = path.dirname(startPath);
+      }
+    } catch (_) {}
+  }
+  const dialogOptions = {
     properties: ['openDirectory']
-  });
+  };
+  if (startPath) {
+    dialogOptions.defaultPath = startPath;
+  }
+  const result = await dialog.showOpenDialog(mainWindow, dialogOptions);
   if (!result.canceled && result.filePaths.length > 0) {
     return result.filePaths[0];
   }
@@ -454,10 +485,17 @@ ipcMain.handle('select-directory', async () => {
 
 ipcMain.handle('select-file', async (event, options = {}) => {
   if (!mainWindow) return null;
-  const result = await dialog.showOpenDialog(mainWindow, {
+  const dialogOptions = {
     properties: ['openFile'],
     ...options
-  });
+  };
+  const startPath = resolveDialogDefaultPath(options.defaultPath);
+  if (startPath) {
+    dialogOptions.defaultPath = startPath;
+  } else {
+    delete dialogOptions.defaultPath;
+  }
+  const result = await dialog.showOpenDialog(mainWindow, dialogOptions);
   if (!result.canceled && result.filePaths.length > 0) {
     return result.filePaths[0];
   }

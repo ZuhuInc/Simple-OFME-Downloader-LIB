@@ -118,7 +118,7 @@ class Extractor:
         # Multi-part check: if user passed part2.rar onwards, auto-route to part 1 if present
         is_multipart_subsequent = False
         lower_name = archive_name.lower()
-        part_match = re.search(r'[\._\-\s]part0*([0-9]+)', lower_name)
+        part_match = re.search(r'(?:^|[\._\-\s])part0*([0-9]+)', lower_name)
         if part_match:
             try:
                 part_num = int(part_match.group(1))
@@ -129,9 +129,22 @@ class Extractor:
 
         if is_multipart_subsequent and not ("forza horizon 2" in (game_title or "").lower() or "azimuth" in lower_name):
             dir_name = os.path.dirname(archive_path)
-            part1_candidate = re.sub(r'([\._\-\s]part0*)([0-9]+)', r'\g<1>1', archive_name, flags=re.IGNORECASE)
-            part1_path = os.path.join(dir_name, part1_candidate)
-            if os.path.exists(part1_path):
+            part1_candidates = [
+                re.sub(r'((?:^|[\._\-\s])part0*)([0-9]+)', r'\g<1>1', archive_name, flags=re.IGNORECASE),
+                re.sub(r'((?:^|[\._\-\s])part)([0-9]+)', r'\g<1>01', archive_name, flags=re.IGNORECASE),
+                re.sub(r'([\._\-\s])part[0-9]+', r'.part1', archive_name, flags=re.IGNORECASE),
+                re.sub(r'([\._\-\s])part[0-9]+', r'_Part1', archive_name, flags=re.IGNORECASE),
+            ]
+            part1_path = None
+            part1_candidate = None
+            for cand in part1_candidates:
+                cand_path = os.path.join(dir_name, cand)
+                if os.path.exists(cand_path):
+                    part1_path = cand_path
+                    part1_candidate = cand
+                    break
+
+            if part1_path and part1_candidate:
                 print(f"[Extractor] Multi-part {archive_name} routed to primary volume {part1_candidate}", flush=True)
                 archive_path = part1_path
                 archive_name = part1_candidate
@@ -286,6 +299,10 @@ class Extractor:
                 progress_cb({"status": "error", "error": error_msg, "file": archive_name})
             return {"success": False, "error": error_msg}
 
+        # Unwrap hardcoded wrapper directories (e.g. GAMES2/...) if archive contained them
+        if not is_fix:
+            self._unwrap_archive_containers(extract_dir, before_entries=before_entries)
+
         # Detect the specific game directory inside extract_dir
         game_dir = extract_dir
         if is_fix:
@@ -293,13 +310,11 @@ class Extractor:
         else:
             # 1. Look for matching folder name based on game_title
             if game_title:
-                norm_title = re.sub(r'[^a-zA-Z0-9]', '', game_title).lower()
-                for item in os.listdir(extract_dir):
+                for item in sorted(os.listdir(extract_dir)):
                     item_path = os.path.join(extract_dir, item)
-                    if os.path.isdir(item_path) and not item.startswith("_") and "redist" not in item.lower():
-                        if re.sub(r'[^a-zA-Z0-9]', '', item).lower() == norm_title or norm_title in re.sub(r'[^a-zA-Z0-9]', '', item).lower():
-                            game_dir = item_path
-                            break
+                    if self._is_title_matching_dir(item_path, game_title):
+                        game_dir = item_path
+                        break
 
             # 2. Look for newly created directories
             if game_dir == extract_dir:
@@ -309,6 +324,19 @@ class Extractor:
                 real_dirs = [d for d in new_dirs if not os.path.basename(d).startswith("_") and "redist" not in os.path.basename(d).lower()]
                 if len(real_dirs) == 1:
                     game_dir = real_dirs[0]
+
+            # 3. Check one level deeper if single wrapper matched folder contains a matching title folder
+            if game_title and game_dir != extract_dir and os.path.isdir(game_dir):
+                try:
+                    sub_dirs = [
+                        os.path.join(game_dir, e) for e in os.listdir(game_dir)
+                        if os.path.isdir(os.path.join(game_dir, e))
+                        and not e.startswith("_") and "redist" not in e.lower()
+                    ]
+                    if len(sub_dirs) == 1 and self._is_title_matching_dir(sub_dirs[0], game_title):
+                        game_dir = sub_dirs[0]
+                except Exception:
+                    pass
 
         # Check for Azimuth compatibility layer (e.g. Forza Horizon 2)
         az_root = None
@@ -436,6 +464,92 @@ class Extractor:
             print(f"[Extractor] Generated azimuth.ini for Forza Horizon 2 at: {ini_path}", flush=True)
         except Exception as e:
             print(f"[Extractor] Notice setting up azimuth.ini: {e}", flush=True)
+
+    @staticmethod
+    def _norm_title_no_the(s: str) -> str:
+        norm = re.sub(r'[^a-zA-Z0-9]', '', str(s)).lower()
+        return re.sub(r'^the', '', norm)
+
+    @classmethod
+    def _is_title_matching_dir(cls, item_path: str, game_title: str) -> bool:
+        if not game_title or not os.path.isdir(item_path):
+            return False
+        name = os.path.basename(item_path)
+        if name.startswith("_") or "redist" in name.lower():
+            return False
+        norm_title = re.sub(r'[^a-zA-Z0-9]', '', game_title).lower()
+        norm_item = re.sub(r'[^a-zA-Z0-9]', '', name).lower()
+        if not norm_title or not norm_item:
+            return False
+        if norm_item == norm_title or norm_title in norm_item:
+            return True
+        if len(norm_item) >= 5 and norm_item in norm_title:
+            return True
+        no_the_title = cls._norm_title_no_the(game_title)
+        no_the_item = cls._norm_title_no_the(name)
+        return bool(no_the_title and no_the_item and (no_the_item == no_the_title or no_the_title in no_the_item))
+
+    @staticmethod
+    def _unwrap_archive_containers(extract_dir: str, before_entries: Optional[set] = None) -> None:
+        """
+        Unwraps hardcoded top-level container folders (e.g. GAMES2/... or GAMES/...)
+        so games unpack directly into the user's chosen extract_dir instead of <extract_dir>/GAMES2/<game>.
+        """
+        if not extract_dir or not os.path.isdir(extract_dir):
+            return
+        base_name_lower = os.path.basename(os.path.normpath(extract_dir)).lower()
+        try:
+            entries = list(os.listdir(extract_dir))
+        except Exception:
+            return
+
+        for entry in entries:
+            wrapper_dir = os.path.join(extract_dir, entry)
+            if not os.path.isdir(wrapper_dir):
+                continue
+            entry_lower = entry.lower()
+            is_games2 = (entry_lower == "games2")
+            is_games_wrapper = (
+                entry_lower == "games"
+                and base_name_lower not in ("games", "games2")
+                and (before_entries is None or entry not in before_entries)
+            )
+            if not (is_games2 or is_games_wrapper):
+                continue
+
+            try:
+                children = list(os.listdir(wrapper_dir))
+            except Exception:
+                continue
+
+            # Safety for 'games' folder: do not unwrap if it looks like a ROM subfolder (contains files like .nup/.rom/.bin and no dirs)
+            if is_games_wrapper:
+                has_dir = any(os.path.isdir(os.path.join(wrapper_dir, c)) for c in children)
+                has_rom = any(c.lower().endswith((".nup", ".nsp", ".xci", ".rom", ".iso")) for c in children)
+                if not has_dir or has_rom:
+                    continue
+
+            print(f"[Extractor] Unwrapping container folder '{entry}' in {extract_dir}...", flush=True)
+            for child in children:
+                src_item = os.path.join(wrapper_dir, child)
+                dst_item = os.path.join(extract_dir, child)
+                try:
+                    if not os.path.exists(dst_item):
+                        shutil.move(src_item, dst_item)
+                    elif os.path.isdir(src_item) and os.path.isdir(dst_item):
+                        shutil.copytree(src_item, dst_item, dirs_exist_ok=True)
+                        shutil.rmtree(src_item, ignore_errors=True)
+                    else:
+                        shutil.copy2(src_item, dst_item)
+                        os.remove(src_item)
+                except Exception as move_err:
+                    print(f"[Extractor] Warning moving unwrapped item '{child}': {move_err}", flush=True)
+
+            try:
+                if not os.listdir(wrapper_dir):
+                    os.rmdir(wrapper_dir)
+            except Exception as rm_err:
+                print(f"[Extractor] Notice removing wrapper folder '{entry}': {rm_err}", flush=True)
 
     @staticmethod
     def _find_game_exe(game_dir: str, game_title: Optional[str] = None) -> Optional[str]:

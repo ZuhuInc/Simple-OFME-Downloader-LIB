@@ -199,6 +199,80 @@ def create_games_blueprint(db_manager, config, cloud_sync=None):
             print(f"[GamesController] Scrape info error: {e}")
             return jsonify({"success": False, "error": str(e)}), 500
 
+    def _find_config_key_and_location(title: str = "", game_id: str = "", matched_game=None):
+        resolved_title = (getattr(matched_game, 'title', None) if matched_game else None) or title or ""
+        norm_title = re.sub(r'[^a-zA-Z0-9]', '', resolved_title.lower())
+        norm_no_the = re.sub(r'^the', '', norm_title)
+        norm_id = re.sub(r'[^a-zA-Z0-9]', '', (game_id or "").lower())
+
+        found_key = None
+        for k in list(config.data.keys()):
+            k_str = str(k)
+            k_norm = re.sub(r'[^a-zA-Z0-9]', '', k_str.lower())
+            if (resolved_title and k_str.strip().lower() == resolved_title.strip().lower()) or \
+               (norm_title and k_norm == norm_title) or \
+               (norm_id and k_norm == norm_id):
+                found_key = k
+                break
+
+        game_state = config.data.get(found_key, {}) if (found_key and isinstance(config.data.get(found_key), dict)) else {}
+        raw_loc = (getattr(matched_game, 'location', None) if matched_game else None) or game_state.get('location') or ''
+        runners_def = (getattr(matched_game, 'runners', None) if matched_game else None) or []
+
+        def _has_runner_or_game_files(cand_dir: str) -> bool:
+            if not cand_dir or not os.path.isdir(cand_dir):
+                return False
+            for rdef in runners_def:
+                folder = rdef.get('folder')
+                if folder and os.path.isdir(os.path.join(cand_dir, folder)):
+                    return True
+            return False
+
+        location = raw_loc if (raw_loc and os.path.isdir(raw_loc)) else ''
+        if hasattr(db_manager, '_resolve_valid_location') and resolved_title:
+            candidate = db_manager._resolve_valid_location(resolved_title, raw_loc or location, config)
+            if candidate and os.path.isdir(candidate):
+                location = candidate
+
+        # If location still doesn't exist or doesn't contain runner subfolders, probe GAMES2 / base dirs / title subdirs
+        if resolved_title and (not location or (runners_def and not _has_runner_or_game_files(location))):
+            bases = [
+                location,
+                config.get("extract_path"),
+                config.get("default_download_path"),
+                config.get("download_path"),
+                r"D:\Games",
+                r"C:\Games",
+                r"D:\GAMES2",
+            ]
+            for base in bases:
+                if not base or not os.path.isdir(base):
+                    continue
+                for check_root in (base, os.path.join(base, "GAMES2")):
+                    if not os.path.isdir(check_root):
+                        continue
+                    try:
+                        for entry in os.listdir(check_root):
+                            sub = os.path.join(check_root, entry)
+                            if not os.path.isdir(sub) or entry.startswith("_"):
+                                continue
+                            ekey = re.sub(r'[^a-zA-Z0-9]', '', entry.lower())
+                            eno_the = re.sub(r'^the', '', ekey)
+                            if (norm_title and ekey == norm_title) or (norm_no_the and eno_the == norm_no_the):
+                                if not location or not _has_runner_or_game_files(location) or _has_runner_or_game_files(sub):
+                                    location = sub
+                                    break
+                    except Exception:
+                        pass
+                if location and (not runners_def or _has_runner_or_game_files(location)):
+                    break
+
+        if found_key and location and location != raw_loc and os.path.isdir(location):
+            config.data[found_key]['location'] = location
+            config.save()
+
+        return found_key, location
+
     @bp.route('/runners', methods=['GET'])
     def get_game_runners():
         game_id = request.args.get('id', '')
@@ -217,32 +291,97 @@ def create_games_blueprint(db_manager, config, cloud_sync=None):
             return jsonify({"error": "Game not found"}), 404
 
         runners_def = getattr(matched_game, 'runners', []) or []
-        location = matched_game.location or ''
-        if not location:
-            # Check config.data with exact and normalized matching
-            norm_title = re.sub(r'[^a-zA-Z0-9]', '', matched_game.title).lower()
-            for k, v in config.data.items():
-                if isinstance(v, dict) and (v.get('downloaded') or v.get('status') == 1 or v.get('location')):
-                    k_norm = re.sub(r'[^a-zA-Z0-9]', '', str(k)).lower()
-                    if k_norm == norm_title or str(k).strip().lower() == matched_game.title.strip().lower():
-                        loc = v.get('location', '')
-                        if loc and os.path.isdir(loc):
-                            location = loc
-                            break
+        found_key, location = _find_config_key_and_location(matched_game.title, matched_game.id, matched_game)
+        game_state = config.data.get(found_key, {}) if (found_key and isinstance(config.data.get(found_key), dict)) else {}
 
-        statuses = RunnersManager.get_runners_status(location, runners_def)
-        preferred = ""
-        for k, v in config.data.items():
-            if k.lower() == matched_game.title.lower() and isinstance(v, dict):
-                preferred = v.get('preferred_runner', '')
-                break
+        saved_runner_exes = dict(game_state.get('runner_exes') or {}) if isinstance(game_state.get('runner_exes'), dict) else {}
+        saved_runner_steam_urls = dict(game_state.get('runner_steam_urls') or {}) if isinstance(game_state.get('runner_steam_urls'), dict) else {}
+
+        statuses = RunnersManager.get_runners_status(
+            location,
+            runners_def,
+            saved_runner_exes=saved_runner_exes,
+            saved_runner_steam_urls=saved_runner_steam_urls
+        )
+
+        # Persist any newly discovered target_exe into runner_exes so all runner paths stay saved
+        if found_key:
+            updated_exes = False
+            for st in statuses:
+                rid = st.get('id')
+                texe = st.get('target_exe')
+                if rid and texe and os.path.isfile(texe) and saved_runner_exes.get(rid) != texe:
+                    if not saved_runner_exes.get(rid) or not os.path.isfile(saved_runner_exes.get(rid)):
+                        saved_runner_exes[rid] = texe
+                        updated_exes = True
+            if updated_exes:
+                config.data[found_key]['runner_exes'] = saved_runner_exes
+                config.save()
+
+        preferred = game_state.get('preferred_runner', '')
 
         return jsonify({
             "success": True,
             "game": matched_game.title,
             "location": location,
             "preferred_runner": preferred,
+            "runner_exes": saved_runner_exes,
             "runners": statuses
+        })
+
+    @bp.route('/runners/select', methods=['POST'])
+    def select_game_runner():
+        data = request.get_json(silent=True) or {}
+        game_id = data.get('id', '')
+        title = data.get('title', '')
+        runner_id = str(data.get('runner_id') or '').strip()
+        exe_path = str(data.get('exe_path') or '').strip()
+
+        if not (game_id or title) or not runner_id:
+            return jsonify({"success": False, "error": "Missing game identifier or runner_id"}), 400
+
+        matched_game = None
+        for g in db_manager.games:
+            if (game_id and g.id == game_id) or (title and g.title.lower() == title.lower()):
+                matched_game = g
+                break
+
+        found_key, location = _find_config_key_and_location(
+            (matched_game.title if matched_game else title),
+            game_id,
+            matched_game
+        )
+        if not found_key:
+            resolved_name = (matched_game.title if matched_game else title) or game_id
+            found_key = resolved_name.upper()
+            config.data.setdefault(found_key, {})
+
+        record = config.data.get(found_key)
+        if not isinstance(record, dict):
+            record = {}
+
+        record['preferred_runner'] = runner_id
+        runner_exes = record.get('runner_exes') if isinstance(record.get('runner_exes'), dict) else {}
+        if exe_path:
+            runner_exes[runner_id] = os.path.normpath(exe_path)
+            record['exe_path'] = runner_exes[runner_id]
+        elif runner_id in runner_exes and os.path.isfile(runner_exes[runner_id]):
+            record['exe_path'] = runner_exes[runner_id]
+        record['runner_exes'] = runner_exes
+
+        runner_steam = record.get('runner_steam_urls') if isinstance(record.get('runner_steam_urls'), dict) else {}
+        if runner_id in runner_steam:
+            record['steam_url'] = runner_steam[runner_id]
+
+        config.data[found_key] = record
+        config.save()
+        db_manager.update_installed_states(config.data)
+
+        return jsonify({
+            "success": True,
+            "preferred_runner": runner_id,
+            "runner_exes": runner_exes,
+            "steam_url": record.get('steam_url')
         })
 
     @bp.route('/runners/install', methods=['POST'])
@@ -269,17 +408,8 @@ def create_games_blueprint(db_manager, config, cloud_sync=None):
         if not runner_def:
             return jsonify({"success": False, "error": f"Runner '{runner_id}' not found for game"}), 404
 
-        location = data.get('location') or matched_game.location or ''
-        if not location:
-            norm_title = re.sub(r'[^a-zA-Z0-9]', '', matched_game.title).lower()
-            for k, v in config.data.items():
-                if isinstance(v, dict) and (v.get('downloaded') or v.get('status') == 1 or v.get('location')):
-                    k_norm = re.sub(r'[^a-zA-Z0-9]', '', str(k)).lower()
-                    if k_norm == norm_title or str(k).strip().lower() == matched_game.title.strip().lower():
-                        loc = v.get('location', '')
-                        if loc and os.path.isdir(loc):
-                            location = loc
-                            break
+        _, detected_location = _find_config_key_and_location(matched_game.title, matched_game.id, matched_game)
+        location = data.get('location') or detected_location or matched_game.location or ''
 
         if not location or not os.path.exists(location):
             return jsonify({"success": False, "error": "Game installation folder not found. Please download the game first before installing runners."}), 404
@@ -347,26 +477,14 @@ def create_games_blueprint(db_manager, config, cloud_sync=None):
             if not chosen_runner:
                 chosen_runner = game_runners[0]
 
-        location = data.get('location') or game_data.get('location')
-        if not location:
-            default_bases = [
-                config.get("extract_path"),
-                config.get("default_download_path"),
-                config.get("download_path"),
-                r"D:\GAMES2",
-                r"D:\Games",
-                r"C:\Games"
-            ]
-            for base in default_bases:
-                if base and title:
-                    cand = os.path.join(base, title)
-                    if os.path.exists(cand):
-                        location = cand
-                        break
+        _, detected_loc = _find_config_key_and_location(title, game_id, matched_game)
+        req_loc = data.get('location')
+        location = (req_loc if req_loc and os.path.exists(req_loc) else '') or detected_loc or game_data.get('location')
 
         if chosen_runner and location:
             rel_p = chosen_runner.get('rel_path', '')
-            resolved_runner_exe = RunnersManager.find_runner_executable(location, chosen_runner)
+            saved_runner_exe = (game_data.get('runner_exes') or {}).get(chosen_runner.get('id'), '') if isinstance(game_data.get('runner_exes'), dict) else ''
+            resolved_runner_exe = RunnersManager.find_runner_executable(location, chosen_runner, saved_exe=saved_runner_exe)
             if resolved_runner_exe:
                 target_exe = resolved_runner_exe
 
@@ -392,6 +510,11 @@ def create_games_blueprint(db_manager, config, cloud_sync=None):
 
                 if found_key:
                     config.data[found_key]['preferred_runner'] = chosen_runner.get('id')
+                    r_exes = config.data[found_key].get('runner_exes')
+                    if not isinstance(r_exes, dict):
+                        r_exes = {}
+                    r_exes[chosen_runner.get('id')] = target_exe
+                    config.data[found_key]['runner_exes'] = r_exes
                     config.save()
             elif runner_id:
                 # Specific runner explicitly requested, but its files are not found

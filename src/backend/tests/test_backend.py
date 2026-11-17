@@ -1080,6 +1080,210 @@ Fix:
             self.assertIsNotNone(low_data["warning"])
             self.assertIn("Drive", low_data["warning"])
 
+    def test_v215_hotfix_issues(self):
+        """Test GAMES2 unwrapping, GameEntry.get/Steam shortcut add, downloader deduplication/source switch, and per-runner exe persistence."""
+        import zipfile
+        from flask import Flask
+        from src.backend.controllers.steam_controller import create_steam_blueprint
+        from src.backend.controllers.downloads_controller import create_downloads_blueprint
+        from src.backend.controllers.games_controller import create_games_blueprint
+        from src.backend.runners_manager import RunnersManager
+
+        # 1. GAMES2 wrapper extraction & Zelda folder matching
+        extractor = Extractor()
+        zelda_zip = os.path.join(self.temp_dir, "zelda.zip")
+        extract_root = os.path.join(self.temp_dir, "MyGames")
+        os.makedirs(extract_root, exist_ok=True)
+        with zipfile.ZipFile(zelda_zip, "w") as zf:
+            zf.writestr("GAMES2/Legend of Zelda - Ocarina of Time/games/The_Legend_of_Zelda_Ocarina_of_Time_U1.1.1.nup", b"rom_data")
+            zf.writestr("GAMES2/Legend of Zelda - Ocarina of Time/NX2navi/ocarina.exe", b"nx_bin")
+
+        res_ext = extractor.extract_archive(
+            archive_path=zelda_zip,
+            extract_dir=extract_root,
+            delete_after=False,
+            game_title="The Legend of Zelda: Ocarina of Time"
+        )
+        self.assertTrue(res_ext["success"])
+        expected_zelda_dir = os.path.join(extract_root, "Legend of Zelda - Ocarina of Time")
+        self.assertEqual(os.path.normpath(res_ext["game_dir"]), os.path.normpath(expected_zelda_dir))
+        self.assertTrue(os.path.isdir(expected_zelda_dir))
+        self.assertFalse(os.path.exists(os.path.join(extract_root, "GAMES2")))
+
+        # 2. GameEntry.get() + Steam shortcut add with GameEntry in db_manager.games + per-runner persistence
+        fake_steam = os.path.join(self.temp_dir, "SteamMock")
+        fake_userdata = os.path.join(fake_steam, "userdata", "123456789", "config")
+        os.makedirs(fake_userdata, exist_ok=True)
+        steam_mgr = SteamManager()
+        steam_mgr.steam_path = fake_steam
+        steam_mgr.get_user_accounts = lambda: [{"account_id": "123456789", "steamid64": "76561198000000000", "most_recent": True, "persona_name": "Tester"}]
+        steam_mgr.get_active_account_id = lambda _=None: "123456789"
+
+        hook_dir = os.path.join(expected_zelda_dir, "HookShot", "Hookshot-Win64", "bin")
+        os.makedirs(hook_dir, exist_ok=True)
+        hook_exe = os.path.join(hook_dir, "hookshot.exe")
+        with open(hook_exe, "wb") as f:
+            f.write(b"hook_bin")
+        with open(os.path.join(expected_zelda_dir, "HookShot", "HookshotBuilder.exe"), "wb") as f:
+            f.write(b"builder_bin")
+
+        runners_def = [
+            {"id": "nx2navi", "name": "NX2navi", "subtitle": "(Recomp 1)", "folder": "NX2navi", "rel_path": "NX2navi/ocarina.exe"},
+            {"id": "hookshot", "name": "Hookshot", "subtitle": "(Recomp 2)", "folder": "HookShot", "rel_path": "HookShot/hookshot.exe"},
+            {"id": "fritchii", "name": "Fritchii", "subtitle": "(Emulator)", "folder": "Fritchii", "rel_path": "Fritchii/lichii.exe", "args": ["games/The_Legend_of_Zelda_Ocarina_of_Time_U1.1.1.nup"]}
+        ]
+
+        cfg = Config(data_folder=self.temp_dir)
+        cfg.data["THE LEGEND OF ZELDA: OCARINA OF TIME"] = {
+            "downloaded": True,
+            "location": expected_zelda_dir
+        }
+        cfg.save()
+
+        db_mgr = DatabaseManager(self.temp_dir, "", config=cfg)
+        game_entry = GameEntry(
+            raw_id="the_legend_of_zelda_ocarina_of_time_pixeldrain",
+            index=0,
+            title="The Legend of Zelda: Ocarina of Time",
+            version="1.1.1",
+            host="PixelDrain",
+            approx_size="24GB",
+            description="Zelda",
+            thumbnail="",
+            origin_url="https://github.com/tangerineturtle1/NX2navi",
+            main_game_url="https://pixeldrain.com/u/FFAi5WW3",
+            fix_url="",
+            runners=runners_def,
+            steam_appid="999888"
+        )
+        self.assertEqual(game_entry.get("title"), "The Legend of Zelda: Ocarina of Time")
+        self.assertEqual(game_entry.get("steam_appid"), "999888")
+        self.assertEqual(game_entry.get("nonexistent_key", "fallback"), "fallback")
+        db_mgr.games = [game_entry]
+        db_mgr.update_installed_states(cfg.data)
+
+        app = Flask(__name__)
+        app.register_blueprint(create_steam_blueprint(steam_mgr, cfg, db_mgr))
+        app.register_blueprint(create_games_blueprint(db_mgr, cfg))
+
+        with unittest.mock.patch.object(steam_mgr.artwork_manager, 'download_and_save_artwork', return_value={}):
+            client = app.test_client()
+            resp_steam = client.post('/api/steam/shortcuts/add', json={
+                "name": "The Legend of Zelda: Ocarina of Time",
+                "exe_path": hook_exe,
+                "runner_id": "hookshot",
+                "account_id": "123456789"
+            })
+            self.assertEqual(resp_steam.status_code, 200)
+            steam_data = resp_steam.get_json()
+            self.assertTrue(steam_data["success"])
+            saved_rec = cfg.data["THE LEGEND OF ZELDA: OCARINA OF TIME"]
+            self.assertEqual(saved_rec["preferred_runner"], "hookshot")
+            self.assertEqual(saved_rec["runner_exes"]["hookshot"], hook_exe)
+            self.assertIn("hookshot", saved_rec["runner_steam_urls"])
+
+        # 3. RunnersManager nested binary & /api/games/runners + /api/games/runners/select persistence
+        with unittest.mock.patch.object(RunnersManager, 'get_latest_github_release', return_value=None):
+            statuses = RunnersManager.get_runners_status(expected_zelda_dir, runners_def)
+            hook_st = next(s for s in statuses if s["id"] == "hookshot")
+            self.assertTrue(hook_st["installed"])
+            self.assertEqual(os.path.normpath(hook_st["target_exe"]), os.path.normpath(hook_exe))
+            fritch_st = next(s for s in statuses if s["id"] == "fritchii")
+            self.assertIn("The_Legend_of_Zelda_Ocarina_of_Time_U1.1.1.nup", fritch_st["launch_options"])
+
+            custom_fritch_exe = os.path.join(expected_zelda_dir, "CustomFritchii", "lichii.exe")
+            os.makedirs(os.path.dirname(custom_fritch_exe), exist_ok=True)
+            with open(custom_fritch_exe, "wb") as f:
+                f.write(b"lichii_bin")
+
+            resp_sel = client.post('/api/games/runners/select', json={
+                "title": "The Legend of Zelda: Ocarina of Time",
+                "runner_id": "fritchii",
+                "exe_path": custom_fritch_exe
+            })
+            self.assertEqual(resp_sel.status_code, 200)
+            sel_data = resp_sel.get_json()
+            self.assertTrue(sel_data["success"])
+            self.assertEqual(sel_data["preferred_runner"], "fritchii")
+            self.assertEqual(os.path.normpath(sel_data["runner_exes"]["fritchii"]), os.path.normpath(custom_fritch_exe))
+            # Hookshot path remains saved too
+            self.assertEqual(os.path.normpath(sel_data["runner_exes"]["hookshot"]), os.path.normpath(hook_exe))
+
+            resp_run = client.get('/api/games/runners?title=The Legend of Zelda: Ocarina of Time')
+            self.assertEqual(resp_run.status_code, 200)
+            run_data = resp_run.get_json()
+            self.assertEqual(run_data["preferred_runner"], "fritchii")
+            fritch_res = next(s for s in run_data["runners"] if s["id"] == "fritchii")
+            self.assertTrue(fritch_res["installed"])
+            self.assertEqual(os.path.normpath(fritch_res["target_exe"]), os.path.normpath(custom_fritch_exe))
+
+        # 4. Downloader deduplication & switch_job_source (prevents 3 -> 6 doubling)
+        dl = Downloader(download_path=self.temp_dir, max_concurrency=2, config=cfg, extractor=extractor)
+        dl._check_queue = lambda: None  # Keep jobs deterministic without spawning network threads
+        part_ids = []
+        for idx in range(1, 4):
+            jid = dl.add_job(
+                f"https://pixeldrain.com/u/pd{idx}",
+                f"The Legend of Zelda - Ocarina of Time.part{idx}.rar",
+                {"title": "The Legend of Zelda: Ocarina of Time", "part_index": idx, "total_parts": 3, "type": f"main_part_{idx}", "host": "PixelDrain"}
+            )
+            part_ids.append(jid)
+        self.assertEqual(len(dl.jobs), 3)
+
+        # Create partial files and pause parts 1 & 2 (leaving part 3 queued)
+        for idx, jid in enumerate(part_ids):
+            j = dl.jobs[jid]
+            with open(j.dest_file + ".part", "wb") as pf:
+                pf.write(b"partial")
+            if idx < 2:
+                j.status = "paused"
+                j._pause_event.clear()
+
+        # Re-queueing same game parts from another source must reuse existing 3 jobs, not create 6
+        for idx in range(1, 4):
+            dl.add_job(
+                f"https://buzzheavier.com/bh{idx}",
+                f"The Legend of Zelda - Ocarina of Time_Part{idx}.rar",
+                {"title": "The Legend of Zelda: Ocarina of Time", "part_index": idx, "total_parts": 3, "type": f"main_part_{idx}", "host": "BuzzHeavier"}
+            )
+        self.assertEqual(len(dl.jobs), 3)
+        self.assertFalse(os.path.exists(dl.jobs[part_ids[0]].dest_file + ".part"))
+
+        # Test /api/downloads/switch-source endpoint switches all 3 parts in-place to GoFile
+        dl_app = Flask(__name__)
+        mock_socketio = unittest.mock.MagicMock()
+        dl_app.register_blueprint(create_downloads_blueprint(dl, extractor, cfg, mock_socketio))
+        dl_client = dl_app.test_client()
+        for idx, jid in enumerate(part_ids):
+            dl.jobs[jid].status = "paused"
+            with open(dl.jobs[jid].dest_file + ".part", "wb") as pf:
+                pf.write(b"bh_partial")
+
+        resp_sw = dl_client.post('/api/downloads/switch-source', json={
+            "job_id": part_ids[0],
+            "new_host": "GoFile",
+            "part_urls": [
+                "https://gofile.io/d/YrkeaD8s",
+                "https://gofile.io/d/ovEdCmmu",
+                "https://gofile.io/d/ZRf06jl0"
+            ],
+            "switch_all_parts": True
+        })
+        self.assertEqual(resp_sw.status_code, 200)
+        sw_data = resp_sw.get_json()
+        self.assertTrue(sw_data["success"])
+        self.assertEqual(sw_data["switched_count"], 3)
+        self.assertEqual(len(dl.jobs), 3)
+        self.assertEqual(dl.jobs[part_ids[0]].url, "https://gofile.io/d/YrkeaD8s")
+        self.assertEqual(dl.jobs[part_ids[1]].url, "https://gofile.io/d/ovEdCmmu")
+        self.assertEqual(dl.jobs[part_ids[2]].url, "https://gofile.io/d/ZRf06jl0")
+        self.assertEqual(dl.jobs[part_ids[0]].meta.get("host"), "GoFile")
+        self.assertFalse(os.path.exists(dl.jobs[part_ids[0]].dest_file + ".part"))
+
+        # Test cancel_job removes job cleanly
+        self.assertTrue(dl.cancel_job(part_ids[0]))
+        self.assertEqual(len(dl.get_all_jobs()), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
