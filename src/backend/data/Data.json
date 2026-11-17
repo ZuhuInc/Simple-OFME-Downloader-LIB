@@ -445,26 +445,28 @@
         "category": "General"
     },
     "Bodycam": {
-        "version": "25092026",
+        "version": "16112026",
         "host": "GoFile",
         "approx_size": "50GB",
         "description": "Bodycam is the first ultra-realistic multiplayer, first-person shooter game made using the latest technologies of the next-gen game engine Unreal Engine 5. Get ready to dive into fast-paced Bodycam actions, where every bullet counts and every choice can decide over the victory or loss of your team.",
         "thumbnail": "https://raw.githubusercontent.com/ZuhuInc/Simple-OFME-Downloader-LIB/main/Assets/BodyCam.jpg",
         "origin_url": "https://online-fix.me/games/shooter/17452-bodycam-po-seti.html",
         "parts": [
-            "https://gofile.io/d/8lbCzF3p",
-            "https://gofile.io/d/5Jnsn9op",
-            "https://gofile.io/d/1lWz6uro",
-            "https://gofile.io/d/uz13PXVE",
-            "https://gofile.io/d/MM6slF9R",
-            "https://gofile.io/d/sXBrbDVw",
-            "https://gofile.io/d/VI262Uo8",
-            "https://gofile.io/d/IWkG9zQz",
-            "https://gofile.io/d/noqTo9l4",
-            "https://gofile.io/d/SvtyItj4",
-            "https://gofile.io/d/WtGdWQFn"
+            "https://gofile.io/d/Ii9GTmQq",
+            "https://gofile.io/d/Ypo0DNFe",
+            "https://gofile.io/d/7akhuBIP",
+            "https://gofile.io/d/KbPQbHRQ",
+            "https://gofile.io/d/QIQrthM3",
+            "https://gofile.io/d/ihSTQMio",
+            "https://gofile.io/d/Bg5ohRou",
+            "https://gofile.io/d/rJzm7o15",
+            "https://gofile.io/d/sn9bVaP2",
+            "https://gofile.io/d/3X87LF8z",
+            "https://gofile.io/d/qwiVI5J8",
+            "https://gofile.io/d/PpBAzXTu",
+            "https://gofile.io/d/ZiRExddT"
         ],
-        "fix_url": "https://gofile.io/d/HOn4lQ2h",
+        "fix_url": "https://gofile.io/d/9HH2NKeM",
         "category": "General"
     },
     "The Headliners": {
@@ -1491,14 +1493,14 @@
         "category": "General"
     },
     "Cities: Skylines II": {
-        "version": "1.6.2f1",
+        "version": "1.6.4f1",
         "host": "BuzzHeavier",
         "approx_size": "88.2GB",
         "description": "Raise a city from the ground up and transform it into the thrivingmetropolisonly you can imagine. You’ve never experienced building on this scale. With deep simulation and a living economy, Cities: Skylines II delivers world-building without limits.The Lord of the Rings: Return to Moria",
         "thumbnail": "https://steamrip.com/wp-content/uploads/2023/10/cities-skylines-2-preinstalled-steamrip.jpg",
         "origin_url": "https://steamrip.com/cities-skylines-two-free-download/",
         "parts": [
-            "https://bzzhr.to/rns189wsjn4y"
+            "https://bzzhr.to/8cga8353itvy"
         ],
         "fix_url": "",
         "category": "General"
@@ -3232,14 +3234,14 @@
         }
     },
     "Dead Sector": {
-        "version": "26521179",
+        "version": "26672902",
         "host": "GoFile",
-        "approx_size": "376 MB",
+        "approx_size": "380 MB",
         "description": "You begin with a bare room and a single server you assembled by hand. Grow it into a sprawling enterprise data center: rows of hundreds of racks, redundant power and networking, massive storage fabric, and a steady stream of clients pushing heavy workloads across hardware you designed yourself every day. You do not buy servers off a shelf. You build them. Choose every piece of hardware and where it goes: processors, memory, storage drives, network cards, GPUs, and enterprise AI accelerators, each with its own cost, performance, and power draw.",
         "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4736470/adbbd4735dfe9993ec44b0445914f24989084f11/library_capsule_2x.jpg?t=1791930002",
         "origin_url": "https://cracked-games.org/dead-sector-free-download",
         "parts": [
-            "https://gofile.io/d/EVwjUqpy"
+            "https://gofile.io/d/EhBRF6nv"
         ],
         "fix_url": "",
         "category": "General"
@@ -3390,6 +3392,53 @@
         "origin_url": "https://steamrip.com/opus-magnum-free-download/",
         "parts": [
             "https://bzzhr.to/efa7ipteqexk"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "DreamWorks Shrek 2 Remastered": {
+        "version": "26575938",
+        "host": "BuzzHeavier",
+        "approx_size": "7.3GB",
+        "description": "DreamWorks Shrek 2 Remastered: The cult-classic, button-mashing co-op adventure is back with all your favorite characters and improved graphics.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/2523740/c2ab691a8ed252da54eee927f37d5aa86e54e79e/library_capsule_2x.jpg?t=1794330089",
+        "origin_url": "https://steamrip.com/dreamworks-shrek-2-remastered-free-download/",
+        "parts": [
+            "https://bzzhr.to/uestndyxg527"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "The Last of Us Part II Remastered": {
+        "version": "1.6.10721.105 (Build 19297819",
+        "host": "GoFile",
+        "approx_size": "103GB",
+        "description": "Now experience thecriticallyacclaimed and multi-award-winning narrative of The Last of Us Part II in its ultimate form with the Remastered edition. This version builds upon the original with a suite of technicalenhancements, making it the definitive way to immerse yourself in the powerful and emotionally charged story of Ellie and Abby. Discover the winner of over 300 Game of the Year awards, now optimized with features that bring its compelling world and characters to life like never before. Prepare to be captivated by a story that has resonated deeply with players worldwide, now elevated with enhancedfidelityand performance.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/2531310/aeac394b61ac94b5d4ea939351baf3943ac0b282/library_600x900_2x.jpg?t=1750959100",
+        "origin_url": "https://steamrip.com/the-last-of-us-part-ii-remastered/",
+        "parts": [
+            "https://gofile.io/d/eORMQ2"
+        ],
+        "fix_url": "",
+        "category": "General",
+        "mirrors": {
+            "BuzzHeavier": {
+                "parts": [
+                    "https://bzzhr.to/1mx0vivs05x4"
+                ],
+                "fix_url": ""
+            }
+        }
+    },
+    "The Last of Us Part I": {
+        "version": "1.1.5.0",
+        "host": "BuzzHeavier",
+        "approx_size": "80GB",
+        "description": "Experience the emotionalstorytellingand unforgettable characters in The Last of Us, winner of over200Game of the Year awards. In a ravaged civilization, where infected and hardened survivors run rampant, Joel, a weary protagonist, is hired to smuggle 14-year-old Ellie out of a militaryquarantinezone. However, what starts as a small job soon transforms into a brutal cross-country journey.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/1888930/library_600x900_2x.jpg?t=1750958840",
+        "origin_url": "https://steamrip.com/the-last-of-us-part-one-free-download-3r/",
+        "parts": [
+            "https://bzzhr.to/z409lxi8ia60"
         ],
         "fix_url": "",
         "category": "General"
