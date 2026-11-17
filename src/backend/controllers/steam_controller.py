@@ -89,6 +89,13 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
             "total": len(shortcuts)
         })
 
+    def _find_config_key(name: str) -> str:
+        norm_name = name.strip().lower()
+        for k in getattr(config, 'data', {}).keys():
+            if str(k).strip().lower() == norm_name:
+                return k
+        return name.upper()
+
     @bp.route('/shortcuts/add', methods=['POST'])
     @bp.route('/add-shortcut', methods=['POST'])
     def add_steam_shortcut():
@@ -102,6 +109,7 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
         account_id = data.get('account_id') or config.get('steam_id') or config.get('steam_user_id')
         auto_artwork = data.get('auto_artwork', True)
         steam_appid = data.get('steam_appid')
+        runner_id = str(data.get('runner_id') or '').strip()
 
         if not name or not exe_path:
             return jsonify({"error": "Missing name or exe_path"}), 400
@@ -114,9 +122,11 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
                         steam_appid = str(v.get("steam_appid"))
                         break
             if not steam_appid:
-                for g in _get_db_games():
-                    if g.get("title", "").strip().lower() == name.strip().lower() and g.get("steam_appid"):
-                        steam_appid = str(g.get("steam_appid"))
+                for g in (_get_db_games() or []):
+                    g_title = g.get("title", "") if hasattr(g, "get") else getattr(g, "title", "")
+                    g_appid = g.get("steam_appid") if hasattr(g, "get") else getattr(g, "steam_appid", None)
+                    if str(g_title).strip().lower() == name.strip().lower() and g_appid:
+                        steam_appid = str(g_appid)
                         break
 
         res = steam_manager.add_non_steam_game(
@@ -131,15 +141,28 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
             steam_appid=steam_appid
         )
 
-        # If matching game exists in Data.json, update steam_url and steam_appid
+        # If matching game exists in Data.json, update steam_url, exe_path, runner_exes, and steam_appid
         if res.get("success") and config and hasattr(config, "data"):
-            key = name.upper()
+            key = _find_config_key(name)
             record = config.data.get(key, {})
+            if not isinstance(record, dict):
+                record = {}
             record["steam_url"] = res.get("steam_url")
+            record["exe_path"] = exe_path
+            if runner_id:
+                runner_exes = record.get("runner_exes") if isinstance(record.get("runner_exes"), dict) else {}
+                runner_exes[runner_id] = exe_path
+                record["runner_exes"] = runner_exes
+                runner_steam = record.get("runner_steam_urls") if isinstance(record.get("runner_steam_urls"), dict) else {}
+                runner_steam[runner_id] = res.get("steam_url")
+                record["runner_steam_urls"] = runner_steam
+                record["preferred_runner"] = runner_id
             if steam_appid:
                 record["steam_appid"] = str(steam_appid)
             config.data[key] = record
             config.save()
+            if db_manager and hasattr(db_manager, "update_installed_states"):
+                db_manager.update_installed_states(config.data)
 
         return jsonify(res)
 
@@ -162,9 +185,11 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
                         steam_appid = str(v.get("steam_appid"))
                         break
             if not steam_appid:
-                for g in _get_db_games():
-                    if g.get("title", "").strip().lower() == name.strip().lower() and g.get("steam_appid"):
-                        steam_appid = str(g.get("steam_appid"))
+                for g in (_get_db_games() or []):
+                    g_title = g.get("title", "") if hasattr(g, "get") else getattr(g, "title", "")
+                    g_appid = g.get("steam_appid") if hasattr(g, "get") else getattr(g, "steam_appid", None)
+                    if str(g_title).strip().lower() == name.strip().lower() and g_appid:
+                        steam_appid = str(g_appid)
                         break
 
         res = steam_manager.sync_game_artwork(
@@ -176,7 +201,7 @@ def create_steam_blueprint(steam_manager, config, db_manager=None):
 
         # If matching game in Data.json and steam_appid provided, update Data.json
         if res.get("success") and steam_appid and config and hasattr(config, "data"):
-            key = name.upper()
+            key = _find_config_key(name)
             if key in config.data:
                 config.data[key]["steam_appid"] = str(steam_appid)
                 config.save()

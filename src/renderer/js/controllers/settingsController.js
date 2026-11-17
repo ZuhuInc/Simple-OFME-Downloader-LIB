@@ -208,7 +208,7 @@ class SettingsController {
         const browseDlBtn = document.getElementById('browseDownloadPathBtn');
         if (browseDlBtn) {
             browseDlBtn.addEventListener('click', async () => {
-                const dir = await window.api?.selectDirectory();
+                const dir = await window.api?.selectDirectory(this.downloadPathInput?.value || '');
                 if (dir && this.downloadPathInput) this.downloadPathInput.value = dir;
             });
         }
@@ -216,7 +216,7 @@ class SettingsController {
         const browseExtractBtn = document.getElementById('browseExtractPathBtn');
         if (browseExtractBtn) {
             browseExtractBtn.addEventListener('click', async () => {
-                const dir = await window.api?.selectDirectory();
+                const dir = await window.api?.selectDirectory(this.extractPathInput?.value || '');
                 if (dir && this.extractPathInput) this.extractPathInput.value = dir;
             });
         }
@@ -225,6 +225,7 @@ class SettingsController {
         if (browseWinrarBtn) {
             browseWinrarBtn.addEventListener('click', async () => {
                 const file = await window.api?.selectFile({
+                    defaultPath: this.winrarInput?.value || '',
                     filters: [{ name: 'Executables', extensions: ['exe'] }]
                 });
                 if (file && this.winrarInput) this.winrarInput.value = file;
@@ -236,6 +237,7 @@ class SettingsController {
         if (browseLocalDbBtn) {
             browseLocalDbBtn.addEventListener('click', async () => {
                 const file = await window.api?.selectFile({
+                    defaultPath: this.localDbPathInput?.value || '',
                     filters: [{ name: 'Data.json Databases', extensions: ['json'] }]
                 });
                 if (file && this.localDbPathInput) {

@@ -20,8 +20,6 @@ def get_default_download_dir() -> str:
 
 
 def get_default_games_dir() -> str:
-    if os.path.exists(r"D:\GAMES2"):
-        return r"D:\GAMES2"
     if os.path.exists(r"D:\\"):
         return r"D:\Games"
     return os.path.join(os.path.expanduser("~"), "Games")
@@ -139,6 +137,16 @@ class Config:
                 dl_path = str(self._data.get("download_path", ""))
                 if "ZUHU" in dl_path and not os.path.exists(dl_path):
                     self._data["download_path"] = os.path.join(os.path.expanduser("~"), "Downloads", "OFME")
+
+                # Auto-fallback extract_path if drive/GAMES2 folder does not exist on this PC
+                cur_extract = str(self._data.get("extract_path", "")).strip()
+                if cur_extract and not os.path.exists(cur_extract):
+                    drive_prefix = os.path.splitdrive(cur_extract)[0]
+                    drive_missing = bool(drive_prefix and not os.path.exists(drive_prefix + "\\"))
+                    if drive_missing or "games2" in cur_extract.lower():
+                        self._data["extract_path"] = get_default_games_dir()
+                if self._data.get("extract_path"):
+                    self._data["default_download_path"] = self._data["extract_path"]
 
                 # Auto-migrate legacy hardcoded Steam ID if any
                 if self._data.get("steam_id") == "1004235037":
@@ -262,7 +270,7 @@ class Config:
                 from src.backend import __version__
                 return __version__
             except ImportError:
-                return os.environ.get("FANTA_APP_VERSION", "2.1.5")
+                return os.environ.get("FANTA_APP_VERSION", "2.1.6")
 
     def get_local_db_path(self) -> str:
         custom_path = self.get("local_db_path")

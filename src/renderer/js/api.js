@@ -125,6 +125,8 @@ class ApiClient {
     installGameRunner(id, title, runnerId) {
         return this.request('/api/games/runners/install', { method: 'POST', body: { id, title, runner_id: runnerId } });
     }
+    selectGameRunner(payload) { return this.request('/api/games/runners/select', { method: 'POST', body: payload }); }
+    runGameRunnerBuilder(payload) { return this.request('/api/games/runners/run-builder', { method: 'POST', body: payload }); }
 
     // Downloads
     getDownloads() { return this.request('/api/downloads'); }
@@ -136,6 +138,7 @@ class ApiClient {
     resumeDownload(job_id) { return this.request('/api/downloads/resume', { method: 'POST', body: { job_id } }); }
     cancelDownload(job_id) { return this.request('/api/downloads/cancel', { method: 'POST', body: { job_id } }); }
     retryDownload(job_id, url = null) { return this.request('/api/downloads/retry', { method: 'POST', body: { job_id, url } }); }
+    switchDownloadSource(payload) { return this.request('/api/downloads/switch-source', { method: 'POST', body: payload }); }
     extractArchive(payload) { return this.request('/api/extract', { method: 'POST', body: payload }); }
 
     // Steam

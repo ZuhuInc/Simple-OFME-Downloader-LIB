@@ -1237,14 +1237,21 @@ select option,
     flex-shrink: 0;
 }
 
-.details-poster-pane #detailsPlayBtn {
+.details-poster-pane .details-play-group {
     margin-top: auto;
     width: 100%;
+}
+
+.details-poster-pane #detailsPlayBtn {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
     box-sizing: border-box;
     justify-content: center;
     text-align: center;
-    padding: 11px 14px;
+    padding: 11px 10px;
     font-size: 13px;
+    border-radius: var(--radius-sm);
 }
 
 .details-info-pane {
@@ -1257,6 +1264,11 @@ select option,
 
 #gameDetailsModal .modal-dialog {
     max-width: 720px;
+    transition: max-width 0.2s ease;
+}
+
+#gameDetailsModal.has-runners .modal-dialog {
+    max-width: 900px;
 }
 
 .details-header-section {
@@ -1934,9 +1946,21 @@ input[type="number"] {
     border-radius: var(--radius-sm);
 }
 
-.btn-group-split.has-mirrors #detailsDownloadMainBtn {
+.btn-group-split.has-mirrors #detailsDownloadMainBtn,
+.details-play-group.has-builders #detailsPlayBtn {
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
+}
+
+#detailsBuilderToggleBtn {
+    border-left: 1px solid rgba(0, 0, 0, 0.25) !important;
+}
+
+.play-builder-dropdown {
+    top: auto !important;
+    bottom: calc(100% + 6px) !important;
+    left: 0;
+    min-width: 280px;
 }
 
 .details-actions-row .btn.btn-split-toggle,
@@ -3137,8 +3161,8 @@ input[type="number"] {
 
 .runners-options-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
 }
 
 .runner-card {
@@ -3171,7 +3195,7 @@ input[type="number"] {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 6px;
+    gap: 8px;
 }
 
 .runner-card-title-group {
@@ -3182,18 +3206,20 @@ input[type="number"] {
 }
 
 .runner-card-name {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
     color: #fff;
     line-height: 1.25;
+    white-space: nowrap;
 }
 
 .runner-card-subtitle {
-    font-size: 10px;
+    font-size: 10.5px;
     font-weight: 600;
     color: var(--accent);
     opacity: 0.9;
     line-height: 1.2;
+    white-space: nowrap;
 }
 
 .runner-github-link {
@@ -3242,10 +3268,17 @@ input[type="number"] {
     border: 1px solid rgba(247, 163, 28, 0.4);
 }
 
+.runner-tag.tag-build {
+    background: rgba(96, 165, 250, 0.18);
+    color: #60a5fa;
+    border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
 .runner-card-bottom {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     margin-top: 2px;
 }
 
@@ -3265,6 +3298,8 @@ input[type="number"] {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
     transition: all 0.15s ease;
 }
 
@@ -3294,5 +3329,58 @@ input[type="number"] {
 .runner-action-btn.btn-update:hover {
     background: #f59e0b;
     color: #000;
+}
+
+/* ─── DOWNLOAD QUEUE SWITCH SOURCE DROPDOWN ─── */
+.dl-source-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 205px;
+    background: rgba(18, 18, 24, 0.98);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    padding: 6px;
+    z-index: 10020;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dl-source-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    text-align: left;
+    width: 100%;
+    transition: var(--transition);
+}
+
+.dl-source-option:hover {
+    background: rgba(212, 168, 83, 0.15);
+    color: var(--accent);
+}
+
+.dl-source-option.active {
+    background: rgba(212, 168, 83, 0.22);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.dl-source-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
 }
 

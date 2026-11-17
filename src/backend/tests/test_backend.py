@@ -1080,6 +1080,372 @@ Fix:
             self.assertIsNotNone(low_data["warning"])
             self.assertIn("Drive", low_data["warning"])
 
+    def test_v215_hotfix_issues(self):
+        """Test GAMES2 unwrapping, GameEntry.get/Steam shortcut add, downloader deduplication/source switch, and per-runner exe persistence."""
+        import zipfile
+        from flask import Flask
+        from src.backend.controllers.steam_controller import create_steam_blueprint
+        from src.backend.controllers.downloads_controller import create_downloads_blueprint
+        from src.backend.controllers.games_controller import create_games_blueprint
+        from src.backend.runners_manager import RunnersManager
+
+        # 1. GAMES2 wrapper extraction & Zelda folder matching
+        extractor = Extractor()
+        zelda_zip = os.path.join(self.temp_dir, "zelda.zip")
+        extract_root = os.path.join(self.temp_dir, "MyGames")
+        os.makedirs(extract_root, exist_ok=True)
+        with zipfile.ZipFile(zelda_zip, "w") as zf:
+            zf.writestr("GAMES2/Legend of Zelda - Ocarina of Time/games/The_Legend_of_Zelda_Ocarina_of_Time_U1.1.1.nup", b"rom_data")
+            zf.writestr("GAMES2/Legend of Zelda - Ocarina of Time/NX2navi/ocarina.exe", b"nx_bin")
+
+        res_ext = extractor.extract_archive(
+            archive_path=zelda_zip,
+            extract_dir=extract_root,
+            delete_after=False,
+            game_title="The Legend of Zelda: Ocarina of Time"
+        )
+        self.assertTrue(res_ext["success"])
+        expected_zelda_dir = os.path.join(extract_root, "Legend of Zelda - Ocarina of Time")
+        self.assertEqual(os.path.normpath(res_ext["game_dir"]), os.path.normpath(expected_zelda_dir))
+        self.assertTrue(os.path.isdir(expected_zelda_dir))
+        self.assertFalse(os.path.exists(os.path.join(extract_root, "GAMES2")))
+
+        # 2. GameEntry.get() + Steam shortcut add with GameEntry in db_manager.games + per-runner persistence
+        fake_steam = os.path.join(self.temp_dir, "SteamMock")
+        fake_userdata = os.path.join(fake_steam, "userdata", "123456789", "config")
+        os.makedirs(fake_userdata, exist_ok=True)
+        steam_mgr = SteamManager()
+        steam_mgr.steam_path = fake_steam
+        steam_mgr.get_user_accounts = lambda: [{"account_id": "123456789", "steamid64": "76561198000000000", "most_recent": True, "persona_name": "Tester"}]
+        steam_mgr.get_active_account_id = lambda _=None: "123456789"
+
+        hook_dir = os.path.join(expected_zelda_dir, "HookShot", "Hookshot-Win64", "bin")
+        os.makedirs(hook_dir, exist_ok=True)
+        hook_exe = os.path.join(hook_dir, "hookshot.exe")
+        with open(hook_exe, "wb") as f:
+            f.write(b"hook_bin")
+        with open(os.path.join(expected_zelda_dir, "HookShot", "HookshotBuilder.exe"), "wb") as f:
+            f.write(b"builder_bin")
+
+        runners_def = [
+            {"id": "nx2navi", "name": "NX2navi", "subtitle": "(Recomp 1)", "folder": "NX2navi", "rel_path": "NX2navi/ocarina.exe"},
+            {"id": "hookshot", "name": "Hookshot", "subtitle": "(Recomp 2)", "folder": "HookShot", "rel_path": "HookShot/hookshot.exe"},
+            {"id": "fritchii", "name": "Fritchii", "subtitle": "(Emulator)", "folder": "Fritchii", "rel_path": "Fritchii/lichii.exe", "args": ["games/The_Legend_of_Zelda_Ocarina_of_Time_U1.1.1.nup"]}
+        ]
+
+        cfg = Config(data_folder=self.temp_dir)
+        cfg.data["THE LEGEND OF ZELDA: OCARINA OF TIME"] = {
+            "downloaded": True,
+            "location": expected_zelda_dir
+        }
+        cfg.save()
+
+        db_mgr = DatabaseManager(self.temp_dir, "", config=cfg)
+        game_entry = GameEntry(
+            raw_id="the_legend_of_zelda_ocarina_of_time_pixeldrain",
+            index=0,
+            title="The Legend of Zelda: Ocarina of Time",
+            version="1.1.1",
+            host="PixelDrain",
+            approx_size="24GB",
+            description="Zelda",
+            thumbnail="",
+            origin_url="https://github.com/tangerineturtle1/NX2navi",
+            main_game_url="https://pixeldrain.com/u/FFAi5WW3",
+            fix_url="",
+            runners=runners_def,
+            steam_appid="999888"
+        )
+        self.assertEqual(game_entry.get("title"), "The Legend of Zelda: Ocarina of Time")
+        self.assertEqual(game_entry.get("steam_appid"), "999888")
+        self.assertEqual(game_entry.get("nonexistent_key", "fallback"), "fallback")
+        db_mgr.games = [game_entry]
+        db_mgr.update_installed_states(cfg.data)
+
+        app = Flask(__name__)
+        app.register_blueprint(create_steam_blueprint(steam_mgr, cfg, db_mgr))
+        app.register_blueprint(create_games_blueprint(db_mgr, cfg))
+
+        with unittest.mock.patch.object(steam_mgr.artwork_manager, 'download_and_save_artwork', return_value={}):
+            client = app.test_client()
+            resp_steam = client.post('/api/steam/shortcuts/add', json={
+                "name": "The Legend of Zelda: Ocarina of Time",
+                "exe_path": hook_exe,
+                "runner_id": "hookshot",
+                "account_id": "123456789"
+            })
+            self.assertEqual(resp_steam.status_code, 200)
+            steam_data = resp_steam.get_json()
+            self.assertTrue(steam_data["success"])
+            saved_rec = cfg.data["THE LEGEND OF ZELDA: OCARINA OF TIME"]
+            self.assertEqual(saved_rec["preferred_runner"], "hookshot")
+            self.assertEqual(saved_rec["runner_exes"]["hookshot"], hook_exe)
+            self.assertIn("hookshot", saved_rec["runner_steam_urls"])
+
+        # 3. RunnersManager nested binary & /api/games/runners + /api/games/runners/select persistence
+        with unittest.mock.patch.object(RunnersManager, 'get_latest_github_release', return_value=None):
+            statuses = RunnersManager.get_runners_status(expected_zelda_dir, runners_def)
+            hook_st = next(s for s in statuses if s["id"] == "hookshot")
+            self.assertTrue(hook_st["installed"])
+            self.assertEqual(os.path.normpath(hook_st["target_exe"]), os.path.normpath(hook_exe))
+            fritch_st = next(s for s in statuses if s["id"] == "fritchii")
+            self.assertIn("The_Legend_of_Zelda_Ocarina_of_Time_U1.1.1.nup", fritch_st["launch_options"])
+
+            custom_fritch_exe = os.path.join(expected_zelda_dir, "CustomFritchii", "lichii.exe")
+            os.makedirs(os.path.dirname(custom_fritch_exe), exist_ok=True)
+            with open(custom_fritch_exe, "wb") as f:
+                f.write(b"lichii_bin")
+
+            resp_sel = client.post('/api/games/runners/select', json={
+                "title": "The Legend of Zelda: Ocarina of Time",
+                "runner_id": "fritchii",
+                "exe_path": custom_fritch_exe
+            })
+            self.assertEqual(resp_sel.status_code, 200)
+            sel_data = resp_sel.get_json()
+            self.assertTrue(sel_data["success"])
+            self.assertEqual(sel_data["preferred_runner"], "fritchii")
+            self.assertEqual(os.path.normpath(sel_data["runner_exes"]["fritchii"]), os.path.normpath(custom_fritch_exe))
+            # Hookshot path remains saved too
+            self.assertEqual(os.path.normpath(sel_data["runner_exes"]["hookshot"]), os.path.normpath(hook_exe))
+
+            resp_run = client.get('/api/games/runners?title=The Legend of Zelda: Ocarina of Time')
+            self.assertEqual(resp_run.status_code, 200)
+            run_data = resp_run.get_json()
+            self.assertEqual(run_data["preferred_runner"], "fritchii")
+            fritch_res = next(s for s in run_data["runners"] if s["id"] == "fritchii")
+            self.assertTrue(fritch_res["installed"])
+            self.assertEqual(os.path.normpath(fritch_res["target_exe"]), os.path.normpath(custom_fritch_exe))
+
+        # 4. Downloader deduplication & switch_job_source (prevents 3 -> 6 doubling)
+        dl = Downloader(download_path=self.temp_dir, max_concurrency=2, config=cfg, extractor=extractor)
+        dl._check_queue = lambda: None  # Keep jobs deterministic without spawning network threads
+        part_ids = []
+        for idx in range(1, 4):
+            jid = dl.add_job(
+                f"https://pixeldrain.com/u/pd{idx}",
+                f"The Legend of Zelda - Ocarina of Time.part{idx}.rar",
+                {"title": "The Legend of Zelda: Ocarina of Time", "part_index": idx, "total_parts": 3, "type": f"main_part_{idx}", "host": "PixelDrain"}
+            )
+            part_ids.append(jid)
+        self.assertEqual(len(dl.jobs), 3)
+
+        # Create partial files and pause parts 1 & 2 (leaving part 3 queued)
+        for idx, jid in enumerate(part_ids):
+            j = dl.jobs[jid]
+            with open(j.dest_file + ".part", "wb") as pf:
+                pf.write(b"partial")
+            if idx < 2:
+                j.status = "paused"
+                j._pause_event.clear()
+
+        # Re-queueing same game parts from another source must reuse existing 3 jobs, not create 6
+        for idx in range(1, 4):
+            dl.add_job(
+                f"https://buzzheavier.com/bh{idx}",
+                f"The Legend of Zelda - Ocarina of Time_Part{idx}.rar",
+                {"title": "The Legend of Zelda: Ocarina of Time", "part_index": idx, "total_parts": 3, "type": f"main_part_{idx}", "host": "BuzzHeavier"}
+            )
+        self.assertEqual(len(dl.jobs), 3)
+        self.assertFalse(os.path.exists(dl.jobs[part_ids[0]].dest_file + ".part"))
+
+        # Test /api/downloads/switch-source endpoint switches all 3 parts in-place to GoFile
+        dl_app = Flask(__name__)
+        mock_socketio = unittest.mock.MagicMock()
+        dl_app.register_blueprint(create_downloads_blueprint(dl, extractor, cfg, mock_socketio))
+        dl_client = dl_app.test_client()
+        for idx, jid in enumerate(part_ids):
+            dl.jobs[jid].status = "paused"
+            with open(dl.jobs[jid].dest_file + ".part", "wb") as pf:
+                pf.write(b"bh_partial")
+
+        resp_sw = dl_client.post('/api/downloads/switch-source', json={
+            "job_id": part_ids[0],
+            "new_host": "GoFile",
+            "part_urls": [
+                "https://gofile.io/d/YrkeaD8s",
+                "https://gofile.io/d/ovEdCmmu",
+                "https://gofile.io/d/ZRf06jl0"
+            ],
+            "switch_all_parts": True
+        })
+        self.assertEqual(resp_sw.status_code, 200)
+        sw_data = resp_sw.get_json()
+        self.assertTrue(sw_data["success"])
+        self.assertEqual(sw_data["switched_count"], 3)
+        self.assertEqual(len(dl.jobs), 3)
+        self.assertEqual(dl.jobs[part_ids[0]].url, "https://gofile.io/d/YrkeaD8s")
+        self.assertEqual(dl.jobs[part_ids[1]].url, "https://gofile.io/d/ovEdCmmu")
+        self.assertEqual(dl.jobs[part_ids[2]].url, "https://gofile.io/d/ZRf06jl0")
+        self.assertEqual(dl.jobs[part_ids[0]].meta.get("host"), "GoFile")
+        self.assertFalse(os.path.exists(dl.jobs[part_ids[0]].dest_file + ".part"))
+
+        # Test cancel_job removes job cleanly
+        self.assertTrue(dl.cancel_job(part_ids[0]))
+        self.assertEqual(len(dl.get_all_jobs()), 2)
+
+    def test_runner_version_comparison_and_builder_once(self):
+        """Test pre-bundled version comparison (Bundled vs remote tag) and Run Builder Once workflow after runner updates."""
+        import json
+        import zipfile
+        import io
+        from flask import Flask
+        from src.backend.runners_manager import RunnersManager
+        from src.backend.controllers.games_controller import create_games_blueprint
+
+        game_dir = os.path.join(self.temp_dir, "Zelda_Builder_Test")
+        hook_dir = os.path.join(game_dir, "HookShot")
+        os.makedirs(hook_dir, exist_ok=True)
+        hook_exe = os.path.join(hook_dir, "hookshot.exe")
+        with open(hook_exe, "wb") as f:
+            f.write(b"old_hookshot")
+        # Set older timestamp on bundled hookshot.exe
+        old_ts = 1700000000.0
+        os.utime(hook_exe, (old_ts, old_ts))
+
+        runners_def = [
+            {
+                "id": "hookshot",
+                "name": "Hookshot",
+                "subtitle": "(Recomp 2)",
+                "repo": "https://git.notrexed.dev/Hookshot/Hookshot",
+                "asset_pattern": "Hookshot-.*Windows-x64\\.zip|HookshotBuilder\\.exe",
+                "folder": "HookShot",
+                "rel_path": "HookShot/hookshot.exe"
+            }
+        ]
+
+        # 1. Pre-bundled runner (no .runner_version.json) reports 'Bundled' and flags update_available=True
+        fake_release = {
+            "tag_name": "v0.2.0",
+            "assets": [{
+                "name": "Hookshot-0.2.0-Windows-x64.zip",
+                "browser_download_url": "https://git.notrexed.dev/Hookshot/Hookshot/releases/download/v0.2.0/Hookshot-0.2.0-Windows-x64.zip",
+                "size": 1024
+            }]
+        }
+        with unittest.mock.patch.object(RunnersManager, 'get_latest_github_release', return_value=fake_release):
+            statuses = RunnersManager.get_runners_status(game_dir, runners_def)
+            self.assertEqual(len(statuses), 1)
+            self.assertTrue(statuses[0]["installed"])
+            self.assertEqual(statuses[0]["installed_version"], "Bundled")
+            self.assertEqual(statuses[0]["latest_version"], "v0.2.0")
+            self.assertTrue(statuses[0]["update_available"])
+
+        # 2. Updating runner extracts HookshotBuilder.exe without replacing old hookshot.exe -> needs_build=True
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("HookshotBuilder.exe", b"new_builder_binary")
+        zip_bytes = buf.getvalue()
+
+        class FakeHTTPResp:
+            def __init__(self, data):
+                self._stream = io.BytesIO(data)
+            def read(self, n=-1):
+                return self._stream.read(n)
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+
+        with unittest.mock.patch.object(RunnersManager, 'get_latest_github_release', return_value=fake_release), \
+             unittest.mock.patch('urllib.request.urlopen', return_value=FakeHTTPResp(zip_bytes)):
+            res_upd = RunnersManager.install_or_update_runner(game_dir, runners_def[0])
+            self.assertTrue(res_upd["success"])
+            self.assertTrue(res_upd["needs_build"])
+            self.assertIn("HookshotBuilder.exe", res_upd["builder_exe"])
+
+        with unittest.mock.patch.object(RunnersManager, 'get_latest_github_release', return_value=fake_release):
+            st_after = RunnersManager.get_runners_status(game_dir, runners_def)[0]
+            self.assertEqual(st_after["installed_version"], "v0.2.0")
+            self.assertFalse(st_after["update_available"])
+            self.assertTrue(st_after["needs_build"])
+            self.assertTrue(st_after["has_builder"])
+
+        # 3. Calling /api/games/launch or /api/games/runners/run-builder launches the Builder when needs_build=True
+        app = Flask(__name__)
+        cfg = Config(data_folder=self.temp_dir)
+        cfg.data["ZELDA BUILDER"] = {"downloaded": True, "location": game_dir}
+        cfg.save()
+        db_mgr = DatabaseManager(self.temp_dir, "", config=cfg)
+        db_mgr.games = [GameEntry(
+            raw_id="zelda_builder", index=0, title="Zelda Builder", version="1.0",
+            host="GoFile", approx_size="1GB", description="", thumbnail="",
+            origin_url="", main_game_url="", fix_url="", runners=runners_def
+        )]
+        app.register_blueprint(create_games_blueprint(db_mgr, cfg))
+        client = app.test_client()
+
+        with unittest.mock.patch('subprocess.Popen') as mock_popen:
+            mock_proc = unittest.mock.MagicMock()
+            mock_proc.pid = 4242
+            mock_proc.wait.return_value = 0
+            mock_popen.return_value = mock_proc
+
+            resp_launch = client.post('/api/games/launch', json={"title": "Zelda Builder", "runner_id": "hookshot"})
+            self.assertEqual(resp_launch.status_code, 200)
+            launch_json = resp_launch.get_json()
+            self.assertTrue(launch_json["success"])
+            self.assertEqual(launch_json["method"], "builder")
+            self.assertTrue(launch_json["builder_launched"])
+            self.assertIn("HookshotBuilder.exe", launch_json["exe_path"])
+
+        # 4. Simulate builder producing a fresh hookshot.exe -> needs_build clears automatically
+        new_ts = old_ts + 100.0
+        os.utime(hook_exe, (new_ts, new_ts))
+        RunnersManager.mark_builder_completed(game_dir, runners_def[0])
+        st_built = RunnersManager.get_runners_status(game_dir, runners_def, check_remote=False)[0]
+        self.assertFalse(st_built["needs_build"])
+        self.assertEqual(os.path.normpath(st_built["primary_exe"]), os.path.normpath(hook_exe))
+
+        # 5. Triforce repo routing & _infer_local_version filtering
+        triforce_urls, _ = RunnersManager._build_api_urls("https://git.triforceproject.com/triforce/source")
+        self.assertIn("triforce/downloads/releases", triforce_urls[0])
+        self.assertEqual(
+            RunnersManager.get_release_page_url("https://git.triforceproject.com/triforce/source"),
+            "https://git.triforceproject.com/triforce/source"
+        )
+
+        # Verify _infer_local_version ignores .NET runtime DLLs (e.g. 8.0.3426) and extracts nightly/setup versions
+        longshot_test_dir = os.path.join(self.temp_dir, "Longshot_Ver_Test")
+        builder_sub = os.path.join(longshot_test_dir, "LongshotBuilder")
+        os.makedirs(builder_sub, exist_ok=True)
+        with open(os.path.join(builder_sub, "System.Runtime.8.0.3426.dll"), "wb") as f:
+            f.write(b"dll")
+        self.assertEqual(RunnersManager._infer_local_version(longshot_test_dir), "")
+
+        nightly_sub = os.path.join(longshot_test_dir, "nightly-80-7315957c")
+        os.makedirs(nightly_sub, exist_ok=True)
+        self.assertEqual(RunnersManager._infer_local_version(longshot_test_dir), "")
+
+        picked = RunnersManager._select_release_from_list(
+            [
+                {"tag_name": "nightly-400-abc", "assets": [{"name": "LongshotBuilder-nightly-400-windows-x64.zip"}]},
+                {"tag_name": "v3.0.0-rc.7", "assets": [{"name": "LongshotBuilder-v3.0.0-rc.7-windows-x64.zip"}]},
+            ],
+            r"LongshotBuilder.*\.zip"
+        )
+        self.assertEqual(picked["tag_name"], "v3.0.0-rc.7")
+
+        nx_test_dir = os.path.join(self.temp_dir, "NX_Ver_Test")
+        os.makedirs(os.path.join(nx_test_dir, "NX2navi", "launcher", "triforce"), exist_ok=True)
+        with open(os.path.join(nx_test_dir, "NX2navi", "NX2navi-Setup-0.8.0.exe"), "wb") as f:
+            f.write(b"setup")
+        triforce_setup = os.path.join(nx_test_dir, "NX2navi", "launcher", "triforce", "TriforceSetup.exe")
+        with open(triforce_setup, "wb") as f:
+            f.write(b"triforce_setup")
+        self.assertEqual(RunnersManager._infer_local_version(os.path.join(nx_test_dir, "NX2navi")), "0.8.0")
+        triforce_runner = {
+            "id": "nx2navi",
+            "name": "Triforce",
+            "folder": "NX2navi",
+            "rel_path": "NX2navi/ocarina.exe"
+        }
+        self.assertEqual(
+            os.path.normpath(RunnersManager.find_builder_executable(nx_test_dir, triforce_runner)),
+            os.path.normpath(triforce_setup)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

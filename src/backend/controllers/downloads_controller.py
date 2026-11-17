@@ -58,6 +58,43 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
         success = downloader.retry_job(job_id, new_url)
         return jsonify({"success": success})
 
+    @bp.route('/downloads/switch-source', methods=['POST'])
+    def switch_download_source():
+        data = request.get_json() or {}
+        job_id = data.get('job_id')
+        new_host = data.get('new_host', '').strip()
+        part_urls = data.get('part_urls')
+        fix_url = data.get('fix_url')
+        switch_all_parts = bool(data.get('switch_all_parts', True))
+        if not job_id or not new_host:
+            return jsonify({"success": False, "error": "Missing job_id or new_host"}), 400
+        res = downloader.switch_job_source(
+            job_id=job_id,
+            new_host=new_host,
+            part_urls=part_urls,
+            fix_url=fix_url,
+            switch_all_parts=switch_all_parts
+        )
+        return jsonify(res), (200 if res.get("success") else 400)
+
+    @bp.route('/downloads/pause-all', methods=['POST'])
+    def pause_all_downloads():
+        count = 0
+        for jid, j in list(downloader.jobs.items()):
+            if j.status in ("downloading", "connecting", "resolving"):
+                if downloader.pause_job(jid):
+                    count += 1
+        return jsonify({"success": True, "paused": count})
+
+    @bp.route('/downloads/resume-all', methods=['POST'])
+    def resume_all_downloads():
+        count = 0
+        for jid, j in list(downloader.jobs.items()):
+            if j.status == "paused":
+                if downloader.resume_job(jid):
+                    count += 1
+        return jsonify({"success": True, "resumed": count})
+
     @bp.route('/downloads/disk_space', methods=['POST'])
     def check_disk_space():
         data = request.get_json() or {}
@@ -219,16 +256,26 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
         if not archive_path:
             return jsonify({"error": "Missing archive_path"}), 400
 
-        # Match job(s) in downloader.jobs to update card status in UI
+        # Match job(s) in downloader.jobs to update card status in UI (skip cancelled jobs)
         matching_jobs = []
         if job_id and job_id in downloader.jobs:
-            matching_jobs.append(downloader.jobs[job_id])
+            primary_job = downloader.jobs[job_id]
+            if primary_job.status != "cancelled" and not getattr(primary_job, "_cancel_flag", False):
+                matching_jobs.append(primary_job)
         norm_archive = os.path.normpath(archive_path) if archive_path else ""
         for j in downloader.jobs.values():
+            if j.status == "cancelled" or getattr(j, "_cancel_flag", False):
+                continue
             if j not in matching_jobs:
                 j_norm = os.path.normpath(j.dest_file) if j.dest_file else ""
                 if (norm_archive and j_norm == norm_archive) or (title and j.meta.get('title') and j.meta.get('title').strip().lower() == title.strip().lower()):
                     matching_jobs.append(j)
+
+        if not custom_extract_dir and matching_jobs:
+            for mj in matching_jobs:
+                if mj.meta.get('extract_dir'):
+                    custom_extract_dir = mj.meta.get('extract_dir')
+                    break
 
         # Determine if this is a fix or main game
         is_fix = ("fix" in os.path.basename(archive_path).lower()) or ("_fix." in archive_path.lower())
@@ -283,6 +330,18 @@ def create_downloads_blueprint(downloader, extractor, config, socketio):
             )
 
             if res.get("success"):
+                if delete_after and matching_jobs and hasattr(downloader, "_is_multipart_job") and downloader._is_multipart_job(matching_jobs[0]):
+                    try:
+                        siblings = downloader._get_sibling_part_jobs_locked(matching_jobs[0])
+                        for sj in siblings:
+                            if sj.dest_file and os.path.exists(sj.dest_file):
+                                try:
+                                    os.remove(sj.dest_file)
+                                except Exception:
+                                    pass
+                    except Exception:
+                        pass
+
                 game_dir = res.get("game_dir") or res.get("extract_dir")
                 exe_path = res.get("exe_path")
                 if title and hasattr(config, "data"):

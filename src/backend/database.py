@@ -40,7 +40,12 @@ class GameEntry:
         steam_url: Optional[str] = None,
         source: Optional[str] = None,
         mirrors: Optional[Dict[str, Any]] = None,
-        runners: Optional[List[Dict[str, Any]]] = None
+        runners: Optional[List[Dict[str, Any]]] = None,
+        steam_appid: Optional[str] = None,
+        exe_path: Optional[str] = None,
+        preferred_runner: Optional[str] = None,
+        runner_exes: Optional[Dict[str, str]] = None,
+        runner_steam_urls: Optional[Dict[str, str]] = None
     ):
         self.id = raw_id
         self.index = index
@@ -63,6 +68,17 @@ class GameEntry:
         self.source = self._determine_source(origin_url, host, source)
         self.mirrors = mirrors or {}
         self.runners = runners or []
+        self.steam_appid = str(steam_appid) if steam_appid else None
+        self.exe_path = exe_path
+        self.preferred_runner = preferred_runner
+        self.runner_exes = runner_exes or {}
+        self.runner_steam_urls = runner_steam_urls or {}
+
+    def get(self, key: str, default: Any = None) -> Any:
+        if hasattr(self, key):
+            val = getattr(self, key)
+            return default if val is None else val
+        return self.to_dict().get(key, default)
 
     @staticmethod
     def _determine_source(origin_url: str, host: str = "", raw_source: Optional[str] = None) -> str:
@@ -161,6 +177,11 @@ class GameEntry:
             "is_downloaded": bool(self.is_downloaded or self.installed_version),
             "location": self.location,
             "steam_url": self.steam_url,
+            "steam_appid": self.steam_appid,
+            "exe_path": self.exe_path,
+            "preferred_runner": self.preferred_runner,
+            "runner_exes": self.runner_exes or {},
+            "runner_steam_urls": self.runner_steam_urls or {},
             "source": self.source,
             "mirrors": self.mirrors or {},
             "runners": self.runners or []
@@ -444,6 +465,55 @@ class DatabaseManager:
     def _normalize_key(s: str) -> str:
         return re.sub(r'[^a-z0-9]', '', str(s).lower())
 
+    @classmethod
+    def _resolve_valid_location(cls, title: str, raw_loc: Optional[str], config: Optional[Any]) -> Optional[str]:
+        if not raw_loc:
+            return None
+        norm_title = cls._normalize_key(title)
+        norm_no_the = re.sub(r'^the', '', norm_title)
+
+        def _find_title_subdir(base_dir: str) -> Optional[str]:
+            if not base_dir or not os.path.isdir(base_dir):
+                return None
+            try:
+                for entry in os.listdir(base_dir):
+                    full = os.path.join(base_dir, entry)
+                    if os.path.isdir(full) and not entry.startswith("_"):
+                        ekey = cls._normalize_key(entry)
+                        eno_the = re.sub(r'^the', '', ekey)
+                        if (norm_title and ekey == norm_title) or (norm_no_the and eno_the == norm_no_the):
+                            return full
+            except Exception:
+                pass
+            return None
+
+        if os.path.isdir(raw_loc):
+            base_lower = os.path.basename(os.path.normpath(raw_loc)).lower()
+            if base_lower in ("games2", "games"):
+                sub = _find_title_subdir(raw_loc)
+                if sub:
+                    return sub
+            games2_sub = os.path.join(raw_loc, "GAMES2")
+            if os.path.isdir(games2_sub):
+                sub = _find_title_subdir(games2_sub)
+                if sub:
+                    return sub
+            return raw_loc
+
+        if config:
+            for key in ("extract_path", "default_download_path", "download_path"):
+                base = config.get(key)
+                if base and os.path.isdir(base):
+                    sub = _find_title_subdir(base)
+                    if sub:
+                        return sub
+                    games2_base = os.path.join(base, "GAMES2")
+                    if os.path.isdir(games2_base):
+                        sub = _find_title_subdir(games2_base)
+                        if sub:
+                            return sub
+        return None
+
     def _build_installed_lookup(self, installed_data: Optional[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         lookup = {}
         for k, v in (installed_data or {}).items():
@@ -471,8 +541,12 @@ class DatabaseManager:
                         game_state = lookup.get(norm_id) or lookup.get(norm_title) or {}
 
                         inst_ver = game_state.get("version") or game_state.get("installed_version")
-                        is_dl = bool(game_state.get("location") or game_state.get("downloaded", False) or inst_ver)
-                        loc = game_state.get("location")
+                        raw_loc = game_state.get("location")
+                        loc = self._resolve_valid_location(title, raw_loc, self.config)
+                        if raw_loc and not loc:
+                            is_dl = False
+                        else:
+                            is_dl = bool(loc or game_state.get("downloaded", False) or inst_ver)
 
                         parts_list = info.get("parts") or []
                         main_url = info.get("main_game_url") or info.get("MainGame", "") or (parts_list[0] if parts_list else "")
@@ -496,7 +570,12 @@ class DatabaseManager:
                             parts=parts_list if parts_list else None,
                             steam_url=game_state.get("steam_url"),
                             mirrors=info.get("mirrors") or {},
-                            runners=info.get("runners") or []
+                            runners=info.get("runners") or [],
+                            steam_appid=info.get("steam_appid") or game_state.get("steam_appid"),
+                            exe_path=game_state.get("exe_path"),
+                            preferred_runner=game_state.get("preferred_runner"),
+                            runner_exes=game_state.get("runner_exes") or {},
+                            runner_steam_urls=game_state.get("runner_steam_urls") or {}
                         )
                         entries.append(entry)
                     return entries
@@ -512,8 +591,12 @@ class DatabaseManager:
                         game_state = lookup.get(norm_id) or lookup.get(norm_title) or {}
 
                         inst_ver = game_state.get("version") or game_state.get("installed_version")
-                        is_dl = bool(game_state.get("location") or game_state.get("downloaded", False) or inst_ver)
-                        loc = game_state.get("location")
+                        raw_loc = game_state.get("location")
+                        loc = self._resolve_valid_location(title, raw_loc, self.config)
+                        if raw_loc and not loc:
+                            is_dl = False
+                        else:
+                            is_dl = bool(loc or game_state.get("downloaded", False) or inst_ver)
                         parts_list = item.get("parts") or []
                         main_url = item.get("main_game_url", "") or (parts_list[0] if parts_list else "")
 
@@ -536,7 +619,12 @@ class DatabaseManager:
                             parts=parts_list if parts_list else None,
                             steam_url=game_state.get("steam_url"),
                             mirrors=item.get("mirrors") or {},
-                            runners=item.get("runners") or []
+                            runners=item.get("runners") or [],
+                            steam_appid=item.get("steam_appid") or game_state.get("steam_appid"),
+                            exe_path=game_state.get("exe_path"),
+                            preferred_runner=game_state.get("preferred_runner"),
+                            runner_exes=game_state.get("runner_exes") or {},
+                            runner_steam_urls=game_state.get("runner_steam_urls") or {}
                         )
                         entries.append(entry)
                     return entries
@@ -609,8 +697,12 @@ class DatabaseManager:
             game_state = lookup.get(norm_id) or lookup.get(norm_title) or {}
 
             inst_ver = game_state.get("version") or game_state.get("installed_version")
-            is_dl = bool(game_state.get("location") or game_state.get("downloaded", False) or inst_ver)
-            loc = game_state.get("location")
+            raw_loc = game_state.get("location")
+            loc = self._resolve_valid_location(title, raw_loc, self.config)
+            if raw_loc and not loc:
+                is_dl = False
+            else:
+                is_dl = bool(loc or game_state.get("downloaded", False) or inst_ver)
 
             entry = GameEntry(
                 raw_id=raw_id,
@@ -629,7 +721,12 @@ class DatabaseManager:
                 is_downloaded=is_dl,
                 location=loc,
                 parts=ordered_parts if ordered_parts else None,
-                steam_url=game_state.get("steam_url")
+                steam_url=game_state.get("steam_url"),
+                steam_appid=game_state.get("steam_appid"),
+                exe_path=game_state.get("exe_path"),
+                preferred_runner=game_state.get("preferred_runner"),
+                runner_exes=game_state.get("runner_exes") or {},
+                runner_steam_urls=game_state.get("runner_steam_urls") or {}
             )
             entries.append(entry)
             entry_index += 1
@@ -642,10 +739,21 @@ class DatabaseManager:
             norm_id = self._normalize_key(g.id)
             game_state = lookup.get(norm_id) or lookup.get(norm_title) or {}
             inst_ver = game_state.get("version") or game_state.get("installed_version")
-            g.is_downloaded = bool(game_state.get("location") or game_state.get("downloaded", False) or inst_ver)
+            raw_loc = game_state.get("location")
+            loc = self._resolve_valid_location(g.title, raw_loc, self.config)
+            if raw_loc and not loc:
+                g.is_downloaded = False
+            else:
+                g.is_downloaded = bool(loc or game_state.get("downloaded", False) or inst_ver)
             g.installed_version = inst_ver
-            g.location = game_state.get("location")
+            g.location = loc
             g.steam_url = game_state.get("steam_url")
+            if game_state.get("steam_appid"):
+                g.steam_appid = str(game_state.get("steam_appid"))
+            g.exe_path = game_state.get("exe_path")
+            g.preferred_runner = game_state.get("preferred_runner")
+            g.runner_exes = game_state.get("runner_exes") or {}
+            g.runner_steam_urls = game_state.get("runner_steam_urls") or {}
 
     def search_and_filter(
         self,

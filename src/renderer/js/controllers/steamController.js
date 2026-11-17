@@ -58,10 +58,12 @@ class SteamController {
         const browseBtn = document.getElementById('browseSteamExeBtn');
         if (browseBtn) {
             browseBtn.addEventListener('click', async () => {
+                const exeInput = document.getElementById('steamGameExeInput');
+                const startPath = exeInput?.value?.trim() || this.activeGame?.location || '';
                 const file = await window.api?.selectFile({
+                    defaultPath: startPath,
                     filters: [{ name: 'Game Executable', extensions: ['exe'] }]
                 });
-                const exeInput = document.getElementById('steamGameExeInput');
                 if (file && exeInput) exeInput.value = file;
             });
         }
@@ -582,11 +584,16 @@ class SteamController {
             return;
         }
 
+        const runnerId = this.activeGame?.runner_id || '';
+        const launchOptions = this.activeGame?.launch_options || '';
+
         try {
             window.uiController.showToast(`Adding "${title}" to Steam shortcuts with official artwork...`, 'info');
             const res = await window.apiClient.addSteamShortcut({
                 name: title,
                 exe_path: exePath,
+                launch_options: launchOptions,
+                runner_id: runnerId,
                 icon_path: this.activeGame?.thumbnail || '',
                 account_id: this.activeAccountId,
                 auto_artwork: true,
@@ -612,9 +619,24 @@ class SteamController {
                     const curr = window.detailsController.currentGame;
                     if (curr.title?.toLowerCase() === title.toLowerCase() || curr.id === this.activeGame?.id) {
                         curr.steam_url = res.steam_url;
-                        if (window.detailsController.addSteamBtn) {
-                            window.detailsController.addSteamBtn.innerHTML = '<i class="fa-brands fa-steam"></i> Play on Steam';
-                            window.detailsController.addSteamBtn.title = 'Launch via Steam shortcut';
+                        curr.exe_path = exePath;
+                        if (runnerId) {
+                            curr.preferred_runner = runnerId;
+                            curr.runner_exes = curr.runner_exes || {};
+                            curr.runner_exes[runnerId] = exePath;
+                            curr.runner_steam_urls = curr.runner_steam_urls || {};
+                            curr.runner_steam_urls[runnerId] = res.steam_url;
+                            const runnerItem = window.detailsController.currentRunners?.find(r => r.id === runnerId);
+                            if (runnerItem) {
+                                runnerItem.target_exe = exePath;
+                                runnerItem.saved_exe = exePath;
+                                runnerItem.steam_url = res.steam_url;
+                                runnerItem.installed = true;
+                            }
+                            window.detailsController.updateRunnersUI();
+                        } else if (window.detailsController.addSteamBtn) {
+                            window.detailsController.addSteamBtn.innerHTML = '<i class="fa-solid fa-play"></i> Launch Direct';
+                            window.detailsController.addSteamBtn.title = 'Launch game executable directly without Steam';
                         }
                     }
                 }
@@ -624,6 +646,14 @@ class SteamController {
                     const match = window.libraryController.games.find(g => g.title?.toLowerCase() === title.toLowerCase());
                     if (match) {
                         match.steam_url = res.steam_url;
+                        match.exe_path = exePath;
+                        if (runnerId) {
+                            match.preferred_runner = runnerId;
+                            match.runner_exes = match.runner_exes || {};
+                            match.runner_exes[runnerId] = exePath;
+                            match.runner_steam_urls = match.runner_steam_urls || {};
+                            match.runner_steam_urls[runnerId] = res.steam_url;
+                        }
                     }
                 }
 

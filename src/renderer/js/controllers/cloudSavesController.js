@@ -1025,10 +1025,10 @@ class CloudSavesController {
 
     async browseDirectory(targetInputId) {
         if (window.api && window.api.selectDirectory) {
-            const path = await window.api.selectDirectory();
-            if (path) {
-                const input = document.getElementById(targetInputId);
-                if (input) input.value = path;
+            const input = document.getElementById(targetInputId);
+            const chosenPath = await window.api.selectDirectory(input ? input.value : '');
+            if (chosenPath && input) {
+                input.value = chosenPath;
             }
         } else {
             window.uiController.showToast('Please type or paste the folder path into the input field.', 'info');

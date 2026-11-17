@@ -23,7 +23,7 @@
         <div class="title-bar-left">
             <img class="app-icon" src="assets/OFME-DWND-ICO.ico" alt="Logo">
             <span class="app-title">FANTA OFME</span>
-            <span class="app-version-tag">v2.1.5</span>
+            <span class="app-version-tag">v2.1.6</span>
             <span id="sourceModeBadge" class="status-pill status-installed"
                 style="display: none; font-size: 10px; padding: 2px 8px; margin-left: 6px; background: rgba(212, 168, 83, 0.18); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.4);">SOURCE
                 MODE</span>
@@ -898,7 +898,7 @@
                                 updates powered by GitHub Releases.</p>
                         </div>
                         <span id="updateAppVersionBadge" class="status-pill status-installed"
-                            style="font-size: 11px;">v2.1.5</span>
+                            style="font-size: 11px;">v2.1.6</span>
                     </div>
 
                     <div
@@ -1415,8 +1415,17 @@
                 <div class="details-poster-pane">
                     <img id="detailsCoverImg" class="details-cover" src="assets/OFME-DWND-ICO.ico" alt="Cover"
                         onerror="this.src='assets/OFME-DWND-ICO.ico'">
-                    <button id="detailsPlayBtn" class="btn btn-play" style="display: none;"><i id="detailsPlayIcon"
-                            class="fa-solid fa-play"></i> <span id="detailsPlayBtnText">Play Game</span></button>
+                    <div class="btn-group-split details-play-group" id="detailsPlayGroup" style="display: none;">
+                        <button id="detailsPlayBtn" class="btn btn-play"><i id="detailsPlayIcon"
+                                class="fa-solid fa-play"></i> <span id="detailsPlayBtnText">Play Game</span></button>
+                        <button id="detailsBuilderToggleBtn" class="btn btn-play btn-split-toggle"
+                            title="Launch Runner Builder / Setup" style="display: none;">
+                            <i class="fa-solid fa-chevron-up"></i>
+                        </button>
+                        <div id="detailsBuilderDropdown" class="mirror-dropdown-menu play-builder-dropdown" style="display: none;">
+                            <!-- Dynamically populated builder options -->
+                        </div>
+                    </div>
                 </div>
 
                 <div class="details-info-pane">
