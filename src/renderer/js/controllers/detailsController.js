@@ -28,6 +28,9 @@ class DetailsController {
         this.mirrorToggleBtn = document.getElementById('detailsMirrorToggleBtn');
         this.mirrorDropdown = document.getElementById('detailsMirrorDropdown');
         this.selectedMirrorHost = null;
+        this.playGroup = document.getElementById('detailsPlayGroup');
+        this.builderToggleBtn = document.getElementById('detailsBuilderToggleBtn');
+        this.builderDropdown = document.getElementById('detailsBuilderDropdown');
         this.downloadFixBtn = document.getElementById('detailsDownloadFixBtn');
         this.openMirrorBtn = document.getElementById('detailsOpenMirrorBtn');
         this.addSteamBtn = document.getElementById('detailsAddSteamBtn');
@@ -146,9 +149,21 @@ class DetailsController {
         if (this.mirrorToggleBtn) {
             this.mirrorToggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (this.builderDropdown) this.builderDropdown.style.display = 'none';
                 if (this.mirrorDropdown) {
                     const isVisible = this.mirrorDropdown.style.display === 'flex';
                     this.mirrorDropdown.style.display = isVisible ? 'none' : 'flex';
+                }
+            });
+        }
+
+        if (this.builderToggleBtn) {
+            this.builderToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.mirrorDropdown) this.mirrorDropdown.style.display = 'none';
+                if (this.builderDropdown) {
+                    const isVisible = this.builderDropdown.style.display === 'flex';
+                    this.builderDropdown.style.display = isVisible ? 'none' : 'flex';
                 }
             });
         }
@@ -157,6 +172,14 @@ class DetailsController {
             if (this.mirrorDropdown && this.mirrorDropdown.style.display === 'flex') {
                 if (!this.mirrorDropdown.contains(e.target) && !this.mirrorToggleBtn?.contains(e.target)) {
                     this.mirrorDropdown.style.display = 'none';
+                }
+            }
+            if (this.builderDropdown && this.builderDropdown.style.display === 'flex') {
+                if (
+                    !this.builderDropdown.contains(e.target) &&
+                    !this.builderToggleBtn?.contains(e.target)
+                ) {
+                    this.builderDropdown.style.display = 'none';
                 }
             }
         });
@@ -285,9 +308,16 @@ class DetailsController {
         this.updateOriginUI(null, game);
  
         const hasRunners = Boolean(game.runners && game.runners.length > 0);
+        this.modal.classList.toggle('has-runners', hasRunners);
+        if (this.playGroup) this.playGroup.classList.remove('has-builders');
+        if (this.builderToggleBtn) this.builderToggleBtn.style.display = 'none';
+        if (this.builderDropdown) this.builderDropdown.style.display = 'none';
 
         // Setup Play Game / Play on Steam button
         const isInstalled = Boolean(game.status === 1 || game.status === 2 || game.is_downloaded || game.location);
+        if (this.playGroup) {
+            this.playGroup.style.display = isInstalled ? 'inline-flex' : 'none';
+        }
         if (this.playBtn) {
             this.playBtn.style.display = isInstalled ? 'inline-flex' : 'none';
             if (isInstalled) {
@@ -421,7 +451,11 @@ class DetailsController {
     }
 
     close() {
-        if (this.modal) this.modal.classList.remove('active');
+        if (this.modal) {
+            this.modal.classList.remove('active', 'has-runners');
+        }
+        if (this.builderDropdown) this.builderDropdown.style.display = 'none';
+        if (this.mirrorDropdown) this.mirrorDropdown.style.display = 'none';
         this.currentGame = null;
     }
 
@@ -1051,7 +1085,7 @@ class DetailsController {
         } else if (url.includes('github.com')) {
             label = 'GitHub Project';
             text = 'View Repository';
-        } else if (url.includes('git.notrexed.dev') || url.includes('git.magicbean.dev')) {
+        } else if (url.includes('git.notrexed.dev') || url.includes('git.magicbean.dev') || url.includes('git.triforceproject.com')) {
             label = 'Git Project';
             text = 'View Repository';
         } else if (url.includes('freedlc.net')) {
@@ -1100,6 +1134,9 @@ class DetailsController {
         const runnersDef = game?.runners || [];
         if (!runnersDef || runnersDef.length === 0) {
             this.runnersContainer.style.display = 'none';
+            if (this.playGroup) this.playGroup.classList.remove('has-builders');
+            if (this.builderToggleBtn) this.builderToggleBtn.style.display = 'none';
+            if (this.builderDropdown) this.builderDropdown.style.display = 'none';
             this.selectedRunnerId = null;
             this.currentRunners = [];
             return;
@@ -1252,6 +1289,8 @@ class DetailsController {
             }
         }
 
+        this.renderBuilderDropdown();
+
         this.runnersList.innerHTML = this.currentRunners.map(r => {
             const isSelected = (r.id === this.selectedRunnerId);
             const isInstalled = Boolean(r.installed);
@@ -1386,6 +1425,42 @@ class DetailsController {
                 const runner = this.currentRunners.find(r => r.id === rid);
                 if (runner) this.installRunner(this.currentGame, runner, btn);
             });
+        });
+    }
+
+    renderBuilderDropdown() {
+        if (!this.playGroup || !this.builderDropdown) return;
+        this.builderDropdown.innerHTML = '';
+        this.builderDropdown.style.display = 'none';
+
+        const builderRunners = (this.currentRunners || []).filter(r => r.installed && r.has_builder && r.builder_exe);
+        if (builderRunners.length === 0) {
+            this.playGroup.classList.remove('has-builders');
+            if (this.builderToggleBtn) this.builderToggleBtn.style.display = 'none';
+            return;
+        }
+
+        this.playGroup.classList.add('has-builders');
+        if (this.builderToggleBtn) this.builderToggleBtn.style.display = 'inline-flex';
+
+        builderRunners.forEach(r => {
+            const exeFileName = r.builder_exe ? r.builder_exe.split(/[\\/]/).pop() : 'Builder';
+            const isActive = (r.id === this.selectedRunnerId);
+            const badgeText = r.needs_build ? 'Build Needed' : (r.installed_version || 'Ready');
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = `mirror-dropdown-item ${isActive ? 'active' : ''}`;
+            item.innerHTML = `
+                <span><i class="fa-solid fa-hammer" style="margin-right: 6px; color: var(--accent);"></i> Run ${r.name} Builder <strong style="font-size: 10px; opacity: 0.7;">(${exeFileName})</strong></span>
+                <span class="mirror-dropdown-badge">${badgeText}</span>
+            `;
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.builderDropdown.style.display = 'none';
+                this.selectRunner(r.id);
+                this.runRunnerBuilder(r.id, false);
+            });
+            this.builderDropdown.appendChild(item);
         });
     }
 

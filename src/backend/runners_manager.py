@@ -31,6 +31,7 @@ class RunnersManager:
         "lichii.exe",
     )
     BUILDER_EXE_CANDIDATES = (
+        "TriforceSetup.exe",
         "HookshotBuilder.exe",
         "LongshotBuilder.exe",
         "LongshotLauncher.exe",
@@ -40,6 +41,7 @@ class RunnersManager:
         "launcher",
         "setup",
         "installer",
+        "triforce",
         "nx2navi",
         "longshot",
         "hookshot",
@@ -52,6 +54,8 @@ class RunnersManager:
         if not clean:
             return ""
         if clean.startswith(("http://", "https://")):
+            if "git.triforceproject.com" in clean.lower() and clean.lower().endswith("/triforce/source"):
+                return clean
             clean = re.sub(r"/releases/?$", "", clean, flags=re.IGNORECASE).rstrip("/")
             return f"{clean}/releases"
         clean = clean.lstrip("/")
@@ -77,11 +81,17 @@ class RunnersManager:
                     },
                 )
             base_url = f"{parsed.scheme}://{parsed.netloc}"
+            api_urls = [
+                f"{base_url}/api/v1/repos/{repo_path}/releases",
+                f"{base_url}/api/v1/repos/{repo_path}/releases/latest",
+            ]
+            if "git.triforceproject.com" in netloc and repo_path.lower() == "triforce/source":
+                api_urls = [
+                    f"{base_url}/api/v1/repos/triforce/downloads/releases",
+                    f"{base_url}/api/v1/repos/triforce/downloads/releases/latest",
+                ] + api_urls
             return (
-                [
-                    f"{base_url}/api/v1/repos/{repo_path}/releases",
-                    f"{base_url}/api/v1/repos/{repo_path}/releases/latest",
-                ],
+                api_urls,
                 {
                     "User-Agent": "Fanta-OFME-Downloader",
                     "Accept": "application/json",
@@ -102,16 +112,29 @@ class RunnersManager:
 
     @staticmethod
     def _select_release_from_list(releases: List[Dict[str, Any]], asset_pattern: Optional[str]) -> Optional[Dict[str, Any]]:
-        """Picks the first release matching asset_pattern, falling back to non-empty assets or raw[0]."""
+        """Picks the first real (non-nightly) release matching asset_pattern, falling back to Windows binary assets or raw[0]."""
+        if not releases:
+            return None
+        real_releases = [
+            r for r in releases
+            if "nightly" not in str(r.get("tag_name") or "").lower()
+            and "nightly" not in str(r.get("name") or "").lower()
+        ]
+        pool = real_releases if real_releases else releases
+
         if asset_pattern:
-            for rel in releases:
+            for rel in pool:
                 for asset in rel.get("assets", []) or []:
                     if re.search(asset_pattern, asset.get("name", ""), re.IGNORECASE):
                         return rel
-        for rel in releases:
+            for rel in pool:
+                for asset in rel.get("assets", []) or []:
+                    if re.search(r'(?:windows|win64|win-x64).*\.(?:zip|exe)$|\.exe$', asset.get("name", ""), re.IGNORECASE):
+                        return rel
+        for rel in pool:
             if rel.get("assets"):
                 return rel
-        return releases[0] if releases else None
+        return pool[0] if pool else None
 
     @staticmethod
     def get_latest_github_release(repo: str, asset_pattern: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -137,15 +160,18 @@ class RunnersManager:
                         if isinstance(raw, list) and len(raw) > 0:
                             release_data = RunnersManager._select_release_from_list(raw, asset_pattern)
                         elif isinstance(raw, dict) and "tag_name" in raw:
-                            if asset_pattern:
-                                has_match = any(
-                                    re.search(asset_pattern, a.get("name", ""), re.IGNORECASE)
-                                    for a in (raw.get("assets", []) or [])
-                                )
-                                if has_match:
+                            tag_l = str(raw.get("tag_name") or "").lower()
+                            name_l = str(raw.get("name") or "").lower()
+                            if "nightly" not in tag_l and "nightly" not in name_l:
+                                if asset_pattern:
+                                    has_match = any(
+                                        re.search(asset_pattern, a.get("name", ""), re.IGNORECASE)
+                                        for a in (raw.get("assets", []) or [])
+                                    )
+                                    if has_match:
+                                        release_data = raw
+                                else:
                                     release_data = raw
-                            else:
-                                release_data = raw
                         if release_data:
                             break
             except Exception as e:
@@ -219,20 +245,24 @@ class RunnersManager:
         if not game_location:
             return ""
         bases = cls._candidate_game_bases(game_location)
-        if folder:
-            for base_loc in bases:
-                cand = os.path.normpath(os.path.join(base_loc, folder))
-                if os.path.isdir(cand):
-                    return cand
-                # Case-insensitive directory check
-                try:
-                    for entry in os.listdir(base_loc):
-                        sub = os.path.join(base_loc, entry)
-                        if os.path.isdir(sub) and entry.lower() == folder.lower():
-                            return os.path.normpath(sub)
-                except Exception:
-                    pass
-            return os.path.normpath(os.path.join(game_location, folder))
+        folder_candidates = [folder] if folder else []
+        if folder and folder.lower() == "nx2navi":
+            folder_candidates.append("Triforce")
+        if folder_candidates:
+            for cand_name in folder_candidates:
+                for base_loc in bases:
+                    cand = os.path.normpath(os.path.join(base_loc, cand_name))
+                    if os.path.isdir(cand):
+                        return cand
+                    # Case-insensitive directory check
+                    try:
+                        for entry in os.listdir(base_loc):
+                            sub = os.path.join(base_loc, entry)
+                            if os.path.isdir(sub) and entry.lower() == cand_name.lower():
+                                return os.path.normpath(sub)
+                    except Exception:
+                        pass
+            return os.path.normpath(os.path.join(game_location, folder_candidates[0]))
         if rel_path:
             return os.path.normpath(os.path.dirname(os.path.join(game_location, rel_path)))
         return os.path.normpath(game_location)
@@ -258,7 +288,7 @@ class RunnersManager:
     @classmethod
     def find_builder_executable(cls, game_location: str, runner_def: Dict[str, Any]) -> str:
         """
-        Resolves the builder/setup executable (e.g. HookshotBuilder.exe, LongshotBuilder.exe)
+        Resolves the builder/setup executable (e.g. TriforceSetup.exe, HookshotBuilder.exe, LongshotBuilder.exe)
         for a runner within game_location, preferring the most recently modified match.
         """
         if not game_location or not runner_def:
@@ -266,13 +296,21 @@ class RunnersManager:
         folder = runner_def.get("folder", "")
         rel_path = runner_def.get("rel_path", "")
         bases = cls._candidate_game_bases(game_location)
-        discovered_all: List[str] = []
-        seen = set()
-
+        candidate_dirs: List[str] = []
         for base_loc in bases:
             folder_dir = os.path.normpath(os.path.join(base_loc, folder)) if folder else (
                 os.path.dirname(os.path.join(base_loc, rel_path)) if rel_path else ""
             )
+            if folder_dir:
+                candidate_dirs.append(folder_dir)
+        resolved_dir = cls._find_runner_folder_dir(game_location, runner_def)
+        if resolved_dir and os.path.normcase(resolved_dir) not in {os.path.normcase(d) for d in candidate_dirs}:
+            candidate_dirs.append(resolved_dir)
+
+        discovered_all: List[str] = []
+        seen = set()
+
+        for folder_dir in candidate_dirs:
             for p in cls._walk_runner_exes(folder_dir):
                 lp = p.lower()
                 if lp not in seen and cls._is_builder_name(p):
@@ -312,6 +350,7 @@ class RunnersManager:
         target_basename = os.path.basename(rel_path).lower() if rel_path else ""
         bases = cls._candidate_game_bases(game_location)
         primary_names = [os.path.basename(c).lower() for c in cls.PRIMARY_EXE_CANDIDATES]
+        candidate_dirs: List[str] = []
 
         for base_loc in bases:
             raw_exe = os.path.normpath(os.path.join(base_loc, rel_path)) if rel_path else ""
@@ -321,6 +360,14 @@ class RunnersManager:
             folder_dir = os.path.normpath(os.path.join(base_loc, folder)) if folder else (
                 os.path.dirname(raw_exe) if raw_exe else ""
             )
+            if folder_dir:
+                candidate_dirs.append(folder_dir)
+
+        resolved_dir = cls._find_runner_folder_dir(game_location, runner_def)
+        if resolved_dir and os.path.normcase(resolved_dir) not in {os.path.normcase(d) for d in candidate_dirs}:
+            candidate_dirs.append(resolved_dir)
+
+        for folder_dir in candidate_dirs:
             discovered_exes = [p for p in cls._walk_runner_exes(folder_dir) if not cls._is_builder_name(p)]
             if not discovered_exes:
                 continue
@@ -339,29 +386,39 @@ class RunnersManager:
 
     @staticmethod
     def _infer_local_version(folder_dir: str) -> str:
-        """Scans subfolder/file names inside folder_dir for a semantic version string."""
+        """Scans runner-specific subfolder or .exe/.zip names inside folder_dir for a version string."""
         if not folder_dir or not os.path.isdir(folder_dir):
             return ""
-        ignored_prefixes = ("vcruntime", "msvcp", "api-ms-win", "d3d", "vulkan", "sdl")
+        runner_keywords = ("nx2navi", "triforce", "hookshot", "longshot", "fritchii", "lichii", "ocarina")
+
+        def _extract_ver(name: str, is_dir: bool) -> str:
+            nl = name.lower()
+            if nl.startswith((".", "_")):
+                return ""
+            if not is_dir and not nl.endswith((".exe", ".zip")):
+                return ""
+            if not any(k in nl for k in runner_keywords):
+                return ""
+            m = re.search(r'(?:^|[-_\s])(v?\d+\.\d+(?:\.\d+)?(?:-rc\.?\d+)?)', name, re.IGNORECASE)
+            if m:
+                return m.group(1)
+            return ""
+
         try:
             entries = sorted(os.listdir(folder_dir))
             for entry in entries:
-                el = entry.lower()
-                if el.startswith(".") or el.startswith(ignored_prefixes):
-                    continue
-                m = re.search(r'(?:^|[-_\s])(v?\d+\.\d+(?:\.\d+)?)', entry, re.IGNORECASE)
-                if m:
-                    return m.group(1)
+                full_p = os.path.join(folder_dir, entry)
+                ver = _extract_ver(entry, os.path.isdir(full_p))
+                if ver:
+                    return ver
             for entry in entries:
                 sub = os.path.join(folder_dir, entry)
                 if os.path.isdir(sub) and not entry.startswith((".", "_")):
                     for sub_entry in sorted(os.listdir(sub)):
-                        sel = sub_entry.lower()
-                        if sel.startswith(".") or sel.startswith(ignored_prefixes):
-                            continue
-                        m = re.search(r'(?:^|[-_\s])(v?\d+\.\d+(?:\.\d+)?)', sub_entry, re.IGNORECASE)
-                        if m:
-                            return m.group(1)
+                        sub_p = os.path.join(sub, sub_entry)
+                        ver = _extract_ver(sub_entry, os.path.isdir(sub_p))
+                        if ver:
+                            return ver
         except Exception:
             pass
         return ""

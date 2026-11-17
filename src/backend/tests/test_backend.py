@@ -1398,6 +1398,54 @@ Fix:
         self.assertFalse(st_built["needs_build"])
         self.assertEqual(os.path.normpath(st_built["primary_exe"]), os.path.normpath(hook_exe))
 
+        # 5. Triforce repo routing & _infer_local_version filtering
+        triforce_urls, _ = RunnersManager._build_api_urls("https://git.triforceproject.com/triforce/source")
+        self.assertIn("triforce/downloads/releases", triforce_urls[0])
+        self.assertEqual(
+            RunnersManager.get_release_page_url("https://git.triforceproject.com/triforce/source"),
+            "https://git.triforceproject.com/triforce/source"
+        )
+
+        # Verify _infer_local_version ignores .NET runtime DLLs (e.g. 8.0.3426) and extracts nightly/setup versions
+        longshot_test_dir = os.path.join(self.temp_dir, "Longshot_Ver_Test")
+        builder_sub = os.path.join(longshot_test_dir, "LongshotBuilder")
+        os.makedirs(builder_sub, exist_ok=True)
+        with open(os.path.join(builder_sub, "System.Runtime.8.0.3426.dll"), "wb") as f:
+            f.write(b"dll")
+        self.assertEqual(RunnersManager._infer_local_version(longshot_test_dir), "")
+
+        nightly_sub = os.path.join(longshot_test_dir, "nightly-80-7315957c")
+        os.makedirs(nightly_sub, exist_ok=True)
+        self.assertEqual(RunnersManager._infer_local_version(longshot_test_dir), "")
+
+        picked = RunnersManager._select_release_from_list(
+            [
+                {"tag_name": "nightly-400-abc", "assets": [{"name": "LongshotBuilder-nightly-400-windows-x64.zip"}]},
+                {"tag_name": "v3.0.0-rc.7", "assets": [{"name": "LongshotBuilder-v3.0.0-rc.7-windows-x64.zip"}]},
+            ],
+            r"LongshotBuilder.*\.zip"
+        )
+        self.assertEqual(picked["tag_name"], "v3.0.0-rc.7")
+
+        nx_test_dir = os.path.join(self.temp_dir, "NX_Ver_Test")
+        os.makedirs(os.path.join(nx_test_dir, "NX2navi", "launcher", "triforce"), exist_ok=True)
+        with open(os.path.join(nx_test_dir, "NX2navi", "NX2navi-Setup-0.8.0.exe"), "wb") as f:
+            f.write(b"setup")
+        triforce_setup = os.path.join(nx_test_dir, "NX2navi", "launcher", "triforce", "TriforceSetup.exe")
+        with open(triforce_setup, "wb") as f:
+            f.write(b"triforce_setup")
+        self.assertEqual(RunnersManager._infer_local_version(os.path.join(nx_test_dir, "NX2navi")), "0.8.0")
+        triforce_runner = {
+            "id": "nx2navi",
+            "name": "Triforce",
+            "folder": "NX2navi",
+            "rel_path": "NX2navi/ocarina.exe"
+        }
+        self.assertEqual(
+            os.path.normpath(RunnersManager.find_builder_executable(nx_test_dir, triforce_runner)),
+            os.path.normpath(triforce_setup)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

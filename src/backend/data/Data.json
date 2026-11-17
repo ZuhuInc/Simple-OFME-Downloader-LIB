@@ -3277,9 +3277,9 @@
         "version": "1.1.1",
         "host": "PixelDrain",
         "approx_size": "24GB",
-        "description": "The Legend of Zelda: Ocarina of Time (Switch Remake PC Edition). Features 4 built-in community launch options: Recomp Option 1 (NX2navi), Recomp Option 2 (Hookshot), Recomp Option 3 (Longshot), and Emulator (Fritchii).",
+        "description": "The Legend of Zelda: Ocarina of Time (Switch Remake PC Edition). Features 4 built-in community launch options: Recomp Option 1 (Triforce / NX2navi), Recomp Option 2 (Hookshot), Recomp Option 3 (Longshot), and Emulator (Fritchii).",
         "thumbnail": "https://cdn.loaded.com/500x706/media/catalog/product/t/h/the_legend_of_zelda_-_ocarina_of_time_switch_2_1.png",
-        "origin_url": "https://github.com/tangerineturtle1/NX2navi",
+        "origin_url": "https://git.triforceproject.com/triforce/source",
         "parts": [
             "https://pixeldrain.com/u/FFAi5WW3",
             "https://pixeldrain.com/u/K9t1iV5M",
@@ -3306,10 +3306,10 @@
         "runners": [
             {
                 "id": "nx2navi",
-                "name": "NX2navi",
+                "name": "Triforce",
                 "subtitle": "(Recomp 1)",
-                "repo": "tangerineturtle1/NX2navi",
-                "asset_pattern": "NX2navi-app.*\\.zip",
+                "repo": "https://git.triforceproject.com/triforce/source",
+                "asset_pattern": "TriforceSetup\\.exe|Triforce-.*windows.*\\.zip|NX2navi-app.*\\.zip",
                 "folder": "NX2navi",
                 "rel_path": "NX2navi/ocarina.exe"
             },
@@ -3327,7 +3327,7 @@
                 "name": "Longshot",
                 "subtitle": "(Recomp 3)",
                 "repo": "https://git.magicbean.dev/MagicBeanDev/Longshot",
-                "asset_pattern": "Longshot.*windows-x64.*\\.zip",
+                "asset_pattern": "Longshot.*windows-x64.*\\.(?:zip|exe)|LongshotBuilder.*\\.(?:zip|exe)|LongshotLauncher.*windows.*\\.(?:zip|exe)",
                 "folder": "Longshot",
                 "rel_path": "Longshot/longshot.exe"
             },
