@@ -3455,5 +3455,18 @@
         ],
         "fix_url": "https://gofile.io/d/M6HKHz",
         "category": "General"
+    },
+    "Dyson Sphere Program": {
+        "version": "23109513",
+        "host": "BuzzHeavier",
+        "approx_size": "1.7GB",
+        "description": "Dyson Sphere Program is a sci-fi sandbox construction game with space, adventure, exploration and factory automation elements. In the future, humanity creates a supercomputer known as the “CentreBrain” with the hope of utilizing its powerful computing capabilities to further expand the application of virtual worlds.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/1366540/library_600x900_2x.jpg?t=1750647055",
+        "origin_url": "https://steamrip.com/dyson-sphere-program-free-download/",
+        "parts": [
+            "https://bzzhr.to/uo2o62bz1e6a"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }
