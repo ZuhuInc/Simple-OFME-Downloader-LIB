@@ -3442,5 +3442,18 @@
         ],
         "fix_url": "",
         "category": "General"
+    },
+    "Wizard with a Gun": {
+        "version": "1.4.6",
+        "host": "GoFile",
+        "approx_size": "1.4GB",
+        "description": "Wizard with aGunis an online cooperative sandbox survival game set in a magical wilderness wrought with dangerous creatures and arcane mysteries.Embarkon a journey alone or with a friend to collect, craft, and outfit your wizard however you see fit as you explore the unknown. Carefully design weapons, bullets, and furnishings for your tower home but try not to burn it all down as the magic you wieldescalatesbeyond your control",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/1150530/library_600x900_2x.jpg?t=1715610726",
+        "origin_url": "https://online-fix.me/games/survival/17356-wizard-with-a-gun-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/hl4O93"
+        ],
+        "fix_url": "https://gofile.io/d/M6HKHz",
+        "category": "General"
     }
 }
