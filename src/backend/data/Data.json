@@ -3557,5 +3557,52 @@
                 "fix_url": "https://pixeldrain.com/u/u4nNS1iJ"
             }
         }
+    },
+    "The One Fish": {
+        "version": "0.8.3.4",
+        "host": "GoFile",
+        "approx_size": "3 GB",
+        "description": "An online co-op game for 1-6 players where you fish with your friends to feed The One Fish! Catch fish of all shapes, sizes, and whimsical effects to keep up with its ever-growing appetite.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/4883580/b0c84f14a235dd5be110be4446594d05063f0c86/library_capsule_2x.jpg?t=1785991238",
+        "origin_url": "https://online-fix.me/games/sandbox/18213-the-one-fish-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/Z4q1dJyv"
+        ],
+        "fix_url": "https://gofile.io/d/ZvOq5LzH",
+        "category": "General"
+    },
+    "Crashout Crew": {
+        "version": "1.1.9-6087",
+        "host": "GoFile",
+        "approx_size": "1500 MB",
+        "description": "Time to clock in at DE NILE SHIPPING, the world’s “most efficient” warehouse! Work together in online co-op with up to 4 players to fulfill orders of increasingly chaotic, physics-based boxes. Time is money, and safety is no concern… just try not to crash out!",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/3583210/baa247436102337dfbcec27c2c04322c0e2f39f6/library_capsule_2x.jpg?t=1759424791",
+        "origin_url": "https://online-fix.me/games/arcade/18124-crashout-crew-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/xEkJg2"
+        ],
+        "fix_url": "https://gofile.io/d/dHbKom",
+        "category": "General"
+    },
+    "Voodoo Fishin": {
+        "version": "31032026",
+        "host": "GoFile",
+        "approx_size": "5 GB",
+        "description": "A creepy-cozy co-op fishing game for 1–6 players with proximity voice chat. Fish a haunted swamp, take odd jobs from the locals, fill Dock Quotas with your crew, and try to survive what hunts you in the dark.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/3071240/30643d7092a2b148f1422031d7293c59e58e6f2d/library_600x900_2x.jpg?t=1761334689",
+        "origin_url": "https://online-fix.me/games/simulator/18053-voodoo-fishin-po-seti.html",
+        "parts": [
+            "https://gofile.io/d/f6wtxi"
+        ],
+        "fix_url": "https://gofile.io/d/UsgFMp",
+        "category": "General",
+        "mirrors": {
+            "PixelDrain": {
+                "parts": [
+                    "https://pixeldrain.com/u/Es8ZtGVb"
+                ],
+                "fix_url": "https://pixeldrain.com/u/S7YbeJoH"
+            }
+        }
     }
 }
