@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Fanta OFME Downloader",
+  "version": "2.5.0-beta.1",
+  "identifier": "com.zuhu.fantaofme",
+  "build": {
+    "frontendDist": "../src/renderer"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Fanta OFME Downloader",
+        "width": 1280,
+        "height": 840,
+        "minWidth": 1000,
+        "minHeight": 700,
+        "decorations": false,
+        "center": true,
+        "backgroundColor": "#0a0a0d"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.png"
+    ]
+  }
+}

@@ -9,6 +9,7 @@
     "start": "electron .",
     "dev": "electron .",
     "dev:updater": "set FANTA_DEV_UPDATER=1&& electron .",
+    "tauri": "tauri",
     "set-version": "node scripts/set-version.js",
     "version:bump": "node scripts/set-version.js",
     "build:backend": "node scripts/build.js --target=backend",
@@ -78,10 +79,12 @@
     ]
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.12.6",
     "electron": "^26.0.0",
     "electron-builder": "^26.15.3"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.12.5",
     "electron-updater": "^6.8.9"
   }
 }
