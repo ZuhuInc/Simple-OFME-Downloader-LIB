@@ -28,6 +28,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "externalBin": [
+      "binaries/bridge_server"
+    ],
     "icon": [
       "icons/icon.ico",
       "icons/icon.png"

@@ -15,3 +15,4 @@ dist_build_temp/
 *.spec
 dev-app-update.yml
 src-tauri/target/
+src-tauri/binaries/*.exe

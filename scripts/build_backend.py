@@ -14,11 +14,18 @@ ENTRY_POINT = os.path.join(SRC_BACKEND, "bridge_server.py")
 OUTPUT_DIR = os.path.join(ROOT_DIR, "dist_backend")
 ICON_PATH = os.path.join(ROOT_DIR, "src", "renderer", "assets", "OFME-DWND-ICO.ico")
 
-def build():
-    print(f"[Build Backend] Starting PyInstaller compilation from {ENTRY_POINT}...")
+def build(tauri_sidecar: bool = False):
+    print(f"[Build Backend] Starting PyInstaller compilation from {ENTRY_POINT} (tauri_sidecar={tauri_sidecar})...")
 
-    # Clean old output directory
-    if os.path.exists(OUTPUT_DIR):
+    target_dist = os.path.join(ROOT_DIR, "src-tauri", "binaries") if tauri_sidecar else OUTPUT_DIR
+    sidecar_name = "bridge_server-x86_64-pc-windows-msvc" if tauri_sidecar else "bridge_server"
+
+    if tauri_sidecar:
+        os.makedirs(target_dist, exist_ok=True)
+        old_bin = os.path.join(target_dist, f"{sidecar_name}.exe")
+        if os.path.exists(old_bin):
+            os.remove(old_bin)
+    elif os.path.exists(OUTPUT_DIR):
         print(f"[Build Backend] Cleaning previous output: {OUTPUT_DIR}")
         shutil.rmtree(OUTPUT_DIR, ignore_errors=True)
 
@@ -30,9 +37,9 @@ def build():
         sys.executable,
         "-m", "PyInstaller",
         "--noconfirm",
-        "--onedir",
-        "--name", "bridge_server",
-        "--distpath", OUTPUT_DIR,
+        "--onefile" if tauri_sidecar else "--onedir",
+        "--name", sidecar_name,
+        "--distpath", target_dist,
         "--workpath", os.path.join(ROOT_DIR, "dist_build_temp"),
         "--specpath", os.path.join(ROOT_DIR, "dist_build_temp"),
         f"--add-data={data_arg}",
@@ -76,14 +83,18 @@ def build():
         print(f"[Build Backend] ERROR: PyInstaller compilation failed with code {result.returncode}")
         sys.exit(result.returncode)
 
-    print(f"[Build Backend] SUCCESS: Backend compiled into {OUTPUT_DIR}/bridge_server")
+    if tauri_sidecar:
+        out_exe = os.path.join(target_dist, f"{sidecar_name}.exe")
+        print(f"[Build Backend] SUCCESS: Tauri sidecar compiled -> {out_exe}")
+    else:
+        print(f"[Build Backend] SUCCESS: Backend compiled into {OUTPUT_DIR}/bridge_server")
 
-    # Ensure data folder exists directly in bridge_server output as well
-    direct_data = os.path.join(OUTPUT_DIR, "bridge_server", "data")
-    src_data = os.path.join(SRC_BACKEND, "data")
-    if os.path.exists(src_data) and not os.path.exists(direct_data):
-        shutil.copytree(src_data, direct_data, dirs_exist_ok=True)
-        print(f"[Build Backend] Copied data folder to {direct_data}")
+        # Ensure data folder exists directly in bridge_server output as well
+        direct_data = os.path.join(OUTPUT_DIR, "bridge_server", "data")
+        src_data = os.path.join(SRC_BACKEND, "data")
+        if os.path.exists(src_data) and not os.path.exists(direct_data):
+            shutil.copytree(src_data, direct_data, dirs_exist_ok=True)
+            print(f"[Build Backend] Copied data folder to {direct_data}")
 
     # Clean temp build directory
     temp_dir = os.path.join(ROOT_DIR, "dist_build_temp")
@@ -91,4 +102,4 @@ def build():
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 if __name__ == "__main__":
-    build()
+    build(tauri_sidecar="--tauri-sidecar" in sys.argv)

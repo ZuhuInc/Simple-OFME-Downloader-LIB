@@ -1,9 +1,11 @@
+mod backend;
+
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
@@ -17,6 +19,7 @@ pub struct LogEntry {
 pub struct AppState {
     pub logs: Mutex<Vec<LogEntry>>,
     pub beta_updates: AtomicBool,
+    pub backend_child: Mutex<Option<Child>>,
 }
 
 impl Default for AppState {
@@ -24,6 +27,7 @@ impl Default for AppState {
         Self {
             logs: Mutex::new(Vec::new()),
             beta_updates: AtomicBool::new(false),
+            backend_child: Mutex::new(None),
         }
     }
 }
@@ -242,11 +246,13 @@ fn start_download_update() -> serde_json::Value {
 
 #[tauri::command]
 fn restart_and_install_update(app: AppHandle) {
+    backend::stop_backend(&app);
     app.restart();
 }
 
 #[tauri::command]
 fn close_app(app: AppHandle) {
+    backend::stop_backend(&app);
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = overlay.close();
     }
@@ -309,10 +315,25 @@ fn hide_achievement_overlay(app: AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(AppState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            backend::start_backend(app.handle());
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if window.label() == "main" {
+                if let WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed = event {
+                    let app_handle = window.app_handle();
+                    backend::stop_backend(app_handle);
+                    if let Some(overlay) = app_handle.get_webview_window("overlay") {
+                        let _ = overlay.close();
+                    }
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             get_app_version,
             is_source_mode,
@@ -331,6 +352,12 @@ pub fn run() {
             show_achievement_overlay,
             hide_achievement_overlay
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Fanta OFME Downloader");
+        .build(tauri::generate_context!())
+        .expect("error while building Fanta OFME Downloader");
+
+    app.run(|app_handle, event| {
+        if let RunEvent::ExitRequested { .. } | RunEvent::Exit = event {
+            backend::stop_backend(app_handle);
+        }
+    });
 }

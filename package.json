@@ -10,6 +10,7 @@
     "dev": "electron .",
     "dev:updater": "set FANTA_DEV_UPDATER=1&& electron .",
     "tauri": "tauri",
+    "tauri:sidecar": "node scripts/build.js --target=tauri-sidecar",
     "set-version": "node scripts/set-version.js",
     "version:bump": "node scripts/set-version.js",
     "build:backend": "node scripts/build.js --target=backend",

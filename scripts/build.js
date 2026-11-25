@@ -32,18 +32,21 @@ function getPythonExecutable() {
   return 'python';
 }
 
-function buildBackend() {
+function buildBackend(tauriSidecar = false) {
   console.log('\n======================================================');
-  console.log('🚀 STEP 1: Compiling Python Backend with PyInstaller');
+  console.log(tauriSidecar
+    ? '🚀 STEP 1: Compiling Python Sidecar (--onefile) for Tauri'
+    : '🚀 STEP 1: Compiling Python Backend with PyInstaller');
   console.log('======================================================');
 
   const pythonExe = getPythonExecutable();
   const buildScript = path.join(ROOT_DIR, 'scripts', 'build_backend.py');
+  const scriptArgs = tauriSidecar ? [buildScript, '--tauri-sidecar'] : [buildScript];
 
   console.log(`[Build] Using Python: ${pythonExe}`);
-  console.log(`[Build] Running: ${buildScript}\n`);
+  console.log(`[Build] Running: ${scriptArgs.join(' ')}\n`);
 
-  const result = spawnSync(pythonExe, [buildScript], {
+  const result = spawnSync(pythonExe, scriptArgs, {
     cwd: ROOT_DIR,
     stdio: 'inherit',
     shell: false,
@@ -55,7 +58,9 @@ function buildBackend() {
     process.exit(result.status || 1);
   }
 
-  const backendDist = path.join(ROOT_DIR, 'dist_backend', 'bridge_server', 'bridge_server.exe');
+  const backendDist = tauriSidecar
+    ? path.join(ROOT_DIR, 'src-tauri', 'binaries', 'bridge_server-x86_64-pc-windows-msvc.exe')
+    : path.join(ROOT_DIR, 'dist_backend', 'bridge_server', 'bridge_server.exe');
   if (!fs.existsSync(backendDist)) {
     console.error(`\n❌ [Build] Expected backend binary not found at: ${backendDist}`);
     process.exit(1);
@@ -139,12 +144,17 @@ function main() {
   console.log(`\n[Fanta OFME Build System] Target: "${target}", Skip Backend: ${skipBackend}`);
 
   if (target === 'backend') {
-    buildBackend();
+    buildBackend(false);
+    return;
+  }
+
+  if (target === 'tauri-sidecar') {
+    buildBackend(true);
     return;
   }
 
   if (!skipBackend) {
-    buildBackend();
+    buildBackend(false);
   }
 
   if (target === 'file' || target === 'standalone') {
