@@ -37,7 +37,7 @@ def get_app_version() -> str:
                 pass
 
     # 3. Fallback default
-    return "2.1.7"
+    return "2.5.0-beta.2"
 
 
 __version__ = get_app_version()

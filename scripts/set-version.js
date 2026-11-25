@@ -180,6 +180,36 @@ function main() {
     }
   }
 
+  // 8. Update src-tauri/tauri.conf.json
+  const tauriConfPath = path.join(ROOT_DIR, 'src-tauri', 'tauri.conf.json');
+  if (fs.existsSync(tauriConfPath)) {
+    const tauriConf = JSON.parse(fs.readFileSync(tauriConfPath, 'utf-8'));
+    if (tauriConf.version !== targetVersion) {
+      tauriConf.version = targetVersion;
+      fs.writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, 2) + '\n', 'utf-8');
+      updatedFiles.push('src-tauri/tauri.conf.json');
+    } else {
+      updatedFiles.push('src-tauri/tauri.conf.json (already up to date)');
+    }
+  }
+
+  // 9. Update [package] version in src-tauri/Cargo.toml
+  const cargoTomlPath = path.join(ROOT_DIR, 'src-tauri', 'Cargo.toml');
+  if (fs.existsSync(cargoTomlPath)) {
+    let cargoToml = fs.readFileSync(cargoTomlPath, 'utf-8');
+    const oldCargo = cargoToml;
+    cargoToml = cargoToml.replace(
+      new RegExp(`(\\[package\\][\\s\\S]*?\\nversion\\s*=\\s*")${SEMVER_PATTERN}(")`, 'm'),
+      `$1${targetVersion}$2`
+    );
+    if (cargoToml !== oldCargo) {
+      fs.writeFileSync(cargoTomlPath, cargoToml, 'utf-8');
+      updatedFiles.push('src-tauri/Cargo.toml');
+    } else {
+      updatedFiles.push('src-tauri/Cargo.toml (already up to date)');
+    }
+  }
+
   console.log('✅ Synchronization completed:');
   updatedFiles.forEach(file => console.log(`   - ${file}`));
   console.log(`\n🎉 Project version is now set to: v${targetVersion}\n`);

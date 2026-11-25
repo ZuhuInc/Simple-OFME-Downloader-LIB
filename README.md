@@ -1,13 +1,17 @@
-# FANTA OFME Downloader (v2.1.7)
+# FANTA OFME Downloader (v2.5.0-beta.2)
 
-![Version](https://img.shields.io/badge/version-2.1.7-d4a853.svg)
+![Version](https://img.shields.io/badge/version-2.5.0--beta.2-d4a853.svg)
+![Channel](https://img.shields.io/badge/channel-BetaRework%20(Tauri%20v2)-orange.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078d7.svg)
-![Electron](https://img.shields.io/badge/Electron-26.6.10-47848F.svg)
+![Tauri](https://img.shields.io/badge/Tauri-v2%20(Rust)-FFC131.svg)
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg)
 ![License](https://img.shields.io/badge/license-MIT--NC-green.svg)
 ![Maintained](https://img.shields.io/badge/maintained%3F-yes-brightgreen.svg)
 
-A desktop game library manager and automated downloader for Online-Fix releases. **Fanta OFME Downloader** pairs a dark glassmorphism Electron interface with a modular Python backend to manage game downloads, automated WinRAR extractions, live version audits, and one-click Steam shortcut integration.
+> [!NOTE]
+> **Active Beta Branch (`BetaRework`)**: This branch runs the **Tauri v2 (Rust)** desktop shell migration with the Python backend sidecar (`2.5.0-beta.x`). For the current production Electron build, switch to the **`main`** branch.
+
+A desktop game library manager and automated downloader for Online-Fix releases. **Fanta OFME Downloader** pairs a dark glassmorphism UI in Tauri v2 (Rust + WebView2) with a modular Python backend sidecar to manage game downloads, automated WinRAR extractions, live version audits, cloud saves, and one-click Steam shortcut integration.
 
 ---
 
@@ -61,8 +65,8 @@ A desktop game library manager and automated downloader for Online-Fix releases.
 >
 > 1. Go to the [**Releases Page**](https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases).
 > 2. Choose your preferred build from **Assets**:
->    - **Setup Installer (`Fanta OFME Downloader Setup 2.1.7.exe`)**: Recommended for automated background update support.
->    - **Standalone Portable (`Fanta OFME Downloader Portable 2.1.7.exe`)**: Self-contained single-executable build without installation.
+>    - **Tauri v2 Beta Installer (`Fanta OFME Downloader_2.5.0-beta.2_x64-setup.exe`)**: Lightweight Rust + WebView2 beta build (`BetaRework` pre-release).
+>    - **Stable Setup Installer / Portable (`main` branch)**: Production Electron builds with automated background updating.
 > 3. **Important:** Ensure [**WinRAR**](https://www.win-rar.com/) is installed for automated archive unpacking.
 > 4. Launch the app and start downloading!
 >
@@ -70,9 +74,10 @@ A desktop game library manager and automated downloader for Online-Fix releases.
 >
 > ---
 >
-> #### 🔄 How Application Updates Work:
-> - **Setup Installer build**: Supports automated background updates. When a newer release is published, the app notifies you in Settings ➔ **Application Updates** where you can download and install it in one click.
-> - **Portable build**: Checks GitHub Releases on launch and alerts you with a direct download link whenever a newer build is available.
+> #### 🔄 How Application Updates Work (Beta Channel):
+> - **Opt-In Beta Updates**: Go to **Settings ➔ Application Updates** and enable **Receive Beta Updates** to receive prerelease builds (`2.5.0-beta.x`) from GitHub Releases. Leave it off to stay on (or return to) Stable releases from `main`.
+> - **Tauri v2 Beta Installer (`Fanta OFME Downloader_<version>_x64-setup.exe`)**: Checks GitHub Releases (respecting your Stable/Beta channel preference) and notifies you whenever a newer build is available.
+> - **Legacy Electron Builds (`main` branch)**: Also published on GitHub Releases as Setup Installer and Portable builds with in-place auto-updating.
 
 ---
 
@@ -83,45 +88,57 @@ A desktop game library manager and automated downloader for Online-Fix releases.
 
 <br>
 
-### Architecture Overview
+### Architecture Overview (`BetaRework` — Tauri v2 + Python Sidecar)
 
-The application is structured as a dual-runtime desktop app:
-1. **Frontend (Electron Process)**: Handles window lifecycle, native dialogs, auto-updater (`electron-updater`), and modern glassmorphism GUI.
-2. **Backend Bridge (Python Process)**: A modular Flask + Flask-SocketIO service managing downloads, multi-host link scrapers (GoFile, PixelDrain, Mega, etc.), WinRAR extraction child processes, and Steam VDF manipulation.
-3. **IPC / Networking**: Real-time bidirectional WebSocket & REST bridge running on `localhost:5004`.
+The application is structured as a hybrid Rust + Python desktop app:
+1. **Desktop Shell (Tauri v2 / Rust)**: Manages the native window lifecycle, frameless titlebar/overlay windows, native file dialogs, external links, GitHub Release / Beta channel update checks, and spawns/cleans up the Python backend sidecar.
+2. **Frontend UI (`src/renderer/`)**: Glassmorphism HTML5/CSS3/Vanilla JS interface connected through a lightweight compatibility bridge ([tauri-bridge.js](src/renderer/js/tauri-bridge.js)).
+3. **Backend Sidecar (`src/backend/`)**: Modular Flask + Flask-SocketIO service managing downloads, multi-host link resolvers (GoFile, PixelDrain, BuzzHeavier, etc.), WinRAR extraction, Steam VDF manipulation, and cloud saves on `127.0.0.1:5004`.
 
 ```
+├── src-tauri/                # Tauri v2 Rust desktop shell, sidecar & updater
+│   ├── src/
+│   │   ├── main.rs           # Windows subsystem entry point
+│   │   ├── lib.rs            # Tauri commands, dialogs, overlay & window events
+│   │   ├── backend.rs        # Python dev runner & production sidecar lifecycle
+│   │   └── updater.rs        # SemVer & Beta-aware GitHub/Tauri updater
+│   ├── binaries/             # Compiled PyInstaller sidecar (.exe, gitignored)
+│   ├── capabilities/         # Tauri v2 window/dialog/opener/updater permissions
+│   ├── Cargo.toml
+│   └── tauri.conf.json
 ├── src/
-│   ├── main/                 # Electron main process, IPC handlers & Auto-updater
-│   │   ├── main.js
-│   │   └── preload.js
 │   ├── renderer/             # Frontend UI (HTML5, Vanilla CSS3 & JS)
 │   │   ├── index.html        # Single-page interface
+│   │   ├── overlay.html      # Achievement popup overlay window
 │   │   ├── app.js            # Frontend router & orchestrator
 │   │   ├── styles/           # Glassmorphism design system & animations
 │   │   ├── assets/           # Application icons & game posters
-│   │   └── js/controllers/   # Modular UI subsystem controllers
-│   └── backend/              # Python service layer
-│       ├── bridge_server.py  # Flask + Socket.IO server entry point
-│       ├── config.py         # Settings & dynamic Data.json manager
-│       ├── database.py       # Catalog cache & local database handler
-│       ├── downloader.py     # Threaded download engine & speed tracker
-│       ├── extractor.py      # WinRAR automation wrapper
-│       ├── steam.py          # Steam VDF shortcuts parser & injector
-│       ├── version_checker.py# Online-fix.me release scraper
-│       └── controllers/      # Flask Blueprints (games, downloads, steam, etc.)
+│   │   └── js/               # API client, tauri-bridge.js & UI controllers
+│   ├── backend/              # Python service layer (dev interpreter / sidecar)
+│   │   ├── bridge_server.py  # Flask + Socket.IO server entry point
+│   │   ├── config.py         # Settings & dynamic Data.json manager
+│   │   ├── database.py       # Catalog cache & local database handler
+│   │   ├── downloader.py     # Threaded download engine & speed tracker
+│   │   ├── extractor.py      # WinRAR automation wrapper
+│   │   ├── runners_manager.py# Multi-runner version & builder orchestration
+│   │   ├── steam.py          # Steam VDF shortcuts parser & injector
+│   │   ├── version_checker.py# Online-fix.me release scraper
+│   │   └── controllers/      # Flask Blueprints (games, downloads, steam, etc.)
+│   └── main/                 # Legacy Electron main process (kept merge-compatible)
 ├── scripts/
-│   ├── build.js              # Complete build orchestrator (PyInstaller + Electron Builder)
-│   └── build_backend.py      # PyInstaller backend freezing utility
+│   ├── build.js              # Build orchestrator (Electron & Tauri sidecar)
+│   ├── build_backend.py      # PyInstaller freezer (--onedir & --tauri-sidecar)
+│   └── set-version.js        # Synchronized SemVer version bumper
 ├── Assets/
 │   └── Menu2/                # Interface preview screenshots
-└── package.json              # Electron & electron-builder packaging configuration
+└── package.json              # Node, Tauri CLI & legacy Electron build config
 ```
 
 ---
 
 ### Prerequisites
 
+* **Rust & Cargo**: Stable toolchain (via [rustup](https://rustup.rs/)) + WebView2 Runtime (pre-installed on Windows 10/11)
 * **Node.js**: v18.0.0 or higher
 * **Python**: 3.10 or higher
 * **WinRAR**: Installed on system
@@ -131,10 +148,11 @@ The application is structured as a dual-runtime desktop app:
 
 ### Running from Source
 
-#### 1. Clone the repository
+#### 1. Clone the repository & switch to `BetaRework`
 ```bash
 git clone https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB.git
 cd Simple-OFME-Downloader-LIB
+git checkout BetaRework
 ```
 
 #### 2. Install Node Dependencies
@@ -158,22 +176,24 @@ source .venv/bin/activate
 pip install -r src/backend/requirements.txt
 ```
 
-> **Note:** Electron automatically discovers and uses `./.venv` when launching the backend bridge in development mode.
+> **Note:** Tauri (`src-tauri/src/backend.rs`) automatically discovers and spawns `./.venv/Scripts/python.exe src/backend/bridge_server.py` in dev mode and cleans up the process tree when closed.
 
-#### 4. Launch Development Environment
+#### 4. Launch Tauri Development Environment
 ```bash
-npm run dev
+npm run tauri dev
 ```
+
+*(To launch the legacy Electron wrapper instead, run `npm run dev`.)*
 
 ---
 
 ### Version Management & Bumping
 
-To update the application version across all project files (`package.json`, `package-lock.json`, `src/renderer/index.html` placeholders, backend fallback in `src/backend/__init__.py`, and documentation in `README.md`), run:
+To update the application version across all project files (`package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `src/renderer/index.html`, backend fallbacks, and `README.md`) using SemVer (including prereleases like `2.5.0-beta.2`), run:
 
 ```bash
-# Set a specific new version (e.g., 2.0.6)
-npm run set-version 2.0.6
+# Set a specific version across Electron, Tauri, Rust & Python
+npm run set-version 2.5.0-beta.2
 
 # Or edit "version" in package.json and sync all project files automatically
 npm run set-version
@@ -181,27 +201,23 @@ npm run set-version
 
 ---
 
-### Building & Packaging Executables
+### Building & Packaging Beta Executables (Tauri v2)
 
-The build pipeline uses `scripts/build.js` to freeze the Python backend into a standalone binary using PyInstaller and packages Electron using `electron-builder`:
+First compile the Python backend into a standalone Tauri sidecar (`src-tauri/binaries/bridge_server-x86_64-pc-windows-msvc.exe`), then build the Tauri NSIS Setup installer:
 
 ```bash
-# Build both Portable .exe (in build/File/) and Setup Installer (in build/Installer/)
-npm run build:all
+# 1. Freeze the Python backend as a single-file Tauri sidecar
+npm run tauri:sidecar
 
-# Build only the Standalone Portable .exe and unpacked test directory
-npm run build:file
-
-# Build only the NSIS Setup Installer with auto-updater metadata
-npm run build:installer
-
-# Freeze only the Python backend
-npm run build:backend
+# 2. Build the Tauri release binary + NSIS Setup installer
+npm run tauri build
 ```
 
-#### Build Output Directories:
-- `build/File/`: Contains `Fanta OFME Downloader Portable 2.1.7.exe` and `win-unpacked/`.
-- `build/Installer/`: Contains `Fanta OFME Downloader Setup 2.1.7.exe`, `latest.yml`, and blockmap.
+#### Tauri Build Outputs:
+- `src-tauri/target/release/fanta-ofme-downloader.exe` & `bridge_server.exe`
+- `src-tauri/target/release/bundle/nsis/`: Contains `Fanta OFME Downloader_<version>_x64-setup.exe`
+
+*(Legacy Electron packaging scripts `npm run build:all`, `npm run build:file`, `npm run build:installer`, and `npm run build:backend` remain available for `build/File/` and `build/Installer/`.)*
 
 ---
 

@@ -1,9 +1,10 @@
 mod backend;
+mod updater;
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
@@ -20,14 +21,16 @@ pub struct AppState {
     pub logs: Mutex<Vec<LogEntry>>,
     pub beta_updates: AtomicBool,
     pub backend_child: Mutex<Option<Child>>,
+    pub pending_update: Mutex<Option<tauri_plugin_updater::Update>>,
 }
 
 impl Default for AppState {
     fn default() -> Self {
         Self {
             logs: Mutex::new(Vec::new()),
-            beta_updates: AtomicBool::new(false),
+            beta_updates: AtomicBool::new(updater::read_beta_updates_setting()),
             backend_child: Mutex::new(None),
+            pending_update: Mutex::new(None),
         }
     }
 }
@@ -220,37 +223,6 @@ fn open_external(app: AppHandle, url: String) -> bool {
 }
 
 #[tauri::command]
-fn set_beta_updates(state: State<'_, AppState>, enabled: bool) -> serde_json::Value {
-    state.beta_updates.store(enabled, Ordering::Relaxed);
-    serde_json::json!({
-        "success": true,
-        "beta_updates": enabled
-    })
-}
-
-#[tauri::command]
-fn check_for_updates() -> serde_json::Value {
-    serde_json::json!({
-        "status": "dev-mode",
-        "message": "Tauri native updater will be connected in Stage 3."
-    })
-}
-
-#[tauri::command]
-fn start_download_update() -> serde_json::Value {
-    serde_json::json!({
-        "status": "error",
-        "message": "Tauri native updater download will be connected in Stage 3."
-    })
-}
-
-#[tauri::command]
-fn restart_and_install_update(app: AppHandle) {
-    backend::stop_backend(&app);
-    app.restart();
-}
-
-#[tauri::command]
 fn close_app(app: AppHandle) {
     backend::stop_backend(&app);
     if let Some(overlay) = app.get_webview_window("overlay") {
@@ -319,8 +291,11 @@ pub fn run() {
         .manage(AppState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             backend::start_backend(app.handle());
+            updater::spawn_startup_check(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -344,10 +319,10 @@ pub fn run() {
             open_path,
             show_item_in_folder,
             open_external,
-            set_beta_updates,
-            check_for_updates,
-            start_download_update,
-            restart_and_install_update,
+            updater::set_beta_updates,
+            updater::check_for_updates,
+            updater::start_download_update,
+            updater::restart_and_install_update,
             close_app,
             show_achievement_overlay,
             hide_achievement_overlay
