@@ -59,6 +59,9 @@ class SettingsController {
         this.updateProgressPercent = document.getElementById('updateProgressPercent');
         this.updateProgressStatus = document.getElementById('updateProgressStatus');
         this.updateVersionBadge = document.getElementById('updateAppVersionBadge');
+        this.betaUpdatesCheck = document.getElementById('set_beta_updates');
+        this.unsavedToastEl = null;
+        this._savedSnapshot = null;
         this.isSourceMode = false;
     }
 
@@ -204,12 +207,60 @@ class SettingsController {
             });
         }
 
+        if (this.betaUpdatesCheck) {
+            this.betaUpdatesCheck.addEventListener('change', async () => {
+                const enabled = Boolean(this.betaUpdatesCheck.checked);
+                this.settings.beta_updates = enabled;
+                if (this._savedSnapshot) {
+                    try {
+                        const prev = JSON.parse(this._savedSnapshot);
+                        prev.beta_updates = enabled;
+                        this._savedSnapshot = JSON.stringify(prev);
+                    } catch (_) {}
+                }
+                try {
+                    await window.apiClient.saveSettings({ beta_updates: enabled });
+                } catch (err) {
+                    console.warn('[SettingsController] Failed to save beta_updates setting:', err);
+                }
+                try {
+                    await window.api?.setBetaUpdates?.(enabled);
+                } catch (err) {
+                    console.warn('[SettingsController] Failed to notify main process of beta_updates:', err);
+                }
+                window.uiController?.showToast(
+                    `Beta Updates ${enabled ? 'Enabled' : 'Disabled'} — checking for updates...`,
+                    'info'
+                );
+                this.appendLog(
+                    `Update channel switched to ${enabled ? 'Beta (Prereleases)' : 'Stable'}`,
+                    'info'
+                );
+                await this.triggerUpdateCheck();
+            });
+        }
+
+        // Detect any unsaved edits in Settings tab and show floating bottom-right save bubble
+        const settingsTab = document.getElementById('settingsTab');
+        if (settingsTab) {
+            const onFieldEdit = (e) => {
+                const targetId = e.target?.id;
+                if (targetId === 'set_beta_updates' || targetId === 'set_game_edit_mode') return;
+                this.updateUnsavedToast();
+            };
+            settingsTab.addEventListener('input', onFieldEdit);
+            settingsTab.addEventListener('change', onFieldEdit);
+        }
+
         // Browse directory buttons
         const browseDlBtn = document.getElementById('browseDownloadPathBtn');
         if (browseDlBtn) {
             browseDlBtn.addEventListener('click', async () => {
                 const dir = await window.api?.selectDirectory(this.downloadPathInput?.value || '');
-                if (dir && this.downloadPathInput) this.downloadPathInput.value = dir;
+                if (dir && this.downloadPathInput) {
+                    this.downloadPathInput.value = dir;
+                    this.updateUnsavedToast();
+                }
             });
         }
 
@@ -217,7 +268,10 @@ class SettingsController {
         if (browseExtractBtn) {
             browseExtractBtn.addEventListener('click', async () => {
                 const dir = await window.api?.selectDirectory(this.extractPathInput?.value || '');
-                if (dir && this.extractPathInput) this.extractPathInput.value = dir;
+                if (dir && this.extractPathInput) {
+                    this.extractPathInput.value = dir;
+                    this.updateUnsavedToast();
+                }
             });
         }
 
@@ -228,7 +282,10 @@ class SettingsController {
                     defaultPath: this.winrarInput?.value || '',
                     filters: [{ name: 'Executables', extensions: ['exe'] }]
                 });
-                if (file && this.winrarInput) this.winrarInput.value = file;
+                if (file && this.winrarInput) {
+                    this.winrarInput.value = file;
+                    this.updateUnsavedToast();
+                }
             });
         }
 
@@ -243,6 +300,7 @@ class SettingsController {
                 if (file && this.localDbPathInput) {
                     this.localDbPathInput.value = file;
                     if (this.useLocalDbCheck) this.useLocalDbCheck.checked = true;
+                    this.updateUnsavedToast();
                 }
             });
         }
@@ -386,8 +444,113 @@ class SettingsController {
         if (this.achDurationSelect) {
             this.achDurationSelect.value = String(this.settings.ach_duration || 4500);
         }
+        const betaEnabled = Boolean(this.settings.beta_updates);
+        if (this.betaUpdatesCheck) {
+            this.betaUpdatesCheck.checked = betaEnabled;
+        }
+        window.api?.setBetaUpdates?.(betaEnabled);
 
         this.setEditMode(Boolean(this.settings.game_edit_mode), false);
+        this._savedSnapshot = JSON.stringify(this.buildSettingsPayload());
+        this.hideUnsavedToast();
+    }
+
+    buildSettingsPayload() {
+        return {
+            winrar_path: this.winrarInput?.value || '',
+            download_path: this.downloadPathInput?.value || '',
+            extract_path: this.extractPathInput?.value || '',
+            rar_password: this.rarPasswordInput?.value || 'online-fix.me',
+            cg_password: this.cgPasswordInput?.value || 'cracked-games.org',
+            concurrent_downloads: parseInt(this.concurrencyInput?.value || 2, 10),
+            speed_unit: this.speedUnitSelect?.value || 'MB/s',
+            size_unit: this.sizeUnitSelect?.value || 'GB',
+            preferred_host: this.preferredHostSelect?.value || 'GoFile',
+            show_size_in_gb: (this.sizeUnitSelect?.value || 'GB') === 'GB',
+            show_download_speed: Boolean(this.showDownloadSpeedCheck?.checked),
+            show_download_percent: Boolean(this.showDownloadPercentCheck?.checked),
+            show_download_total: Boolean(this.showDownloadTotalCheck?.checked),
+            auto_extract: Boolean(this.autoExtractCheck?.checked),
+            auto_delete_archive: Boolean(this.autoDeleteArchiveCheck?.checked),
+            use_local_db: Boolean(this.useLocalDbCheck?.checked),
+            local_db_path: this.localDbPathInput?.value.trim() || '',
+            game_edit_mode: Boolean(this.gameEditModeCheck?.checked),
+            multi_threaded_scan: Boolean(this.multiThreadedScanCheck?.checked),
+            scan_workers: parseInt(this.scanWorkersInput?.value || 6, 10),
+            enable_scrape_cache: Boolean(this.enableScrapeCacheCheck?.checked),
+            scrape_cache_ttl_minutes: parseInt(this.scrapeCacheTtlInput?.value || 15, 10),
+            ach_overlay_enabled: Boolean(this.achOverlayCheck?.checked),
+            ach_sound_enabled: Boolean(this.achSoundCheck?.checked),
+            ach_volume: parseInt(this.achVolumeSlider?.value || 80, 10),
+            ach_duration: parseInt(this.achDurationSelect?.value || 4500, 10),
+            beta_updates: Boolean(this.betaUpdatesCheck?.checked)
+        };
+    }
+
+    hasUnsavedChanges() {
+        if (!this._savedSnapshot) return false;
+        return JSON.stringify(this.buildSettingsPayload()) !== this._savedSnapshot;
+    }
+
+    updateUnsavedToast() {
+        const isSettingsActive = document.getElementById('settingsTab')?.classList.contains('active');
+        if (isSettingsActive && this.hasUnsavedChanges()) {
+            this.showUnsavedToast();
+        } else {
+            this.hideUnsavedToast();
+        }
+    }
+
+    showUnsavedToast() {
+        if (this.unsavedToastEl && this.unsavedToastEl.isConnected) return;
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-warning toast-unsaved-settings';
+        toast.innerHTML = `
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span style="flex: 1;">Unsaved settings changes</span>
+            <button type="button" class="toast-reset-btn">Reset</button>
+            <button type="button" class="toast-action-btn"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+        `;
+
+        const resetBtn = toast.querySelector('.toast-reset-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.populateForm();
+                window.uiController?.showToast('Reverted unsaved settings changes', 'info');
+            });
+        }
+
+        const saveBtn = toast.querySelector('.toast-action-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                saveBtn.disabled = true;
+                await this.saveCurrentSettings();
+                if (saveBtn.isConnected) saveBtn.disabled = false;
+            });
+        }
+
+        this.unsavedToastEl = toast;
+        container.appendChild(toast);
+        setTimeout(() => {
+            if (this.unsavedToastEl === toast) {
+                toast.classList.add('visible');
+            }
+        }, 20);
+    }
+
+    hideUnsavedToast() {
+        const toast = this.unsavedToastEl;
+        if (!toast) return;
+        this.unsavedToastEl = null;
+        toast.classList.remove('visible');
+        setTimeout(() => {
+            if (toast.parentElement) toast.remove();
+        }, 250);
     }
 
     isEditMode() {
@@ -425,34 +588,7 @@ class SettingsController {
     }
 
     async saveCurrentSettings() {
-        const payload = {
-            winrar_path: this.winrarInput?.value || '',
-            download_path: this.downloadPathInput?.value || '',
-            extract_path: this.extractPathInput?.value || '',
-            rar_password: this.rarPasswordInput?.value || 'online-fix.me',
-            cg_password: this.cgPasswordInput?.value || 'cracked-games.org',
-            concurrent_downloads: parseInt(this.concurrencyInput?.value || 2, 10),
-            speed_unit: this.speedUnitSelect?.value || 'MB/s',
-            size_unit: this.sizeUnitSelect?.value || 'GB',
-            preferred_host: this.preferredHostSelect?.value || 'GoFile',
-            show_size_in_gb: (this.sizeUnitSelect?.value || 'GB') === 'GB',
-            show_download_speed: Boolean(this.showDownloadSpeedCheck?.checked),
-            show_download_percent: Boolean(this.showDownloadPercentCheck?.checked),
-            show_download_total: Boolean(this.showDownloadTotalCheck?.checked),
-            auto_extract: Boolean(this.autoExtractCheck?.checked),
-            auto_delete_archive: Boolean(this.autoDeleteArchiveCheck?.checked),
-            use_local_db: Boolean(this.useLocalDbCheck?.checked),
-            local_db_path: this.localDbPathInput?.value.trim() || '',
-            game_edit_mode: Boolean(this.gameEditModeCheck?.checked),
-            multi_threaded_scan: Boolean(this.multiThreadedScanCheck?.checked),
-            scan_workers: parseInt(this.scanWorkersInput?.value || 6, 10),
-            enable_scrape_cache: Boolean(this.enableScrapeCacheCheck?.checked),
-            scrape_cache_ttl_minutes: parseInt(this.scrapeCacheTtlInput?.value || 15, 10),
-            ach_overlay_enabled: Boolean(this.achOverlayCheck?.checked),
-            ach_sound_enabled: Boolean(this.achSoundCheck?.checked),
-            ach_volume: parseInt(this.achVolumeSlider?.value || 80, 10),
-            ach_duration: parseInt(this.achDurationSelect?.value || 4500, 10)
-        };
+        const payload = this.buildSettingsPayload();
 
         if (window.downloadController) {
             window.downloadController.speedUnit = payload.speed_unit;
@@ -467,6 +603,9 @@ class SettingsController {
             const res = await window.apiClient.saveSettings(payload);
             if (res.success) {
                 this.settings = res.settings;
+                this._savedSnapshot = JSON.stringify(payload);
+                this.hideUnsavedToast();
+                window.api?.setBetaUpdates?.(payload.beta_updates);
                 window.uiController.showToast('Settings saved successfully', 'success');
                 this.appendLog('Settings saved successfully', 'success');
 
@@ -519,7 +658,7 @@ class SettingsController {
             const isSrc = await window.api?.isSourceMode?.();
             if (isSrc) {
                 if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Development Mode';
-                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Running directly from source code.';
+                if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Running from source code (use Check for Updates if dev-app-update.yml is configured).';
             } else if (isPort) {
                 if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Standalone Portable Build';
                 if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Self-contained executable. Full background auto-updating is active in the NSIS Installer version.';

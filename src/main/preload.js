@@ -19,6 +19,7 @@ const exposed = {
   isSourceMode: () => ipcRenderer.invoke('is-source-mode'),
   isPortable: () => ipcRenderer.invoke('is-portable'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  setBetaUpdates: (enabled) => ipcRenderer.invoke('set-beta-updates', Boolean(enabled)),
   startDownloadUpdate: () => ipcRenderer.invoke('start-download-update'),
   restartAndInstallUpdate: () => ipcRenderer.invoke('restart-and-install-update'),
   onUpdaterEvent: (callback) => {

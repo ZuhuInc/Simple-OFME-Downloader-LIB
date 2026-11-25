@@ -44,6 +44,10 @@ class UIController {
             }
         }
 
+        if (tabId !== 'settingsTab' && window.settingsController?.hideUnsavedToast) {
+            window.settingsController.hideUnsavedToast();
+        }
+
         if (tabId === 'versionCheckerTab' && window.versionCheckerController) {
             window.versionCheckerController.loadSavedCredentials();
         } else if (tabId === 'settingsTab' && window.settingsController) {

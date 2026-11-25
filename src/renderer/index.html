@@ -23,7 +23,7 @@
         <div class="title-bar-left">
             <img class="app-icon" src="assets/OFME-DWND-ICO.ico" alt="Logo">
             <span class="app-title">FANTA OFME</span>
-            <span class="app-version-tag">v2.1.6</span>
+            <span class="app-version-tag">v2.1.7</span>
             <span id="sourceModeBadge" class="status-pill status-installed"
                 style="display: none; font-size: 10px; padding: 2px 8px; margin-left: 6px; background: rgba(212, 168, 83, 0.18); color: var(--accent); border: 1px solid rgba(212, 168, 83, 0.4);">SOURCE
                 MODE</span>
@@ -898,7 +898,7 @@
                                 updates powered by GitHub Releases.</p>
                         </div>
                         <span id="updateAppVersionBadge" class="status-pill status-installed"
-                            style="font-size: 11px;">v2.1.6</span>
+                            style="font-size: 11px;">v2.1.7</span>
                     </div>
 
                     <div
@@ -923,6 +923,20 @@
                             <button id="restartAndInstallBtn" class="btn btn-primary btn-sm" style="display: none;"><i
                                     class="fa-solid fa-bolt"></i> Restart & Apply</button>
                         </div>
+                    </div>
+
+                    <div class="form-row" style="margin-bottom: 0; padding-top: 4px;">
+                        <div class="form-label-area">
+                            <span class="form-label" style="display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-flask" style="color: var(--accent);"></i>
+                                Receive Beta Updates
+                            </span>
+                            <span class="form-desc">Include early prerelease builds (e.g. 2.5.0-beta.1) from GitHub Releases. Turn off to return to Stable releases.</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="set_beta_updates">
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
 
                     <!-- Live Update Progress Bar (hidden unless downloading) -->

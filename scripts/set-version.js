@@ -13,6 +13,9 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
+const SEMVER_REGEX = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+const SEMVER_PATTERN = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?';
+const SHIELDS_SEMVER_PATTERN = '[0-9]+\\.[0-9]+\\.[0-9]+(?:--?[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?';
 
 function getCleanVersion(raw) {
   if (!raw) return null;
@@ -29,8 +32,8 @@ function main() {
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
   let targetVersion = getCleanVersion(process.argv[2]) || pkg.version;
 
-  if (!/^\d+\.\d+\.\d+/.test(targetVersion)) {
-    console.error(`❌ Invalid semver version: "${targetVersion}". Expected format like "2.0.5".`);
+  if (!SEMVER_REGEX.test(targetVersion)) {
+    console.error(`❌ Invalid semver version: "${targetVersion}". Expected format like "2.0.5" or "2.5.0-beta.1".`);
     process.exit(1);
   }
 
@@ -80,11 +83,11 @@ function main() {
     let html = fs.readFileSync(htmlPath, 'utf-8');
     const oldHtml = html;
     html = html.replace(
-      /(<span class="app-version-tag">)v[0-9.]+(<\/span>)/g,
+      new RegExp(`(<span class="app-version-tag">)v${SEMVER_PATTERN}(<\\/span>)`, 'g'),
       `$1v${targetVersion}$2`
     );
     html = html.replace(
-      /(<span id="updateAppVersionBadge"[^>]*>)v[0-9.]+(<\/span>)/g,
+      new RegExp(`(<span id="updateAppVersionBadge"[^>]*>)v${SEMVER_PATTERN}(<\\/span>)`, 'g'),
       `$1v${targetVersion}$2`
     );
     if (html !== oldHtml) {
@@ -100,24 +103,25 @@ function main() {
   if (fs.existsSync(readmePath)) {
     let readme = fs.readFileSync(readmePath, 'utf-8');
     const oldReadme = readme;
+    const shieldsVersion = targetVersion.replace(/-/g, '--');
 
     // Header: # FANTA OFME Downloader (vX.X.X)
     readme = readme.replace(
-      /(# FANTA OFME Downloader \(v)[0-9.]+(\))/g,
+      new RegExp(`(# FANTA OFME Downloader \\(v)${SEMVER_PATTERN}(\\))`, 'g'),
       `$1${targetVersion}$2`
     );
     // Version Shield Badge
     readme = readme.replace(
-      /(img\.shields\.io\/badge\/version-)[0-9.]+(-d4a853\.svg)/g,
-      `$1${targetVersion}$2`
+      new RegExp(`(img\\.shields\\.io\\/badge\\/version-)${SHIELDS_SEMVER_PATTERN}(-d4a853\\.svg)`, 'g'),
+      `$1${shieldsVersion}$2`
     );
     // Setup and Portable executable references
     readme = readme.replace(
-      /Fanta OFME Downloader Setup [0-9.]+\.exe/g,
+      new RegExp(`Fanta OFME Downloader Setup ${SEMVER_PATTERN}\\.exe`, 'g'),
       `Fanta OFME Downloader Setup ${targetVersion}.exe`
     );
     readme = readme.replace(
-      /Fanta OFME Downloader Portable [0-9.]+\.exe/g,
+      new RegExp(`Fanta OFME Downloader Portable ${SEMVER_PATTERN}\\.exe`, 'g'),
       `Fanta OFME Downloader Portable ${targetVersion}.exe`
     );
 
@@ -135,7 +139,7 @@ function main() {
     let backendInit = fs.readFileSync(backendInitPath, 'utf-8');
     const oldBackendInit = backendInit;
     backendInit = backendInit.replace(
-      /(# 3\. Fallback default\r?\n\s+return ")[0-9.]+(")/g,
+      new RegExp(`(# 3\\. Fallback default\\r?\\n\\s+return ")${SEMVER_PATTERN}(")`, 'g'),
       `$1${targetVersion}$2`
     );
     if (backendInit !== oldBackendInit) {
@@ -152,7 +156,7 @@ function main() {
     let vc = fs.readFileSync(vcPath, 'utf-8');
     const oldVc = vc;
     vc = vc.replace(
-      /(__version__\s*=\s*")[0-9.]+(")/g,
+      new RegExp(`(__version__\\s*=\\s*")${SEMVER_PATTERN}(")`, 'g'),
       `$1${targetVersion}$2`
     );
     if (vc !== oldVc) {
@@ -167,7 +171,7 @@ function main() {
     let cfg = fs.readFileSync(configPath, 'utf-8');
     const oldCfg = cfg;
     cfg = cfg.replace(
-      /(os\.environ\.get\("FANTA_APP_VERSION",\s*")[0-9.]+("\))/g,
+      new RegExp(`(os\\.environ\\.get\\("FANTA_APP_VERSION",\\s*")${SEMVER_PATTERN}("\\))`, 'g'),
       `$1${targetVersion}$2`
     );
     if (cfg !== oldCfg) {

@@ -13,3 +13,4 @@ build/
 dist_backend/
 dist_build_temp/
 *.spec
+dev-app-update.yml

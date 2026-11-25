@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
+const os = require('os');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const https = require('https');
@@ -8,6 +9,22 @@ const { autoUpdater } = require('electron-updater');
 // Configure autoUpdater settings (Notify only, download on user click)
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.allowDowngrade = true;
+
+function readBetaUpdatesSetting() {
+  try {
+    const zuhuDir = path.join(os.homedir(), 'Documents', 'ZuhuProjects', 'ZuhuOFME');
+    const dataFolder = fs.existsSync(zuhuDir) ? zuhuDir : path.join(os.homedir(), '.fanta_ofme');
+    const settingsPath = path.join(dataFolder, 'Settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const parsed = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      return Boolean(parsed?.beta_updates);
+    }
+  } catch (_) {}
+  return false;
+}
+
+let betaUpdatesEnabled = readBetaUpdatesSetting();
 
 let mainWindow = null;
 let overlayWindow = null;
@@ -82,35 +99,97 @@ function isPortable() {
   return Boolean(process.env.PORTABLE_EXECUTABLE_DIR || process.env.PORTABLE_EXECUTABLE_FILE);
 }
 
+function hasDevUpdateConfig() {
+  if (app.isPackaged) return false;
+  if (process.env.FANTA_DEV_UPDATER !== '1') return false;
+  return fs.existsSync(path.join(app.getAppPath(), 'dev-app-update.yml'));
+}
+
 function hasUpdateConfig() {
+  if (hasDevUpdateConfig()) return true;
   if (!app.isPackaged) return false;
   const updateYml = path.join(process.resourcesPath, 'app-update.yml');
   return fs.existsSync(updateYml);
 }
 
+function applyUpdaterChannelConfig() {
+  autoUpdater.allowPrerelease = Boolean(betaUpdatesEnabled);
+  autoUpdater.allowDowngrade = true;
+
+  if (hasDevUpdateConfig()) {
+    autoUpdater.forceDevUpdateConfig = true;
+    autoUpdater.channel = betaUpdatesEnabled ? 'beta' : 'latest';
+  } else {
+    // Let GitHubProvider resolve any prerelease tag when allowPrerelease is true,
+    // or latest.yml when allowPrerelease is false.
+    autoUpdater._channel = null;
+  }
+}
+
 function cleanVersion(v) {
   if (!v || typeof v !== 'string') return '0.0.0';
-  return v.trim().replace(/^[vV]/, '');
+  return v.trim().replace(/^[vV]/, '').split('+')[0];
+}
+
+function compareSemVer(a, b) {
+  const cleanA = cleanVersion(a);
+  const cleanB = cleanVersion(b);
+
+  const dashA = cleanA.indexOf('-');
+  const dashB = cleanB.indexOf('-');
+  const coreA = (dashA >= 0 ? cleanA.slice(0, dashA) : cleanA).split('.').map(n => parseInt(n, 10) || 0);
+  const coreB = (dashB >= 0 ? cleanB.slice(0, dashB) : cleanB).split('.').map(n => parseInt(n, 10) || 0);
+
+  for (let i = 0; i < Math.max(coreA.length, coreB.length); i++) {
+    const numA = coreA[i] || 0;
+    const numB = coreB[i] || 0;
+    if (numA > numB) return 1;
+    if (numA < numB) return -1;
+  }
+
+  const preA = dashA >= 0 ? cleanA.slice(dashA + 1) : '';
+  const preB = dashB >= 0 ? cleanB.slice(dashB + 1) : '';
+  if (!preA && !preB) return 0;
+  if (!preA) return 1;  // Stable > prerelease
+  if (!preB) return -1; // Prerelease < stable
+
+  const partsA = preA.split('.');
+  const partsB = preB.split('.');
+  for (let i = 0; i < Math.min(partsA.length, partsB.length); i++) {
+    const tokA = partsA[i];
+    const tokB = partsB[i];
+    if (tokA === tokB) continue;
+
+    const isNumA = /^\d+$/.test(tokA);
+    const isNumB = /^\d+$/.test(tokB);
+    if (isNumA && isNumB) {
+      const intA = parseInt(tokA, 10);
+      const intB = parseInt(tokB, 10);
+      return intA > intB ? 1 : -1;
+    }
+    if (isNumA !== isNumB) {
+      return isNumA ? -1 : 1; // Numeric identifiers have lower precedence than non-numeric
+    }
+    return tokA > tokB ? 1 : -1;
+  }
+
+  if (partsA.length === partsB.length) return 0;
+  return partsA.length > partsB.length ? 1 : -1;
 }
 
 function isNewerVersion(remoteVer, currentVer) {
-  const r = cleanVersion(remoteVer).split('.').map(n => parseInt(n, 10) || 0);
-  const c = cleanVersion(currentVer).split('.').map(n => parseInt(n, 10) || 0);
-
-  for (let i = 0; i < Math.max(r.length, c.length); i++) {
-    const rNum = r[i] || 0;
-    const cNum = c[i] || 0;
-    if (rNum > cNum) return true;
-    if (rNum < cNum) return false;
-  }
-  return false;
+  return compareSemVer(remoteVer, currentVer) > 0;
 }
 
-function checkGitHubRelease() {
+function checkGitHubRelease(allowPrerelease = betaUpdatesEnabled) {
   return new Promise((resolve) => {
+    const apiPath = allowPrerelease
+      ? '/repos/ZuhuInc/Simple-OFME-Downloader-LIB/releases?per_page=25'
+      : '/repos/ZuhuInc/Simple-OFME-Downloader-LIB/releases/latest';
+
     const options = {
       hostname: 'api.github.com',
-      path: '/repos/ZuhuInc/Simple-OFME-Downloader-LIB/releases/latest',
+      path: apiPath,
       headers: {
         'User-Agent': 'Fanta-OFME-Downloader'
       }
@@ -122,16 +201,49 @@ function checkGitHubRelease() {
       res.on('end', () => {
         if (res.statusCode === 200) {
           try {
-            const release = JSON.parse(data);
-            const rawTag = release.tag_name || '';
-            const cleanedTag = cleanVersion(rawTag);
-            const currentVer = app.getVersion();
-            if (isNewerVersion(cleanedTag, currentVer)) {
+            const payload = JSON.parse(data);
+            const currentVer = cleanVersion(app.getVersion());
+
+            if (!allowPrerelease) {
+              const rawTag = payload.tag_name || '';
+              const cleanedTag = cleanVersion(rawTag);
+              const cmp = compareSemVer(cleanedTag, currentVer);
+              const returningToStable = currentVer.includes('-') && cmp < 0;
+              if (cmp > 0 || returningToStable) {
+                resolve({
+                  status: 'update-available',
+                  version: cleanedTag,
+                  releaseUrl: payload.html_url || 'https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases',
+                  releaseNotes: payload.body || '',
+                  isPrerelease: false
+                });
+              } else {
+                resolve({ status: 'up-to-date', version: currentVer });
+              }
+              return;
+            }
+
+            const releases = Array.isArray(payload)
+              ? payload.filter(r => r && !r.draft && r.tag_name)
+              : [];
+
+            let bestRelease = null;
+            let bestTag = '0.0.0';
+            for (const rel of releases) {
+              const candidateTag = cleanVersion(rel.tag_name);
+              if (!bestRelease || compareSemVer(candidateTag, bestTag) > 0) {
+                bestRelease = rel;
+                bestTag = candidateTag;
+              }
+            }
+
+            if (bestRelease && compareSemVer(bestTag, currentVer) > 0) {
               resolve({
                 status: 'update-available',
-                version: cleanedTag,
-                releaseUrl: release.html_url || 'https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases',
-                releaseNotes: release.body || ''
+                version: bestTag,
+                releaseUrl: bestRelease.html_url || 'https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases',
+                releaseNotes: bestRelease.body || '',
+                isPrerelease: Boolean(bestRelease.prerelease)
               });
             } else {
               resolve({ status: 'up-to-date', version: currentVer });
@@ -154,15 +266,18 @@ function checkGitHubRelease() {
 }
 
 function setupAutoUpdater() {
-  if (!app.isPackaged) {
+  const devConfigActive = hasDevUpdateConfig();
+  if (!app.isPackaged && !devConfigActive) {
     console.log('[AutoUpdater] Development/source mode detected: Auto-update checks disabled.');
     return;
   }
 
+  applyUpdaterChannelConfig();
+
   if (!hasUpdateConfig()) {
     console.log('[AutoUpdater] Standalone portable mode: Checking GitHub releases via API...');
     setTimeout(async () => {
-      const releaseInfo = await checkGitHubRelease();
+      const releaseInfo = await checkGitHubRelease(betaUpdatesEnabled);
       if (releaseInfo.status === 'update-available') {
         broadcastLog(`[AutoUpdater] New release available on GitHub: v${releaseInfo.version}!`, 'success');
         if (mainWindow && mainWindow.webContents) {
@@ -233,6 +348,16 @@ function setupAutoUpdater() {
   autoUpdater.on('error', (err) => {
     const errText = err?.message || String(err);
     console.error('[AutoUpdater] Error:', errText);
+    if (hasDevUpdateConfig() && errText.includes('ERR_CONNECTION_REFUSED')) {
+      broadcastLog('[AutoUpdater] Local mock update server (127.0.0.1:8787) is not running. Start it with: node scripts/mock-update-server.js', 'info');
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send('updater-event', {
+          type: 'not-available',
+          version: app.getVersion()
+        });
+      }
+      return;
+    }
     if (errText.includes('404') || errText.includes('HttpError: 404') || errText.includes('Cannot find latest') || errText.includes('ENOENT')) {
       broadcastLog(`[AutoUpdater] GitHub release check: App is currently on latest v${app.getVersion()}.`, 'info');
       if (mainWindow && mainWindow.webContents) {
@@ -255,6 +380,7 @@ function setupAutoUpdater() {
   // Automatically check 5 seconds after startup
   setTimeout(() => {
     if (hasUpdateConfig()) {
+      applyUpdaterChannelConfig();
       autoUpdater.checkForUpdates().catch(err => {
         console.warn('[AutoUpdater] Initial check notice:', err?.message || err);
       });
@@ -567,14 +693,22 @@ ipcMain.handle('is-source-mode', () => isSourceMode());
 ipcMain.handle('is-portable', () => isPortable());
 
 // Auto-updater IPC handlers
+ipcMain.handle('set-beta-updates', async (event, enabled) => {
+  betaUpdatesEnabled = Boolean(enabled);
+  applyUpdaterChannelConfig();
+  broadcastLog(`[AutoUpdater] Beta update channel ${betaUpdatesEnabled ? 'ENABLED' : 'DISABLED'}`, 'info');
+  return { success: true, beta_updates: betaUpdatesEnabled };
+});
+
 ipcMain.handle('check-for-updates', async () => {
-  if (!app.isPackaged) {
+  const devConfigActive = hasDevUpdateConfig();
+  if (!app.isPackaged && !devConfigActive) {
     return { status: 'dev-mode', message: 'Auto-updater is inactive in source/development mode.' };
   }
   if (!hasUpdateConfig()) {
     // Portable build: query GitHub API directly
     try {
-      const releaseInfo = await checkGitHubRelease();
+      const releaseInfo = await checkGitHubRelease(betaUpdatesEnabled);
       if (releaseInfo.status === 'update-available') {
         return {
           status: 'portable-update-available',
@@ -592,6 +726,7 @@ ipcMain.handle('check-for-updates', async () => {
     }
   }
   try {
+    applyUpdaterChannelConfig();
     const result = await autoUpdater.checkForUpdates();
     return { status: 'success', updateInfo: result?.updateInfo };
   } catch (err) {
@@ -607,7 +742,7 @@ ipcMain.handle('check-for-updates', async () => {
 });
 
 ipcMain.handle('start-download-update', async () => {
-  if (!app.isPackaged || !hasUpdateConfig()) {
+  if (!hasUpdateConfig()) {
     return { status: 'error', message: 'Download updater is only active in the installed build.' };
   }
   try {
