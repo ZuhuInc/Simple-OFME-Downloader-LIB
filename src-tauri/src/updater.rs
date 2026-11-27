@@ -232,72 +232,84 @@ pub async fn run_update_check(app: &AppHandle) -> serde_json::Value {
 
     // If a Tauri updater manifest asset (`latest.json` / `beta.json`) is present and
     // updater signing keys are configured, prefer signed native in-app updating.
+    let has_signing_pubkey = app
+        .config()
+        .plugins
+        .0
+        .get("updater")
+        .and_then(|u| u.get("pubkey"))
+        .and_then(|p| p.as_str())
+        .map(|s| !s.trim().is_empty())
+        .unwrap_or(false);
+
     let endpoint_str = if !beta_enabled {
         Some(STABLE_LATEST_JSON_URL.to_string())
     } else {
         resolved_rel.as_ref().and_then(|r| r.manifest_url.clone())
     };
 
-    if let (Some(url_str), Some(rel)) = (endpoint_str, resolved_rel.as_ref()) {
-        if rel.manifest_url.is_some() {
-            if let Ok(parsed_url) = tauri::Url::parse(&url_str) {
-                if let Ok(builder) = app.updater_builder().endpoints(vec![parsed_url]) {
-                    if let Ok(updater) = builder.build() {
-                        match updater.check().await {
-                            Ok(Some(update)) => {
-                                let new_ver = clean_version(&update.version);
-                                let release_notes = update.body.clone().unwrap_or_default();
-                                if let Some(state) = app.try_state::<AppState>() {
-                                    if let Ok(mut guard) = state.pending_update.lock() {
-                                        *guard = Some(update);
+    if has_signing_pubkey {
+        if let (Some(url_str), Some(rel)) = (endpoint_str, resolved_rel.as_ref()) {
+            if rel.manifest_url.is_some() {
+                if let Ok(parsed_url) = tauri::Url::parse(&url_str) {
+                    if let Ok(builder) = app.updater_builder().endpoints(vec![parsed_url]) {
+                        if let Ok(updater) = builder.build() {
+                            match updater.check().await {
+                                Ok(Some(update)) => {
+                                    let new_ver = clean_version(&update.version);
+                                    let release_notes = update.body.clone().unwrap_or_default();
+                                    if let Some(state) = app.try_state::<AppState>() {
+                                        if let Ok(mut guard) = state.pending_update.lock() {
+                                            *guard = Some(update);
+                                        }
                                     }
+                                    backend::broadcast_log(
+                                        app,
+                                        &format!(
+                                            "[AutoUpdater] New update found: v{}! Ready to download.",
+                                            new_ver
+                                        ),
+                                        Some("info"),
+                                    );
+                                    let _ = app.emit(
+                                        "updater-event",
+                                        serde_json::json!({
+                                            "type": "available",
+                                            "version": new_ver,
+                                            "releaseNotes": release_notes
+                                        }),
+                                    );
+                                    return serde_json::json!({
+                                        "status": "success",
+                                        "updateInfo": { "version": new_ver }
+                                    });
                                 }
-                                backend::broadcast_log(
-                                    app,
-                                    &format!(
-                                        "[AutoUpdater] New update found: v{}! Ready to download.",
-                                        new_ver
-                                    ),
-                                    Some("info"),
-                                );
-                                let _ = app.emit(
-                                    "updater-event",
-                                    serde_json::json!({
-                                        "type": "available",
-                                        "version": new_ver,
-                                        "releaseNotes": release_notes
-                                    }),
-                                );
-                                return serde_json::json!({
-                                    "status": "success",
-                                    "updateInfo": { "version": new_ver }
-                                });
-                            }
-                            Ok(None) => {
-                                backend::broadcast_log(
-                                    app,
-                                    &format!("[AutoUpdater] Current version (v{}) is up-to-date.", current_ver),
-                                    Some("info"),
-                                );
-                                let _ = app.emit(
-                                    "updater-event",
-                                    serde_json::json!({
-                                        "type": "not-available",
-                                        "version": current_ver
-                                    }),
-                                );
-                                return serde_json::json!({
-                                    "status": "up-to-date",
-                                    "message": "You are running the latest release."
-                                });
-                            }
-                            Err(err) => {
-                                // Fall through to GitHub Release link fallback cleanly
-                                backend::broadcast_log(
-                                    app,
-                                    &format!("[AutoUpdater] Signed manifest notice: {}", err),
-                                    Some("info"),
-                                );
+                                Ok(None) => {
+                                    backend::broadcast_log(
+                                        app,
+                                        &format!("[AutoUpdater] Current version (v{}) is up-to-date.", current_ver),
+                                        Some("info"),
+                                    );
+                                    let _ = app.emit(
+                                        "updater-event",
+                                        serde_json::json!({
+                                            "type": "not-available",
+                                            "version": current_ver
+                                        }),
+                                    );
+                                    return serde_json::json!({
+                                        "status": "up-to-date",
+                                        "message": "You are running the latest release."
+                                    });
+                                }
+                                Err(err) => {
+                                    // Fall through to GitHub Release link fallback cleanly
+                                    backend::broadcast_log(
+                                        app,
+                                        &format!("[AutoUpdater] Signed manifest notice: {}", err),
+                                        Some("info"),
+                                    );
+                                }
                             }
                         }
                     }

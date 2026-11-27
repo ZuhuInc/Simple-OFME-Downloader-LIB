@@ -42,5 +42,14 @@
         "installerIcon": "icons/icon.ico"
       }
     }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": [
+        "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases/latest/download/latest.json"
+      ],
+      "allowDowngrades": true
+    }
   }
 }
