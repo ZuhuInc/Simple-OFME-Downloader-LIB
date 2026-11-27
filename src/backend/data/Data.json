@@ -3604,5 +3604,31 @@
                 "fix_url": "https://pixeldrain.com/u/S7YbeJoH"
             }
         }
+    },
+    "Zombies Aren’t Real": {
+        "version": "26692741",
+        "host": "MegaDB",
+        "approx_size": "302MB",
+        "description": "Zombies Aren’t Real is a horde-defense,strategygame where you attempt to control a quick-spreading zombie infection in real-world cities by commanding militarySafari-TV",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/5185890/332f6bf08b537454fcdb0c6c4d431334074ac013/library_capsule_2x.jpg?t=1793587604",
+        "origin_url": "https://steamrip.com/zombies-arent-real-free-download/",
+        "parts": [
+            "https://megadb.net/eb27eb975a495b4d"
+        ],
+        "fix_url": "",
+        "category": "General"
+    },
+    "Can 'Em All": {
+        "version": "26762380",
+        "host": "GoFile",
+        "approx_size": "401 MB",
+        "description": "A truck delivers a fresh batch of adorable creatures straight to your factory. Unfortunately for them, they're also your main source of income. Grab your weapons and clear out the factory.",
+        "thumbnail": "https://shared.steamstatic.com/store_item_assets/steam/apps/5133900/161478c18969dc24f12b2f52372af0e08065fa52/library_capsule_2x.jpg?t=1791394647",
+        "origin_url": "https://cracked-games.org/can-em-all-free-download",
+        "parts": [
+            "https://gofile.io/d/HuzorccW"
+        ],
+        "fix_url": "",
+        "category": "General"
     }
 }
