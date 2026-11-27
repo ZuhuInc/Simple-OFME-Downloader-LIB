@@ -179,12 +179,16 @@ async fn resolve_github_release(allow_prerelease: bool) -> Result<Option<Resolve
         return Ok(None);
     }
 
+    let preferred_name = if allow_prerelease { "beta.json" } else { "latest.json" };
+    let fallback_name = if allow_prerelease { "latest.json" } else { "beta.json" };
     let manifest_url = rel
         .assets
         .iter()
-        .find(|a| {
-            let lower = a.name.to_lowercase();
-            lower == "latest.json" || lower == "beta.json"
+        .find(|a| a.name.eq_ignore_ascii_case(preferred_name))
+        .or_else(|| {
+            rel.assets
+                .iter()
+                .find(|a| a.name.eq_ignore_ascii_case(fallback_name))
         })
         .map(|a| a.browser_download_url.clone());
 
@@ -203,6 +207,17 @@ pub async fn run_update_check(app: &AppHandle) -> serde_json::Value {
         .try_state::<AppState>()
         .map(|s| s.beta_updates.load(Ordering::Relaxed))
         .unwrap_or(false);
+    let is_portable = std::env::var_os("PORTABLE_EXECUTABLE_DIR").is_some()
+        || std::env::var_os("PORTABLE_EXECUTABLE_FILE").is_some();
+
+    if let Some(state) = app.try_state::<AppState>() {
+        if let Ok(mut pending) = state.pending_update.lock() {
+            *pending = None;
+        }
+        if let Ok(mut downloaded) = state.downloaded_update.lock() {
+            *downloaded = None;
+        }
+    }
 
     let _ = app.emit("updater-event", serde_json::json!({ "type": "checking" }));
     backend::broadcast_log(
@@ -248,11 +263,15 @@ pub async fn run_update_check(app: &AppHandle) -> serde_json::Value {
         resolved_rel.as_ref().and_then(|r| r.manifest_url.clone())
     };
 
-    if has_signing_pubkey {
+    if has_signing_pubkey && !is_portable {
         if let (Some(url_str), Some(rel)) = (endpoint_str, resolved_rel.as_ref()) {
             if rel.manifest_url.is_some() {
                 if let Ok(parsed_url) = tauri::Url::parse(&url_str) {
+                    let before_exit_app = app.clone();
                     if let Ok(builder) = app.updater_builder().endpoints(vec![parsed_url]) {
+                        let builder = builder.on_before_exit(move || {
+                            backend::stop_backend(&before_exit_app);
+                        });
                         if let Ok(updater) = builder.build() {
                             match updater.check().await {
                                 Ok(Some(update)) => {
@@ -402,6 +421,9 @@ pub fn set_beta_updates(
     if let Ok(mut pending) = state.pending_update.lock() {
         *pending = None;
     }
+    if let Ok(mut downloaded) = state.downloaded_update.lock() {
+        *downloaded = None;
+    }
     backend::broadcast_log(
         &app,
         &format!(
@@ -447,7 +469,7 @@ pub async fn start_download_update(app: AppHandle) -> serde_json::Value {
     let app_finished = app.clone();
 
     let res = update
-        .download_and_install(
+        .download(
             move |chunk_len, content_len| {
                 transferred += chunk_len as u64;
                 let total = content_len.unwrap_or(0);
@@ -472,7 +494,7 @@ pub async fn start_download_update(app: AppHandle) -> serde_json::Value {
             move || {
                 backend::broadcast_log(
                     &app_finished,
-                    "[AutoUpdater] Download verified; preparing install...",
+                    "[AutoUpdater] Download verified; ready for Restart & Apply.",
                     Some("info"),
                 );
             },
@@ -480,10 +502,15 @@ pub async fn start_download_update(app: AppHandle) -> serde_json::Value {
         .await;
 
     match res {
-        Ok(_) => {
+        Ok(bytes) => {
+            if let Some(state) = app.try_state::<AppState>() {
+                if let Ok(mut guard) = state.downloaded_update.lock() {
+                    *guard = Some((update, bytes));
+                }
+            }
             backend::broadcast_log(
                 &app,
-                &format!("[AutoUpdater] Update v{} downloaded and ready for restart!", version),
+                &format!("[AutoUpdater] Update v{} downloaded successfully and ready for install!", version),
                 Some("success"),
             );
             let _ = app.emit(
@@ -493,7 +520,7 @@ pub async fn start_download_update(app: AppHandle) -> serde_json::Value {
                     "version": version
                 }),
             );
-            serde_json::json!({ "status": "downloading" })
+            serde_json::json!({ "status": "downloaded", "version": version })
         }
         Err(err) => {
             let msg = err.to_string();
@@ -510,5 +537,30 @@ pub async fn start_download_update(app: AppHandle) -> serde_json::Value {
 #[tauri::command]
 pub fn restart_and_install_update(app: AppHandle) {
     backend::stop_backend(&app);
+
+    let downloaded_opt = app
+        .try_state::<AppState>()
+        .and_then(|s| s.downloaded_update.lock().ok().and_then(|mut g| g.take()));
+
+    if let Some((update, bytes)) = downloaded_opt {
+        backend::broadcast_log(
+            &app,
+            &format!("[AutoUpdater] Installing update v{} and restarting...", clean_version(&update.version)),
+            Some("info"),
+        );
+        if let Err(err) = update.install(&bytes) {
+            backend::broadcast_log(
+                &app,
+                &format!("[AutoUpdater] Install failed: {}", err),
+                Some("danger"),
+            );
+            let _ = app.emit(
+                "updater-event",
+                serde_json::json!({ "type": "error", "message": err.to_string() }),
+            );
+        }
+        return;
+    }
+
     app.restart();
 }

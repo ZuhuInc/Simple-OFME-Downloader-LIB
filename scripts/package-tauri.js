@@ -5,8 +5,8 @@
  * Electron's `build/Installer/` and `build/File/` layout:
  *   - build/Tauri/Installer/
  *       - Fanta-OFME-Downloader-Setup-<version>.exe
- *       - beta.yml   (for electron-updater prerelease upgrades)
- *       - latest.yml (for electron-updater / fallback checks)
+ *       - latest.json / beta.json (for Tauri signed in-app auto-updates)
+ *       - beta.yml / latest.yml   (for Electron v2.1.7 -> Tauri prerelease upgrades)
  *   - build/Tauri/File/
  *       - Fanta-OFME-Downloader-Portable-<version>.exe (single standalone runnable exe)
  */
@@ -48,6 +48,25 @@ function buildUpdaterYml(version, installerName, sha512, sizeBytes) {
     `releaseDate: '${new Date().toISOString()}'`,
     ''
   ].join('\n');
+}
+
+function buildTauriManifestJson(version, installerName, signature) {
+  const tag = `v${version}`;
+  return JSON.stringify(
+    {
+      version,
+      notes: `Fanta OFME Downloader ${tag}`,
+      pub_date: new Date().toISOString(),
+      platforms: {
+        'windows-x86_64': {
+          signature: signature.trim(),
+          url: `https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases/download/${tag}/${installerName}`
+        }
+      }
+    },
+    null,
+    2
+  ) + '\n';
 }
 
 function findMakensis() {
@@ -103,6 +122,21 @@ function main() {
   const latestYmlPath = path.join(outInstallerDir, 'latest.yml');
   fs.writeFileSync(betaYmlPath, ymlContent, 'utf8');
   fs.writeFileSync(latestYmlPath, ymlContent, 'utf8');
+
+  // Generate Tauri static JSON manifests (`latest.json` & `beta.json`) from `.sig`
+  const setupSigSrc = `${setupExeSrc}.sig`;
+  let latestJsonPath = null;
+  let betaJsonPath = null;
+  if (fs.existsSync(setupSigSrc)) {
+    const signature = fs.readFileSync(setupSigSrc, 'utf8').trim();
+    const manifestJson = buildTauriManifestJson(version, cleanSetupName, signature);
+    latestJsonPath = path.join(outInstallerDir, 'latest.json');
+    betaJsonPath = path.join(outInstallerDir, 'beta.json');
+    fs.writeFileSync(latestJsonPath, manifestJson, 'utf8');
+    fs.writeFileSync(betaJsonPath, manifestJson, 'utf8');
+  } else {
+    console.warn(`⚠️ Signature file not found (${setupSigSrc}); skipping latest.json / beta.json.`);
+  }
 
   // 2. Package Single Standalone Portable Executable via NSIS
   const outFileDir = path.join(ROOT_DIR, 'build', 'Tauri', 'File');
@@ -161,8 +195,12 @@ function main() {
   console.log(`📦 Tauri v${version} Release Package Ready`);
   console.log('======================================================');
   console.log(`💿 Installer (.exe) : ${outSetupPath} (${setupSize} bytes)`);
-  console.log(`📄 Metadata (beta)  : ${betaYmlPath}`);
-  console.log(`📄 Metadata (latest): ${latestYmlPath}`);
+  if (latestJsonPath && betaJsonPath) {
+    console.log(`🔄 Tauri (latest)   : ${latestJsonPath}`);
+    console.log(`🔄 Tauri (beta)     : ${betaJsonPath}`);
+  }
+  console.log(`📄 Electron (beta)  : ${betaYmlPath}`);
+  console.log(`📄 Electron (latest): ${latestYmlPath}`);
   console.log(`📦 Portable (.exe)  : ${portableExePath} (${portableSize} bytes)`);
   console.log('======================================================\n');
 }

@@ -28,7 +28,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "createUpdaterArtifacts": false,
+    "createUpdaterArtifacts": true,
     "externalBin": [
       "binaries/bridge_server"
     ],
@@ -45,11 +45,14 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFEMUVGQkZCQjRFODc3QzYKUldUR2QraTArL3NlSFJDNDAzYWc2bnhpZVh5Um8wZ2Rrc1JEczVtWDVud1B2NXdsaElVeFhlbisK",
       "endpoints": [
         "https://github.com/ZuhuInc/Simple-OFME-Downloader-LIB/releases/latest/download/latest.json"
       ],
-      "allowDowngrades": true
+      "allowDowngrades": true,
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

@@ -22,6 +22,7 @@ pub struct AppState {
     pub beta_updates: AtomicBool,
     pub backend_child: Mutex<Option<Child>>,
     pub pending_update: Mutex<Option<tauri_plugin_updater::Update>>,
+    pub downloaded_update: Mutex<Option<(tauri_plugin_updater::Update, Vec<u8>)>>,
 }
 
 impl Default for AppState {
@@ -31,6 +32,7 @@ impl Default for AppState {
             beta_updates: AtomicBool::new(updater::read_beta_updates_setting()),
             backend_child: Mutex::new(None),
             pending_update: Mutex::new(None),
+            downloaded_update: Mutex::new(None),
         }
     }
 }
