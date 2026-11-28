@@ -19,22 +19,58 @@ class LibraryController {
         this.gameCountEl = document.getElementById('libraryGameCount');
         this.favorites = new Set();
         this.loadFavorites();
+        this._favoritesSyncedFromBackend = false;
     }
 
     loadFavorites() {
         try {
             const raw = localStorage.getItem('fanta_favorite_games');
             const arr = raw ? JSON.parse(raw) : [];
-            this.favorites = new Set(Array.isArray(arr) ? arr.map(s => String(s).toLowerCase()) : []);
+            this.favorites = new Set(
+                Array.isArray(arr)
+                    ? arr.map(s => String(s).trim().toLowerCase()).filter(Boolean)
+                    : []
+            );
         } catch (e) {
             this.favorites = new Set();
         }
     }
 
     saveFavorites() {
+        const list = Array.from(this.favorites);
         try {
-            localStorage.setItem('fanta_favorite_games', JSON.stringify(Array.from(this.favorites)));
+            localStorage.setItem('fanta_favorite_games', JSON.stringify(list));
         } catch (e) {}
+        if (window.apiClient && typeof window.apiClient.saveSettings === 'function') {
+            window.apiClient.saveSettings({ favorite_games: list }).catch(() => {});
+        }
+    }
+
+    async syncFavoritesFromBackend() {
+        try {
+            if (!window.apiClient || typeof window.apiClient.getSettings !== 'function') return;
+            const data = await window.apiClient.getSettings();
+            const settings = data?.settings || {};
+            if (Array.isArray(settings.favorite_games)) {
+                this.favorites = new Set(
+                    settings.favorite_games.map(s => String(s).trim().toLowerCase()).filter(Boolean)
+                );
+                try {
+                    localStorage.setItem('fanta_favorite_games', JSON.stringify(Array.from(this.favorites)));
+                } catch (e) {}
+                this._favoritesSyncedFromBackend = true;
+                if (this.games.length > 0) {
+                    this.applyFilters();
+                }
+            } else {
+                this._favoritesSyncedFromBackend = true;
+                if (this.favorites.size > 0 && typeof window.apiClient.saveSettings === 'function') {
+                    window.apiClient.saveSettings({ favorite_games: Array.from(this.favorites) }).catch(() => {});
+                }
+            }
+        } catch (e) {
+            // Backend not ready yet; will retry on bridge_status connected
+        }
     }
 
     isFavorite(game) {
@@ -56,6 +92,7 @@ class LibraryController {
 
     init() {
         this.bindEvents();
+        this.syncFavoritesFromBackend();
         this.loadGames();
     }
 
@@ -97,8 +134,13 @@ class LibraryController {
 
         // Auto-load as soon as bridge socket connects
         window.apiClient.on('bridge_status', (status) => {
-            if (status.connected && this.games.length === 0) {
-                this.loadGames();
+            if (status.connected) {
+                if (!this._favoritesSyncedFromBackend) {
+                    this.syncFavoritesFromBackend();
+                }
+                if (this.games.length === 0) {
+                    this.loadGames();
+                }
             }
         });
     }

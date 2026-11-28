@@ -98,8 +98,79 @@
     window.fantaAPI = exposed;
     window.electronAPI = exposed;
 
-    // Enable frameless titlebar drag & double-click maximize in Tauri WebView2
+    function patchApiClientForRust() {
+        const client = window.apiClient;
+        if (!client || client._rustPatched) return;
+        client._rustPatched = true;
+
+        const origGetStatus = client.getStatus.bind(client);
+        const origSaveSettings = client.saveSettings.bind(client);
+        const origRefreshGames = client.refreshGames.bind(client);
+        const origMarkGameStatus = client.markGameStatus.bind(client);
+        const origRemoveGame = client.removeGame.bind(client);
+        const origRemoveSteamLink = client.removeSteamLink.bind(client);
+
+        client.getStatus = async () => {
+            try {
+                return await origGetStatus();
+            } catch {
+                return await invoke('rust_get_status');
+            }
+        };
+
+        client.getSettings = () => invoke('rust_get_settings');
+
+        client.saveSettings = async (settings) => {
+            const res = await invoke('rust_save_settings', { settings: settings || {} });
+            origSaveSettings(settings).catch(() => {});
+            return res;
+        };
+
+        client.getGames = (params = {}) => invoke('rust_get_games', {
+            params: {
+                q: params.q || '',
+                host: params.host || '',
+                status: params.status || 'all',
+                sort: params.sort || 'default',
+                order: params.order || 'asc'
+            }
+        });
+
+        client.refreshGames = async () => {
+            const res = await invoke('rust_refresh_games');
+            origRefreshGames().catch(() => {});
+            return res;
+        };
+
+        client.markGameStatus = async (payload) => {
+            try {
+                return await origMarkGameStatus(payload);
+            } catch {
+                return await invoke('rust_mark_game_status', { payload: payload || {} });
+            }
+        };
+
+        client.removeGame = async (payload) => {
+            try {
+                return await origRemoveGame(payload);
+            } catch {
+                return await invoke('rust_remove_game', { payload: payload || {} });
+            }
+        };
+
+        client.removeSteamLink = async (payload) => {
+            try {
+                return await origRemoveSteamLink(payload);
+            } catch {
+                return await invoke('rust_remove_steam_link', { payload: payload || {} });
+            }
+        };
+    }
+
+    // Enable frameless titlebar drag & double-click maximize + Stage 4.1 Rust data bridge
     document.addEventListener('DOMContentLoaded', () => {
+        patchApiClientForRust();
+
         const titlebar = document.querySelector('.titlebar');
         const win = currentWin();
         if (!titlebar || !win) return;
