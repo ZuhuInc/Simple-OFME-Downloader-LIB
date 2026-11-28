@@ -1,6 +1,6 @@
 [package]
 name = "fanta-ofme-downloader"
-version = "2.5.0-beta.4"
+version = "2.5.0-beta.5"
 description = "Fanta OFME Downloader - Online-Fix Game Manager & Downloader"
 authors = ["ZuhuInc"]
 license = "MIT"

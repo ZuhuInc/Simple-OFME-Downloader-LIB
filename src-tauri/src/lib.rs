@@ -2,6 +2,7 @@ mod backend;
 mod config;
 mod database;
 mod extractor;
+mod steam;
 mod updater;
 
 use serde::{Deserialize, Serialize};
@@ -257,8 +258,8 @@ fn rust_get_status(app: AppHandle, state: State<'_, AppState>) -> Value {
     let ext = extractor::Extractor::from_config(&cfg);
     let winrar_installed = ext.is_winrar_available();
     let sevenzip_installed = ext.is_sevenzip_available();
-    let steam_path = cfg.get_str("steam_path");
-    let steam_detected = !steam_path.is_empty() && Path::new(&steam_path).exists();
+    let steam_mgr = steam::SteamManager::from_config(&cfg);
+    let steam_detected = steam_mgr.steam_path.as_ref().is_some_and(|p| p.exists());
     let local_db = cfg
         .get_active_db_path()
         .map(|p| p.to_string_lossy().to_string())
@@ -846,6 +847,566 @@ fn rust_extract_archive(
     Ok(json!({ "success": true, "message": "Extraction started in background" }))
 }
 
+fn resolve_steam_appid_for_title(
+    installed_games: &Map<String, Value>,
+    db_games: &[database::GameEntry],
+    title: &str,
+) -> Option<String> {
+    let norm = title.trim();
+    if norm.is_empty() {
+        return None;
+    }
+    for (k, v) in installed_games {
+        if k.trim().eq_ignore_ascii_case(norm) {
+            if let Some(obj) = v.as_object() {
+                if !database::DatabaseManager::is_catalog_only_entry(obj) {
+                    if let Some(aid) = obj.get("steam_appid").and_then(|x| x.as_str()).filter(|s| !s.is_empty()) {
+                        return Some(aid.to_string());
+                    }
+                }
+            }
+        }
+    }
+    for g in db_games {
+        if g.title.trim().eq_ignore_ascii_case(norm) {
+            if let Some(ref aid) = g.steam_appid {
+                if !aid.is_empty() {
+                    return Some(aid.clone());
+                }
+            }
+        }
+    }
+    None
+}
+
+#[tauri::command]
+fn rust_get_steam_libraries(app: AppHandle, state: State<'_, AppState>) -> Value {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.bind_app(&app);
+    cfg.reload_if_changed();
+    let mgr = steam::SteamManager::from_config(&cfg);
+    json!({
+        "steam_path": mgr.steam_path.as_ref().map(|p| p.to_string_lossy().to_string()),
+        "libraries": mgr.libraries,
+        "games": mgr.get_installed_games(),
+    })
+}
+
+#[tauri::command]
+async fn rust_get_steam_accounts(app: AppHandle, state: State<'_, AppState>) -> Result<Value, String> {
+    let (mgr, configured_id) = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+        let mgr = steam::SteamManager::from_config(&cfg);
+        let cid = {
+            let s1 = cfg.get_str("steam_id");
+            if !s1.is_empty() { s1 } else { cfg.get_str("steam_user_id") }
+        };
+        (mgr, cid)
+    };
+
+    let accounts = mgr.get_user_accounts().await;
+    let active_id = steam::SteamManager::resolve_active_account_id_from_list(&accounts, Some(&configured_id));
+    let active_account = accounts
+        .iter()
+        .find(|a| a.get("account_id").and_then(|v| v.as_str()) == Some(active_id.as_str()))
+        .cloned()
+        .or_else(|| accounts.first().cloned());
+
+    Ok(json!({
+        "success": true,
+        "steam_path": mgr.steam_path.as_ref().map(|p| p.to_string_lossy().to_string()),
+        "accounts": accounts,
+        "active_user": active_id,
+        "active_account": active_account,
+    }))
+}
+
+#[tauri::command]
+async fn rust_select_steam_account(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    account_id: String,
+) -> Result<Value, String> {
+    let trimmed = account_id.trim().to_string();
+    if trimmed.is_empty() {
+        return Err("Missing account_id".to_string());
+    }
+
+    let (mgr, fanta_data, db_games) = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+        let mut patch = Map::new();
+        patch.insert("steam_id".into(), json!(trimmed));
+        patch.insert("steam_user_id".into(), json!(trimmed));
+        cfg.update_settings(patch);
+
+        let mgr = steam::SteamManager::from_config(&cfg);
+        let fanta_data = cfg.installed_games.clone();
+        let mut db = state.database.lock().unwrap();
+        if db.games.is_empty() {
+            db.load_local_or_cached(&cfg, false);
+        }
+        (mgr, fanta_data, db.games.clone())
+    };
+
+    let accounts = mgr.get_user_accounts().await;
+    let active_account = accounts
+        .iter()
+        .find(|a| a.get("account_id").and_then(|v| v.as_str()) == Some(trimmed.as_str()))
+        .cloned();
+    let shortcuts = mgr
+        .get_shortcuts(Some(&trimmed), &fanta_data, &db_games)
+        .await;
+
+    Ok(json!({
+        "success": true,
+        "active_user": trimmed,
+        "active_account": active_account,
+        "shortcuts_count": shortcuts.len(),
+    }))
+}
+
+#[tauri::command]
+async fn rust_get_steam_shortcuts(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    account_id: Option<String>,
+) -> Result<Value, String> {
+    let (mgr, target_acc_opt, fanta_data, db_games) = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+        let mgr = steam::SteamManager::from_config(&cfg);
+        let acc_opt = account_id
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                let s1 = cfg.get_str("steam_id");
+                if !s1.is_empty() {
+                    Some(s1)
+                } else {
+                    let s2 = cfg.get_str("steam_user_id");
+                    if !s2.is_empty() { Some(s2) } else { None }
+                }
+            });
+        let fanta_data = cfg.installed_games.clone();
+        let mut db = state.database.lock().unwrap();
+        if db.games.is_empty() {
+            db.load_local_or_cached(&cfg, false);
+        }
+        (mgr, acc_opt, fanta_data, db.games.clone())
+    };
+
+    let shortcuts = mgr
+        .get_shortcuts(target_acc_opt.as_deref(), &fanta_data, &db_games)
+        .await;
+    let fanta_count = shortcuts
+        .iter()
+        .filter(|s| s.get("is_fanta").and_then(|v| v.as_bool()).unwrap_or(false))
+        .count();
+
+    Ok(json!({
+        "success": true,
+        "account_id": target_acc_opt,
+        "shortcuts": shortcuts,
+        "fanta_count": fanta_count,
+        "total": shortcuts.len(),
+    }))
+}
+
+#[tauri::command]
+async fn rust_add_steam_shortcut(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    payload: Map<String, Value>,
+) -> Result<Value, String> {
+    let name = payload
+        .get("name")
+        .or_else(|| payload.get("title"))
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "Missing name or exe_path".to_string())?
+        .to_string();
+    let exe_path = payload
+        .get("exe_path")
+        .or_else(|| payload.get("exe"))
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "Missing name or exe_path".to_string())?
+        .to_string();
+    let start_dir = payload
+        .get("start_dir")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let icon_path = payload
+        .get("icon_path")
+        .or_else(|| payload.get("icon"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let launch_options = payload
+        .get("launch_options")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let tags: Vec<String> = payload
+        .get("tags")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|x| x.as_str().map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_else(|| vec!["Online-Fix".into()]);
+    let auto_artwork = payload
+        .get("auto_artwork")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+    let runner_id = payload
+        .get("runner_id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+
+    let (mgr, account_id, resolved_appid, artwork_dir) = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+        let mgr = steam::SteamManager::from_config(&cfg);
+        let account_id = payload
+            .get("account_id")
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .or_else(|| {
+                let s1 = cfg.get_str("steam_id");
+                if !s1.is_empty() {
+                    Some(s1)
+                } else {
+                    let s2 = cfg.get_str("steam_user_id");
+                    if !s2.is_empty() { Some(s2) } else { None }
+                }
+            });
+
+        let mut db = state.database.lock().unwrap();
+        if db.games.is_empty() {
+            db.load_local_or_cached(&cfg, false);
+        }
+
+        let resolved_appid = payload
+            .get("steam_appid")
+            .and_then(|v| {
+                v.as_str()
+                    .map(str::to_string)
+                    .or_else(|| v.as_u64().map(|n| n.to_string()))
+            })
+            .filter(|s| !s.trim().is_empty())
+            .or_else(|| resolve_steam_appid_for_title(&cfg.installed_games, &db.games, &name));
+
+        (mgr, account_id, resolved_appid, steam::default_artwork_dir())
+    };
+
+    let req = steam::AddShortcutRequest {
+        name: name.clone(),
+        exe_path: exe_path.clone(),
+        start_dir,
+        icon_path,
+        launch_options,
+        tags,
+        account_id,
+        auto_artwork,
+        steam_appid: resolved_appid.clone(),
+    };
+
+    let res = mgr.add_non_steam_game(req, &artwork_dir).await;
+    if res.get("success").and_then(|v| v.as_bool()).unwrap_or(false) {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.reload_if_changed();
+        let key = find_installed_game_key(&cfg.installed_games, &name, "")
+            .unwrap_or_else(|| name.to_uppercase());
+        let mut record = cfg
+            .installed_games
+            .get(&key)
+            .and_then(|v| v.as_object())
+            .cloned()
+            .unwrap_or_default();
+
+        if let Some(url) = res.get("steam_url") {
+            record.insert("steam_url".into(), url.clone());
+        }
+        record.insert("exe_path".into(), json!(exe_path));
+
+        if !runner_id.is_empty() {
+            let mut runner_exes = record
+                .get("runner_exes")
+                .and_then(|v| v.as_object())
+                .cloned()
+                .unwrap_or_default();
+            runner_exes.insert(runner_id.clone(), json!(exe_path));
+            record.insert("runner_exes".into(), Value::Object(runner_exes));
+
+            let mut runner_steam = record
+                .get("runner_steam_urls")
+                .and_then(|v| v.as_object())
+                .cloned()
+                .unwrap_or_default();
+            if let Some(url) = res.get("steam_url") {
+                runner_steam.insert(runner_id.clone(), url.clone());
+            }
+            record.insert("runner_steam_urls".into(), Value::Object(runner_steam));
+            record.insert("preferred_runner".into(), json!(runner_id));
+        }
+        if let Some(ref aid) = resolved_appid {
+            record.insert("steam_appid".into(), json!(aid));
+        }
+
+        cfg.installed_games.insert(key, Value::Object(record));
+        cfg.save_installed_games();
+        let mut db = state.database.lock().unwrap();
+        db.update_installed_states(&cfg);
+
+        backend::broadcast_log(
+            &app,
+            &format!("[Steam] Added shortcut '{}' to shortcuts.vdf", name),
+            Some("success"),
+        );
+    }
+
+    Ok(res)
+}
+
+#[tauri::command]
+async fn rust_sync_shortcut_artwork(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    payload: Map<String, Value>,
+) -> Result<Value, String> {
+    let name = payload
+        .get("name")
+        .or_else(|| payload.get("title"))
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "Missing game name".to_string())?
+        .to_string();
+    let exe_path = payload
+        .get("exe_path")
+        .or_else(|| payload.get("exe"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    let (mgr, account_id, resolved_appid, artwork_dir) = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+        let mgr = steam::SteamManager::from_config(&cfg);
+        let account_id = payload
+            .get("account_id")
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .or_else(|| {
+                let s1 = cfg.get_str("steam_id");
+                if !s1.is_empty() {
+                    Some(s1)
+                } else {
+                    let s2 = cfg.get_str("steam_user_id");
+                    if !s2.is_empty() { Some(s2) } else { None }
+                }
+            });
+
+        let mut db = state.database.lock().unwrap();
+        if db.games.is_empty() {
+            db.load_local_or_cached(&cfg, false);
+        }
+
+        let resolved_appid = payload
+            .get("steam_appid")
+            .or_else(|| payload.get("appid"))
+            .and_then(|v| {
+                v.as_str()
+                    .map(str::to_string)
+                    .or_else(|| v.as_u64().map(|n| n.to_string()))
+            })
+            .filter(|s| !s.trim().is_empty())
+            .or_else(|| resolve_steam_appid_for_title(&cfg.installed_games, &db.games, &name));
+
+        (mgr, account_id, resolved_appid, steam::default_artwork_dir())
+    };
+
+    let res = mgr
+        .sync_game_artwork(
+            &artwork_dir,
+            &name,
+            &exe_path,
+            resolved_appid.as_deref(),
+            account_id.as_deref(),
+        )
+        .await;
+
+    if res.get("success").and_then(|v| v.as_bool()).unwrap_or(false) {
+        if let Some(ref aid) = resolved_appid {
+            let mut cfg = state.config.lock().unwrap();
+            cfg.reload_if_changed();
+            if let Some(fk) = find_installed_game_key(&cfg.installed_games, &name, "") {
+                if let Some(obj) = cfg
+                    .installed_games
+                    .get_mut(&fk)
+                    .and_then(|v| v.as_object_mut())
+                {
+                    obj.insert("steam_appid".into(), json!(aid));
+                    cfg.save_installed_games();
+                }
+            }
+        }
+    }
+
+    Ok(res)
+}
+
+#[tauri::command]
+async fn rust_delete_steam_shortcut(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    payload: Map<String, Value>,
+) -> Result<Value, String> {
+    let identifier = ["appid", "name", "shortcut_id", "id"]
+        .iter()
+        .find_map(|k| {
+            payload.get(*k).and_then(|v| {
+                v.as_str()
+                    .map(str::to_string)
+                    .or_else(|| v.as_u64().map(|n| n.to_string()))
+            })
+        })
+        .filter(|s| !s.trim().is_empty())
+        .ok_or_else(|| "Missing appid or shortcut name".to_string())?;
+
+    let (mgr, account_id) = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+        let mgr = steam::SteamManager::from_config(&cfg);
+        let acc = payload
+            .get("account_id")
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .or_else(|| {
+                let s1 = cfg.get_str("steam_id");
+                if !s1.is_empty() {
+                    Some(s1)
+                } else {
+                    let s2 = cfg.get_str("steam_user_id");
+                    if !s2.is_empty() { Some(s2) } else { None }
+                }
+            });
+        (mgr, acc)
+    };
+
+    let res = mgr
+        .delete_shortcut(&identifier, account_id.as_deref())
+        .await;
+
+    if res.get("success").and_then(|v| v.as_bool()).unwrap_or(false) {
+        let name = payload
+            .get("name")
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .or_else(|| {
+                res.get("deleted_name")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string)
+            });
+
+        if let Some(ref game_name) = name {
+            let mut cfg = state.config.lock().unwrap();
+            cfg.reload_if_changed();
+            if let Some(fk) = find_installed_game_key(&cfg.installed_games, game_name, "") {
+                if let Some(obj) = cfg
+                    .installed_games
+                    .get_mut(&fk)
+                    .and_then(|v| v.as_object_mut())
+                {
+                    obj.insert("steam_url".into(), Value::Null);
+                    cfg.save_installed_games();
+                    let mut db = state.database.lock().unwrap();
+                    db.update_installed_states(&cfg);
+                }
+            }
+        }
+    }
+
+    Ok(res)
+}
+
+#[tauri::command]
+async fn rust_rescan_steam(app: AppHandle, state: State<'_, AppState>) -> Result<Value, String> {
+    let (mgr, configured_id, fanta_data, db_games) = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+        let mgr = steam::SteamManager::from_config(&cfg);
+        let cid = {
+            let s1 = cfg.get_str("steam_id");
+            if !s1.is_empty() { s1 } else { cfg.get_str("steam_user_id") }
+        };
+        let fanta_data = cfg.installed_games.clone();
+        let mut db = state.database.lock().unwrap();
+        if db.games.is_empty() {
+            db.load_local_or_cached(&cfg, false);
+        }
+        (mgr, cid, fanta_data, db.games.clone())
+    };
+
+    let accounts = mgr.get_user_accounts().await;
+    let active_id = steam::SteamManager::resolve_active_account_id_from_list(&accounts, Some(&configured_id));
+    let shortcuts = mgr
+        .get_shortcuts(Some(&active_id), &fanta_data, &db_games)
+        .await;
+    let fanta_count = shortcuts
+        .iter()
+        .filter(|s| s.get("is_fanta").and_then(|v| v.as_bool()).unwrap_or(false))
+        .count();
+
+    Ok(json!({
+        "success": true,
+        "steam_path": mgr.steam_path.as_ref().map(|p| p.to_string_lossy().to_string()),
+        "libraries": mgr.libraries,
+        "accounts": accounts,
+        "active_user": active_id,
+        "shortcuts": shortcuts,
+        "fanta_count": fanta_count,
+        "total_shortcuts": shortcuts.len(),
+    }))
+}
+
+#[tauri::command]
+async fn rust_restart_steam(app: AppHandle, state: State<'_, AppState>) -> Result<Value, String> {
+    let mgr = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+        steam::SteamManager::from_config(&cfg)
+    };
+    tauri::async_runtime::spawn_blocking(move || mgr.restart_steam())
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn close_app(app: AppHandle) {
     backend::stop_backend(&app);
@@ -989,6 +1550,15 @@ pub fn run() {
             rust_get_extractor_status,
             rust_find_game_exe,
             rust_extract_archive,
+            rust_get_steam_libraries,
+            rust_get_steam_accounts,
+            rust_select_steam_account,
+            rust_get_steam_shortcuts,
+            rust_add_steam_shortcut,
+            rust_sync_shortcut_artwork,
+            rust_delete_steam_shortcut,
+            rust_rescan_steam,
+            rust_restart_steam,
             close_app,
             show_achievement_overlay,
             hide_achievement_overlay

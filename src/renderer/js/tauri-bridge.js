@@ -174,6 +174,20 @@
         });
 
         client.extractArchive = (payload) => invoke('rust_extract_archive', { payload: payload || {} });
+
+        client.getSteamLibraries = () => invoke('rust_get_steam_libraries');
+        client.getSteamAccounts = () => invoke('rust_get_steam_accounts');
+        client.selectSteamAccount = async (accountId) => {
+            const res = await invoke('rust_select_steam_account', { accountId: String(accountId || '') });
+            origSaveSettings({ steam_id: accountId, steam_user_id: accountId }).catch(() => {});
+            return res;
+        };
+        client.getSteamShortcuts = (accountId = '') => invoke('rust_get_steam_shortcuts', { accountId: accountId || null });
+        client.addSteamShortcut = (data) => invoke('rust_add_steam_shortcut', { payload: data || {} });
+        client.syncShortcutArtwork = (payload) => invoke('rust_sync_shortcut_artwork', { payload: payload || {} });
+        client.deleteSteamShortcut = (payload) => invoke('rust_delete_steam_shortcut', { payload: payload || {} });
+        client.rescanSteam = () => invoke('rust_rescan_steam');
+        client.restartSteam = () => invoke('rust_restart_steam');
     }
 
     // Enable frameless titlebar drag & double-click maximize + Stage 4.1 Rust data bridge
