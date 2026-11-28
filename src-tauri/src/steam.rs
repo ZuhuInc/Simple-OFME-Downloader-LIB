@@ -1053,7 +1053,7 @@ impl SteamManager {
         }
 
         println!(
-            "[Steam] Successfully injected shortcut '{}' (AppID: {}) into {}",
+            "[Rust Backend] [Steam] Successfully injected shortcut '{}' (AppID: {}) into {}",
             req.name,
             appid,
             path.display()
@@ -1259,7 +1259,7 @@ impl SteamManager {
             .unwrap_or_else(|| "steam.exe".to_string());
 
         if is_process_running("steam.exe") {
-            println!("[Steam] Gracefully requesting Steam shutdown via -shutdown...");
+            println!("[Rust Backend] [Steam] Gracefully requesting Steam shutdown via -shutdown...");
             let mut shut_cmd = Command::new(&steam_exe);
             shut_cmd.arg("-shutdown");
             #[cfg(target_os = "windows")]
@@ -1285,7 +1285,7 @@ impl SteamManager {
             }
         }
 
-        println!("[Steam] Launching Steam: {}", steam_exe);
+        println!("[Rust Backend] [Steam] Launching Steam: {}", steam_exe);
         let mut launch_cmd = Command::new(&steam_exe);
         #[cfg(target_os = "windows")]
         launch_cmd.creation_flags(DETACHED_PROCESS);

@@ -23,10 +23,23 @@ fn current_time_label() -> String {
     format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
 
-pub fn broadcast_log(app: &AppHandle, raw_text: &str, custom_level: Option<&str>) {
+fn broadcast_log_with_console(
+    app: &AppHandle,
+    raw_text: &str,
+    custom_level: Option<&str>,
+    console_prefix: Option<&str>,
+) {
     let clean_text = raw_text.trim();
     if clean_text.is_empty() {
         return;
+    }
+
+    if let Some(prefix) = console_prefix {
+        if prefix.is_empty() {
+            println!("{}", clean_text);
+        } else {
+            println!("{} {}", prefix, clean_text);
+        }
     }
 
     let level = if let Some(lvl) = custom_level {
@@ -71,6 +84,10 @@ pub fn broadcast_log(app: &AppHandle, raw_text: &str, custom_level: Option<&str>
     }
 
     let _ = app.emit("backend-log", entry);
+}
+
+pub fn broadcast_log(app: &AppHandle, raw_text: &str, custom_level: Option<&str>) {
+    broadcast_log_with_console(app, raw_text, custom_level, Some("[Rust Backend]"));
 }
 
 fn find_repo_root() -> Option<PathBuf> {
@@ -167,8 +184,12 @@ fn pipe_reader_threads(app: &AppHandle, child: &mut Child) {
                 if let Ok(line) = line_res {
                     let trimmed = line.trim();
                     if !trimmed.is_empty() {
-                        println!("[Python Backend] {}", trimmed);
-                        broadcast_log(&app_handle, trimmed, None);
+                        broadcast_log_with_console(
+                            &app_handle,
+                            trimmed,
+                            None,
+                            Some("[Python Backend]"),
+                        );
                     }
                 }
             }
@@ -196,9 +217,9 @@ fn pipe_reader_threads(app: &AppHandle, child: &mut Child) {
                         || trimmed.contains("HTTP/1.1\" 304")
                         || trimmed.contains("Running on http://")
                     {
-                        broadcast_log(&app_handle, trimmed, Some("info"));
+                        broadcast_log_with_console(&app_handle, trimmed, Some("info"), None);
                     } else {
-                        broadcast_log(&app_handle, trimmed, None);
+                        broadcast_log_with_console(&app_handle, trimmed, None, None);
                     }
                 }
             }
@@ -257,7 +278,6 @@ pub fn start_backend(app: &AppHandle) {
         source_mode_str == "1",
         program
     );
-    println!("{}", spawn_msg);
     broadcast_log(app, &spawn_msg, Some("info"));
 
     let mut cmd = Command::new(&program);
@@ -284,7 +304,6 @@ pub fn start_backend(app: &AppHandle) {
         }
         Err(err) => {
             let err_msg = format!("[Main] Failed to spawn Python backend process: {}", err);
-            eprintln!("{}", err_msg);
             broadcast_log(app, &err_msg, Some("danger"));
         }
     }
@@ -306,7 +325,7 @@ pub fn stop_backend(app: &AppHandle) {
     };
 
     let pid = child.id();
-    println!("[Main] Terminating Python backend process tree (PID {})...", pid);
+    println!("[Rust Backend] [Main] Terminating Python backend process tree (PID {})...", pid);
 
     #[cfg(target_os = "windows")]
     {

@@ -1,7 +1,9 @@
 mod backend;
 mod config;
 mod database;
+mod downloader;
 mod extractor;
+mod resolver;
 mod steam;
 mod updater;
 
@@ -10,7 +12,7 @@ use serde_json::{json, Map, Value};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 use std::sync::atomic::AtomicBool;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
@@ -30,6 +32,7 @@ pub struct AppState {
     pub downloaded_update: Mutex<Option<(tauri_plugin_updater::Update, Vec<u8>)>>,
     pub config: Mutex<config::ConfigManager>,
     pub database: Mutex<database::DatabaseManager>,
+    pub downloader: Arc<downloader::DownloadManager>,
 }
 
 impl Default for AppState {
@@ -42,6 +45,7 @@ impl Default for AppState {
             downloaded_update: Mutex::new(None),
             config: Mutex::new(config::ConfigManager::default()),
             database: Mutex::new(database::DatabaseManager::default()),
+            downloader: Arc::new(downloader::DownloadManager::default()),
         }
     }
 }
@@ -427,7 +431,7 @@ fn rust_mark_game_status(
     Ok(json!({ "success": true, "game_state": val }))
 }
 
-fn find_installed_game_key(
+pub(crate) fn find_installed_game_key(
     installed_games: &Map<String, Value>,
     title: &str,
     game_id: &str,
@@ -739,6 +743,12 @@ fn rust_extract_archive(
         } else {
             title.as_str()
         };
+        app_handle.state::<AppState>().downloader.mark_job_extracting(
+            &app_handle,
+            job_id.as_deref(),
+            &archive_path,
+            &title,
+        );
         backend::broadcast_log(
             &app_handle,
             &format!("[Extractor] Starting extraction for {} -> {}", label, extract_dir.display()),
@@ -812,6 +822,15 @@ fn rust_extract_archive(
                 db.update_installed_states(&cfg);
             }
 
+            app_handle.state::<AppState>().downloader.mark_job_extracted(
+                &app_handle,
+                job_id.as_deref(),
+                &archive_path,
+                &title,
+                &game_dir,
+                exe_path.as_deref(),
+            );
+
             backend::broadcast_log(
                 &app_handle,
                 &format!("[Extractor] Extraction complete for {} -> {}", label, game_dir),
@@ -831,6 +850,13 @@ fn rust_extract_archive(
             let err_msg = result
                 .error
                 .unwrap_or_else(|| "Unknown extraction error".to_string());
+            app_handle.state::<AppState>().downloader.mark_job_extract_failed(
+                &app_handle,
+                job_id.as_deref(),
+                &archive_path,
+                &title,
+                &err_msg,
+            );
             backend::broadcast_log(
                 &app_handle,
                 &format!("[Extractor] Extraction failed for {}: {}", label, err_msg),
@@ -1408,6 +1434,190 @@ async fn rust_restart_steam(app: AppHandle, state: State<'_, AppState>) -> Resul
 }
 
 #[tauri::command]
+fn rust_get_browsers() -> Value {
+    json!({ "browsers": resolver::get_installed_browsers() })
+}
+
+#[tauri::command]
+fn rust_get_downloads(state: State<'_, AppState>) -> Value {
+    json!({ "jobs": state.downloader.get_all_jobs() })
+}
+
+#[tauri::command]
+fn rust_check_disk_space(app: AppHandle, state: State<'_, AppState>, payload: Map<String, Value>) -> Value {
+    let install_path = payload
+        .get("install_path")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let dl_path_owned = payload
+        .get("download_path")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| {
+            let mut cfg = state.config.lock().unwrap();
+            cfg.bind_app(&app);
+            cfg.reload_if_changed();
+            downloader::DownloadManager::resolve_download_dir(&cfg)
+                .to_string_lossy()
+                .to_string()
+        });
+    let game_size = payload
+        .get("game_size")
+        .or_else(|| payload.get("approx_size"))
+        .cloned()
+        .unwrap_or_else(|| json!("10GB"));
+
+    downloader::check_disk_space(install_path, &dl_path_owned, &game_size)
+}
+
+#[tauri::command]
+fn rust_add_download(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    payload: Map<String, Value>,
+) -> Result<Value, String> {
+    let url = payload
+        .get("url")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "Missing URL".to_string())?
+        .to_string();
+    let filename = payload
+        .get("filename")
+        .and_then(|v| v.as_str())
+        .map(str::to_string);
+    let meta = payload
+        .get("meta")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+
+    let (download_dir, concurrency) = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+        let dir = downloader::DownloadManager::resolve_download_dir(&cfg);
+        let conc = cfg
+            .settings
+            .get("concurrent_downloads")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(2) as usize;
+        (dir, conc)
+    };
+
+    let job_id = state
+        .downloader
+        .add_job(&app, &download_dir, concurrency, url, filename, meta);
+    Ok(json!({ "success": true, "job_id": job_id }))
+}
+
+#[tauri::command]
+fn rust_pause_download(app: AppHandle, state: State<'_, AppState>, job_id: String) -> Value {
+    let ok = state.downloader.pause_job(&app, job_id.trim());
+    json!({ "success": ok })
+}
+
+#[tauri::command]
+fn rust_resume_download(app: AppHandle, state: State<'_, AppState>, job_id: String) -> Value {
+    let ok = state.downloader.resume_job(&app, job_id.trim());
+    json!({ "success": ok })
+}
+
+#[tauri::command]
+fn rust_cancel_download(app: AppHandle, state: State<'_, AppState>, job_id: String) -> Value {
+    let concurrency = {
+        let cfg = state.config.lock().unwrap();
+        cfg.settings
+            .get("concurrent_downloads")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(2) as usize
+    };
+    let ok = state
+        .downloader
+        .cancel_job(&app, concurrency, job_id.trim());
+    json!({ "success": ok })
+}
+
+#[tauri::command]
+fn rust_retry_download(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    job_id: String,
+    url: Option<String>,
+) -> Value {
+    let concurrency = {
+        let cfg = state.config.lock().unwrap();
+        cfg.settings
+            .get("concurrent_downloads")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(2) as usize
+    };
+    let ok = state
+        .downloader
+        .retry_job(&app, concurrency, job_id.trim(), url);
+    json!({ "success": ok })
+}
+
+#[tauri::command]
+fn rust_switch_download_source(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    payload: Map<String, Value>,
+) -> Result<Value, String> {
+    let job_id = payload
+        .get("job_id")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "Missing job_id or new_host".to_string())?;
+    let new_host = payload
+        .get("new_host")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "Missing job_id or new_host".to_string())?;
+
+    let part_urls: Option<Vec<String>> = payload
+        .get("part_urls")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|x| x.as_str().map(str::to_string))
+                .collect()
+        });
+    let fix_url = payload
+        .get("fix_url")
+        .and_then(|v| v.as_str())
+        .map(str::to_string);
+    let switch_all_parts = payload
+        .get("switch_all_parts")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+
+    let concurrency = {
+        let cfg = state.config.lock().unwrap();
+        cfg.settings
+            .get("concurrent_downloads")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(2) as usize
+    };
+
+    let res = state.downloader.switch_job_source(
+        &app,
+        concurrency,
+        job_id,
+        new_host,
+        part_urls,
+        fix_url,
+        switch_all_parts,
+    );
+    Ok(res)
+}
+
+#[tauri::command]
 fn close_app(app: AppHandle) {
     backend::stop_backend(&app);
     if let Some(overlay) = app.get_webview_window("overlay") {
@@ -1559,6 +1769,15 @@ pub fn run() {
             rust_delete_steam_shortcut,
             rust_rescan_steam,
             rust_restart_steam,
+            rust_get_browsers,
+            rust_get_downloads,
+            rust_check_disk_space,
+            rust_add_download,
+            rust_pause_download,
+            rust_resume_download,
+            rust_cancel_download,
+            rust_retry_download,
+            rust_switch_download_source,
             close_app,
             show_achievement_overlay,
             hide_achievement_overlay

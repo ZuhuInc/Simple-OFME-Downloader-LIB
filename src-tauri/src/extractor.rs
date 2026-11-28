@@ -128,7 +128,7 @@ impl Extractor {
                         .map(|n| n.to_string_lossy().to_string())
                         .unwrap_or_default();
                     println!(
-                        "[Extractor] Multi-part {} routed to primary volume {}",
+                        "[Rust Backend] [Extractor] Multi-part {} routed to primary volume {}",
                         archive_name, routed_name
                     );
                     archive_path = routed;
@@ -163,7 +163,7 @@ impl Extractor {
                     "The game is currently running ({}). Please close the game before extracting.",
                     blocking.join(", ")
                 );
-                println!("[Extractor] Aborting extraction: {}", err);
+                println!("[Rust Backend] [Extractor] Aborting extraction: {}", err);
                 progress_cb(json!({
                     "status": "error",
                     "error": err,
@@ -202,7 +202,7 @@ impl Extractor {
 
         // Method 1: Native Rust zip extraction for .zip archives (instant, zero GUI popups)
         if is_zip {
-            println!("[Extractor] Running native Zip extraction for {}...", archive_name);
+            println!("[Rust Backend] [Extractor] Running native Zip extraction for {}...", archive_name);
             match extract_zip_native(&archive_path, &opts.extract_dir, &passwords_to_try) {
                 Ok(()) => {
                     success = true;
@@ -225,7 +225,7 @@ impl Extractor {
                         } else {
                             format!("-p{}", p)
                         };
-                        println!("[Extractor] Running WinRAR -> {}", opts.extract_dir.display());
+                        println!("[Rust Backend] [Extractor] Running WinRAR -> {}", opts.extract_dir.display());
                         match run_hidden_extractor(
                             wr_exe,
                             &[
@@ -276,7 +276,7 @@ impl Extractor {
                         } else {
                             format!("-p{}", p)
                         };
-                        println!("[Extractor] Running 7-Zip -> {}", opts.extract_dir.display());
+                        println!("[Rust Backend] [Extractor] Running 7-Zip -> {}", opts.extract_dir.display());
                         match run_hidden_extractor(
                             sz_exe,
                             &[
@@ -378,7 +378,7 @@ impl Extractor {
         }));
 
         println!(
-            "[Extractor] Extraction COMPLETE: {} -> {}",
+            "[Rust Backend] [Extractor] Extraction COMPLETE: {} -> {}",
             archive_name, game_dir_str
         );
 
@@ -503,7 +503,7 @@ impl Extractor {
         }
         if let Ok(()) = fs::write(&ini_path, bytes) {
             println!(
-                "[Extractor] Generated azimuth.ini for Forza Horizon 2 at: {}",
+                "[Rust Backend] [Extractor] Generated azimuth.ini for Forza Horizon 2 at: {}",
                 ini_path.display()
             );
         }
@@ -591,7 +591,7 @@ impl Extractor {
             }
 
             println!(
-                "[Extractor] Unwrapping container folder '{}' in {}...",
+                "[Rust Backend] [Extractor] Unwrapping container folder '{}' in {}...",
                 entry_name,
                 extract_dir.display()
             );
@@ -603,7 +603,7 @@ impl Extractor {
                 let dst_item = extract_dir.join(child_name);
                 if let Err(e) = move_or_merge(&src_item, &dst_item) {
                     println!(
-                        "[Extractor] Warning moving unwrapped item '{}': {}",
+                        "[Rust Backend] [Extractor] Warning moving unwrapped item '{}': {}",
                         child_name.to_string_lossy(),
                         e
                     );
@@ -1127,11 +1127,11 @@ fn cleanup_after_extraction(archive_path: &Path) {
     if archive_path.is_file() {
         match fs::remove_file(archive_path) {
             Ok(()) => println!(
-                "[Extractor] Successfully deleted raw archive after extraction: {}",
+                "[Rust Backend] [Extractor] Successfully deleted raw archive after extraction: {}",
                 archive_path.display()
             ),
             Err(e) => println!(
-                "[Extractor] Notice: Could not remove archive {}: {}",
+                "[Rust Backend] [Extractor] Notice: Could not remove archive {}: {}",
                 archive_path.display(),
                 e
             ),

@@ -186,6 +186,22 @@
         client.addSteamShortcut = (data) => invoke('rust_add_steam_shortcut', { payload: data || {} });
         client.syncShortcutArtwork = (payload) => invoke('rust_sync_shortcut_artwork', { payload: payload || {} });
         client.deleteSteamShortcut = (payload) => invoke('rust_delete_steam_shortcut', { payload: payload || {} });
+        subscribeEvent('download-progress', (payload) => {
+            if (payload) {
+                client.emitLocal('download_progress', payload);
+            }
+        });
+
+        client.getBrowsers = () => invoke('rust_get_browsers');
+        client.getDownloads = () => invoke('rust_get_downloads');
+        client.checkDiskSpace = (payload) => invoke('rust_check_disk_space', { payload: payload || {} });
+        client.addDownload = (url, filename, meta = {}) => invoke('rust_add_download', { payload: { url, filename, meta } });
+        client.pauseDownload = (jobId) => invoke('rust_pause_download', { jobId: String(jobId || '') });
+        client.resumeDownload = (jobId) => invoke('rust_resume_download', { jobId: String(jobId || '') });
+        client.cancelDownload = (jobId) => invoke('rust_cancel_download', { jobId: String(jobId || '') });
+        client.retryDownload = (jobId, url = null) => invoke('rust_retry_download', { jobId: String(jobId || ''), url: url || null });
+        client.switchDownloadSource = (payload) => invoke('rust_switch_download_source', { payload: payload || {} });
+
         client.rescanSteam = () => invoke('rust_rescan_steam');
         client.restartSteam = () => invoke('rust_restart_steam');
     }

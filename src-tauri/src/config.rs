@@ -347,7 +347,7 @@ impl ConfigManager {
                         .ok()
                         .and_then(|m| m.modified().ok());
                     println!(
-                        "[Config] Migrated {} favorite game(s) from Electron Local Storage to Settings.json",
+                        "[Rust Backend] [Config] Migrated {} favorite game(s) from Electron Local Storage to Settings.json",
                         count
                     );
                 }
@@ -408,7 +408,7 @@ impl ConfigManager {
         if self.installed_games.is_empty() {
             if let Ok(meta) = fs::metadata(&self.data_json_path) {
                 if meta.len() > 100 {
-                    println!("[Config] Prevented saving empty installed games dictionary over existing Data.json");
+                    println!("[Rust Backend] [Config] Prevented saving empty installed games dictionary over existing Data.json");
                     return;
                 }
             }

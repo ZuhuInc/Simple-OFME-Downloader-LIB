@@ -656,6 +656,15 @@ class SettingsController {
 
             const isPort = await window.api?.isPortable?.();
             const isSrc = await window.api?.isSourceMode?.();
+            const buildTypeBadge = document.getElementById('buildTypeBadge');
+            if (buildTypeBadge) {
+                if (isSrc) {
+                    buildTypeBadge.style.display = 'none';
+                } else {
+                    buildTypeBadge.textContent = isPort ? 'PORTABLE' : 'INSTALLED';
+                    buildTypeBadge.style.display = 'inline-flex';
+                }
+            }
             if (isSrc) {
                 if (this.updateStatusTitle) this.updateStatusTitle.textContent = 'Development Mode';
                 if (this.updateStatusDesc) this.updateStatusDesc.textContent = 'Running from source code (use Check for Updates if dev-app-update.yml is configured).';
