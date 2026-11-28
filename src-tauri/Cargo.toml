@@ -1,6 +1,6 @@
 [package]
 name = "fanta-ofme-downloader"
-version = "2.5.0-beta.3"
+version = "2.5.0-beta.4"
 description = "Fanta OFME Downloader - Online-Fix Game Manager & Downloader"
 authors = ["ZuhuInc"]
 license = "MIT"
@@ -22,3 +22,4 @@ tauri-plugin-process = "2"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
+zip = { version = "9.8", default-features = false, features = ["deflate"] }

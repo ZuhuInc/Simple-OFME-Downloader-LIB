@@ -382,16 +382,86 @@ impl DatabaseManager {
         self.hosts = hosts;
     }
 
+    pub fn is_catalog_only_entry(obj: &Map<String, Value>) -> bool {
+        let has_downloaded_flag = obj
+            .get("downloaded")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        let has_install_fields = get_opt_str_field(
+            obj,
+            &[
+                "location",
+                "exe_path",
+                "steam_url",
+                "installed_version",
+                "preferred_runner",
+            ],
+        )
+        .is_some();
+        let has_runner_exes = obj
+            .get("runner_exes")
+            .and_then(|v| v.as_object())
+            .is_some_and(|m| !m.is_empty());
+
+        if has_downloaded_flag || has_install_fields || has_runner_exes {
+            return false;
+        }
+
+        const CATALOG_MARKERS: [&str; 9] = [
+            "parts",
+            "origin_url",
+            "Origin",
+            "main_game_url",
+            "MainGame",
+            "thumbnail",
+            "Thumbnail",
+            "approx_size",
+            "ApproxSize",
+        ];
+        CATALOG_MARKERS.iter().any(|k| obj.contains_key(*k))
+    }
+
+    pub fn installed_entry_score(key: &str, obj: &Map<String, Value>) -> u8 {
+        let mut score = 0u8;
+        if get_opt_str_field(obj, &["location"]).is_some() {
+            score += 4;
+        }
+        if obj
+            .get("downloaded")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+        {
+            score += 2;
+        }
+        if get_opt_str_field(obj, &["exe_path", "steam_url"]).is_some() {
+            score += 1;
+        }
+        if key == key.to_uppercase() {
+            score += 1;
+        }
+        score
+    }
+
     fn build_installed_lookup<'a>(
         installed: &'a Map<String, Value>,
     ) -> HashMap<String, &'a Map<String, Value>> {
-        let mut lookup = HashMap::new();
+        let mut lookup: HashMap<String, (u8, &'a Map<String, Value>)> = HashMap::new();
         for (k, v) in installed {
             if let Some(obj) = v.as_object() {
-                lookup.insert(normalize_key(k), obj);
+                if Self::is_catalog_only_entry(obj) {
+                    continue;
+                }
+                let norm = normalize_key(k);
+                let score = Self::installed_entry_score(k, obj);
+                match lookup.get(&norm) {
+                    Some(&(prev_score, _)) if score < prev_score => {}
+                    _ => {
+                        lookup.insert(norm, (score, obj));
+                    }
+                }
             }
         }
-        lookup
+        lookup.into_iter().map(|(k, (_s, v))| (k, v)).collect()
     }
 
     fn make_entry(
@@ -803,5 +873,62 @@ mod tests {
         let by_source = db.search_and_filter("", "OFME", "all", "default", "asc");
         assert_eq!(by_source.len(), 1);
         assert_eq!(by_source[0]["title"], "Alpha Game");
+    }
+
+    #[test]
+    fn test_installed_lookup_ignores_catalog_only_duplicates() {
+        let mut cfg = ConfigManager::default();
+        cfg.installed_games.clear();
+
+        // Insert real installed record first, then a trailing legacy catalog-only duplicate
+        cfg.installed_games.insert(
+            "MEGABONK".into(),
+            json!({
+                "location": "D:\\GAMES2\\Megabonk",
+                "downloaded": true,
+                "version": "21750826",
+                "exe_path": "D:\\GAMES2\\Megabonk\\Megabonk.exe"
+            }),
+        );
+        cfg.installed_games.insert(
+            "Megabonk".into(),
+            json!({
+                "version": "21750826Pre-Installed GameMegaDB",
+                "host": "BuzzHeavier",
+                "parts": ["https://bzzhr.to/jacb00xgmt7c"],
+                "origin_url": "https://steamrip.com/megabonk-free-download",
+                "thumbnail": "https://steamrip.com/wp-content/uploads/2025/09/megabonk.jpg"
+            }),
+        );
+        cfg.installed_games.insert(
+            "Hades 2".into(),
+            json!({
+                "version": "1.143476",
+                "host": "GoFile",
+                "parts": ["https://gofile.io/d/45J1cq5n"]
+            }),
+        );
+
+        let raw_catalog = r#"{
+            "Megabonk": { "version": "21750826", "host": "BuzzHeavier", "parts": ["https://bzzhr.to/jacb00xgmt7c"] },
+            "Hades 2": { "version": "1.143476", "host": "GoFile", "parts": ["https://gofile.io/d/45J1cq5n"] }
+        }"#;
+        let mut db = DatabaseManager::default();
+        db.games = db.parse_database(raw_catalog, &cfg);
+
+        assert_eq!(db.games.len(), 2);
+        let megabonk = &db.games[0];
+        assert_eq!(megabonk.status_code(), 1);
+        assert_eq!(megabonk.status_text(), "up_to_date");
+        assert_eq!(megabonk.installed_version.as_deref(), Some("21750826"));
+        assert_eq!(
+            megabonk.exe_path.as_deref(),
+            Some("D:\\GAMES2\\Megabonk\\Megabonk.exe")
+        );
+
+        let hades = &db.games[1];
+        assert_eq!(hades.status_code(), 0);
+        assert_eq!(hades.status_text(), "not_downloaded");
+        assert!(!hades.is_downloaded);
     }
 }

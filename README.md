@@ -1,6 +1,6 @@
-# FANTA OFME Downloader (v2.5.0-beta.3)
+# FANTA OFME Downloader (v2.5.0-beta.4)
 
-![Version](https://img.shields.io/badge/version-2.5.0--beta.3-d4a853.svg)
+![Version](https://img.shields.io/badge/version-2.5.0--beta.4-d4a853.svg)
 ![Channel](https://img.shields.io/badge/channel-BetaRework%20(Tauri%20v2)-orange.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078d7.svg)
 ![Tauri](https://img.shields.io/badge/Tauri-v2%20(Rust)-FFC131.svg)

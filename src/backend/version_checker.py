@@ -19,7 +19,7 @@ except ImportError:
     try:
         from src.backend import __version__
     except ImportError:
-        __version__ = "2.5.0-beta.3"
+        __version__ = "2.5.0-beta.4"
 
 
 class VersionChecker:

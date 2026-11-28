@@ -1,6 +1,7 @@
 mod backend;
 mod config;
 mod database;
+mod extractor;
 mod updater;
 
 use serde::{Deserialize, Serialize};
@@ -253,8 +254,9 @@ fn rust_get_status(app: AppHandle, state: State<'_, AppState>) -> Value {
         }
         db.games.len()
     };
-    let winrar_path = cfg.get_str("winrar_path");
-    let winrar_installed = !winrar_path.is_empty() && Path::new(&winrar_path).is_file();
+    let ext = extractor::Extractor::from_config(&cfg);
+    let winrar_installed = ext.is_winrar_available();
+    let sevenzip_installed = ext.is_sevenzip_available();
     let steam_path = cfg.get_str("steam_path");
     let steam_detected = !steam_path.is_empty() && Path::new(&steam_path).exists();
     let local_db = cfg
@@ -266,6 +268,7 @@ fn rust_get_status(app: AppHandle, state: State<'_, AppState>) -> Value {
         "status": "online",
         "version": app.package_info().version.to_string(),
         "winrar_installed": winrar_installed,
+        "sevenzip_installed": sevenzip_installed,
         "steam_detected": steam_detected,
         "total_games": total_games,
         "is_source_mode": cfg!(debug_assertions),
@@ -423,6 +426,38 @@ fn rust_mark_game_status(
     Ok(json!({ "success": true, "game_state": val }))
 }
 
+fn find_installed_game_key(
+    installed_games: &Map<String, Value>,
+    title: &str,
+    game_id: &str,
+) -> Option<String> {
+    let norm_title = database::normalize_key(title);
+    let norm_id = database::normalize_key(game_id);
+
+    installed_games
+        .iter()
+        .filter_map(|(k, v)| {
+            let obj = v.as_object()?;
+            if database::DatabaseManager::is_catalog_only_entry(obj) {
+                return None;
+            }
+            let kn = database::normalize_key(k);
+            let matches = (!title.is_empty() && k.eq_ignore_ascii_case(title))
+                || (!norm_title.is_empty() && kn == norm_title)
+                || (!norm_id.is_empty() && kn == norm_id);
+            if matches {
+                Some((
+                    database::DatabaseManager::installed_entry_score(k, obj),
+                    k.clone(),
+                ))
+            } else {
+                None
+            }
+        })
+        .max_by_key(|(score, _)| *score)
+        .map(|(_, k)| k)
+}
+
 #[tauri::command]
 fn rust_remove_game(
     state: State<'_, AppState>,
@@ -439,16 +474,10 @@ fn rust_remove_game(
         return Err("Missing game id or title".to_string());
     }
 
-    let norm_title = database::normalize_key(title);
-    let norm_id = database::normalize_key(game_id);
-
     let mut cfg = state.config.lock().unwrap();
     cfg.reload_if_changed();
 
-    let found_key = cfg.installed_games.keys().find(|k| {
-        let kn = database::normalize_key(k);
-        k.eq_ignore_ascii_case(title) || (!norm_title.is_empty() && kn == norm_title) || (!norm_id.is_empty() && kn == norm_id)
-    }).cloned();
+    let found_key = find_installed_game_key(&cfg.installed_games, title, game_id);
 
     let mut game_location = String::new();
     if let Some(ref fk) = found_key {
@@ -510,15 +539,9 @@ fn rust_remove_steam_link(
         return Err("Missing game id or title".to_string());
     }
 
-    let norm_title = database::normalize_key(title);
-    let norm_id = database::normalize_key(game_id);
-
     let mut cfg = state.config.lock().unwrap();
     cfg.reload_if_changed();
-    let found_key = cfg.installed_games.keys().find(|k| {
-        let kn = database::normalize_key(k);
-        k.eq_ignore_ascii_case(title) || (!norm_title.is_empty() && kn == norm_title) || (!norm_id.is_empty() && kn == norm_id)
-    }).cloned();
+    let found_key = find_installed_game_key(&cfg.installed_games, title, game_id);
 
     if let Some(ref fk) = found_key {
         if let Some(obj) = cfg.installed_games.get_mut(fk).and_then(|v| v.as_object_mut()) {
@@ -539,6 +562,288 @@ fn rust_remove_steam_link(
         "success": true,
         "message": "No Steam shortcut link was found for this title"
     }))
+}
+
+#[tauri::command]
+fn rust_get_extractor_status(app: AppHandle, state: State<'_, AppState>) -> Value {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.bind_app(&app);
+    cfg.reload_if_changed();
+    let ext = extractor::Extractor::from_config(&cfg);
+    json!({
+        "winrar_available": ext.is_winrar_available(),
+        "winrar_path": ext.winrar_path.as_ref().map(|p| p.to_string_lossy().to_string()),
+        "sevenzip_available": ext.is_sevenzip_available(),
+        "sevenzip_path": ext.sevenzip_path.as_ref().map(|p| p.to_string_lossy().to_string()),
+        "any_available": ext.is_any_extractor_available()
+    })
+}
+
+#[tauri::command]
+fn rust_find_game_exe(game_dir: String, title: Option<String>) -> Option<String> {
+    extractor::Extractor::find_game_exe(Path::new(&game_dir), title.as_deref())
+        .map(|p| p.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn rust_extract_archive(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    payload: Map<String, Value>,
+) -> Result<Value, String> {
+    let job_id = payload
+        .get("job_id")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    let archive_path = payload
+        .get("archive_path")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "Missing archive_path".to_string())?
+        .to_string();
+    let title = payload
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let custom_extract_dir = payload
+        .get("extract_dir")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string);
+    let explicit_version = payload
+        .get("version")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string);
+
+    let (extractor_inst, extract_dir, password, cg_password, delete_after, is_fix) = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.bind_app(&app);
+        cfg.reload_if_changed();
+
+        let ext = extractor::Extractor::from_config(&cfg);
+        let password = payload
+            .get("password")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .unwrap_or_else(|| {
+                let p = cfg.get_str("rar_password");
+                if p.is_empty() {
+                    extractor::DEFAULT_RAR_PASSWORD.to_string()
+                } else {
+                    p
+                }
+            });
+        let cg_password = {
+            let p = cfg.get_str("cg_password");
+            if p.is_empty() {
+                "cracked-games.org".to_string()
+            } else {
+                p
+            }
+        };
+        let delete_after = payload
+            .get("delete_after")
+            .and_then(|v| v.as_bool())
+            .unwrap_or_else(|| {
+                cfg.settings
+                    .get("auto_delete_archive")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(true)
+            });
+
+        let archive_file_name = Path::new(&archive_path)
+            .file_name()
+            .map(|n| n.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+        let is_fix = archive_file_name.contains("fix")
+            || archive_path.to_lowercase().contains("_fix.");
+
+        let mut existing_location: Option<String> = None;
+        if !title.is_empty() {
+            if let Some(fk) = find_installed_game_key(&cfg.installed_games, &title, "") {
+                existing_location = cfg
+                    .installed_games
+                    .get(&fk)
+                    .and_then(|v| v.get("location"))
+                    .and_then(|l| l.as_str())
+                    .filter(|s| !s.trim().is_empty())
+                    .map(str::to_string);
+            }
+        }
+
+        let default_base = {
+            let def_dl = cfg.get_str("default_download_path");
+            let ext_p = cfg.get_str("extract_path");
+            if !def_dl.trim().is_empty() {
+                PathBuf::from(def_dl.trim())
+            } else if !ext_p.trim().is_empty() {
+                PathBuf::from(ext_p.trim())
+            } else {
+                config::get_default_games_dir()
+            }
+        };
+
+        let resolved_dir = if let Some(custom) = custom_extract_dir {
+            PathBuf::from(custom)
+        } else if is_fix {
+            if let Some(ref loc) = existing_location {
+                let lp = PathBuf::from(loc);
+                if lp.is_dir() {
+                    lp
+                } else {
+                    default_base.join(&title)
+                }
+            } else {
+                default_base.join(&title)
+            }
+        } else if let Some(ref loc) = existing_location {
+            let lp = PathBuf::from(loc);
+            if lp.is_dir() {
+                match lp.parent() {
+                    Some(parent)
+                        if parent.exists() || parent.to_string_lossy().len() <= 3 =>
+                    {
+                        parent.to_path_buf()
+                    }
+                    _ => lp,
+                }
+            } else {
+                default_base
+            }
+        } else {
+            default_base
+        };
+
+        (ext, resolved_dir, password, cg_password, delete_after, is_fix)
+    };
+
+    let app_handle = app.clone();
+    std::thread::spawn(move || {
+        let emit_status = |mut payload_obj: Map<String, Value>| {
+            payload_obj.insert("title".into(), json!(title));
+            if let Some(ref jid) = job_id {
+                payload_obj.insert("job_id".into(), json!(jid));
+            }
+            let _ = app_handle.emit("extraction-status", Value::Object(payload_obj));
+        };
+
+        let label = if title.is_empty() {
+            archive_path.as_str()
+        } else {
+            title.as_str()
+        };
+        backend::broadcast_log(
+            &app_handle,
+            &format!("[Extractor] Starting extraction for {} -> {}", label, extract_dir.display()),
+            Some("info"),
+        );
+
+        let opts = extractor::ExtractOptions {
+            archive_path: PathBuf::from(&archive_path),
+            extract_dir,
+            password,
+            cg_password,
+            delete_after,
+            game_title: if title.trim().is_empty() {
+                None
+            } else {
+                Some(title.clone())
+            },
+            is_fix,
+        };
+
+        let result = extractor_inst.extract_archive(opts, |_| {});
+
+        if result.success {
+            let game_dir = result
+                .game_dir
+                .clone()
+                .unwrap_or_else(|| result.extract_dir.clone());
+            let exe_path = result.exe_path.clone();
+
+            if !result.skipped && !title.trim().is_empty() {
+                let state_ref = app_handle.state::<AppState>();
+                let mut cfg = state_ref.config.lock().unwrap();
+                cfg.reload_if_changed();
+                let mut db = state_ref.database.lock().unwrap();
+                if db.games.is_empty() {
+                    db.load_local_or_cached(&cfg, false);
+                }
+
+                let norm_title = database::normalize_key(&title);
+                let resolved_version = explicit_version.clone().or_else(|| {
+                    db.games
+                        .iter()
+                        .find(|g| {
+                            g.title.eq_ignore_ascii_case(&title)
+                                || (!norm_title.is_empty()
+                                    && database::normalize_key(&g.title) == norm_title)
+                        })
+                        .map(|g| g.version.clone())
+                        .filter(|v| !v.trim().is_empty())
+                });
+
+                let key = find_installed_game_key(&cfg.installed_games, &title, "")
+                    .unwrap_or_else(|| title.to_uppercase());
+
+                let mut record = cfg
+                    .installed_games
+                    .get(&key)
+                    .and_then(|v| v.as_object())
+                    .cloned()
+                    .unwrap_or_default();
+                record.insert("downloaded".into(), json!(true));
+                record.insert("location".into(), json!(game_dir));
+                if let Some(ref ver) = resolved_version {
+                    record.insert("version".into(), json!(ver));
+                }
+                if let Some(ref exe) = exe_path {
+                    record.insert("exe_path".into(), json!(exe));
+                }
+                cfg.installed_games.insert(key, Value::Object(record));
+                cfg.save_installed_games();
+                db.update_installed_states(&cfg);
+            }
+
+            backend::broadcast_log(
+                &app_handle,
+                &format!("[Extractor] Extraction complete for {} -> {}", label, game_dir),
+                Some("success"),
+            );
+
+            let mut done_map = Map::new();
+            done_map.insert("status".into(), json!("success"));
+            done_map.insert("file".into(), json!(archive_path));
+            done_map.insert("dest".into(), json!(game_dir));
+            done_map.insert("game_dir".into(), json!(game_dir));
+            if let Some(ref exe) = exe_path {
+                done_map.insert("exe_path".into(), json!(exe));
+            }
+            emit_status(done_map);
+        } else {
+            let err_msg = result
+                .error
+                .unwrap_or_else(|| "Unknown extraction error".to_string());
+            backend::broadcast_log(
+                &app_handle,
+                &format!("[Extractor] Extraction failed for {}: {}", label, err_msg),
+                Some("danger"),
+            );
+            let mut err_map = Map::new();
+            err_map.insert("status".into(), json!("error"));
+            err_map.insert("file".into(), json!(archive_path));
+            err_map.insert("error".into(), json!(err_msg));
+            emit_status(err_map);
+        }
+    });
+
+    Ok(json!({ "success": true, "message": "Extraction started in background" }))
 }
 
 #[tauri::command]
@@ -681,6 +986,9 @@ pub fn run() {
             rust_mark_game_status,
             rust_remove_game,
             rust_remove_steam_link,
+            rust_get_extractor_status,
+            rust_find_game_exe,
+            rust_extract_archive,
             close_app,
             show_achievement_overlay,
             hide_achievement_overlay

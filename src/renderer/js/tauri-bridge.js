@@ -74,6 +74,7 @@
         openExternal: (url) => invoke('open_external', { url: url || '' }),
         onBackendLog: (callback) => subscribeEvent('backend-log', callback),
         getInitialLogs: () => invoke('get_initial_logs'),
+        getExtractorStatus: () => invoke('rust_get_extractor_status'),
         isSourceMode: () => invoke('is_source_mode'),
         isPortable: () => invoke('is_portable'),
         checkForUpdates: () => invoke('check_for_updates'),
@@ -165,6 +166,14 @@
                 return await invoke('rust_remove_steam_link', { payload: payload || {} });
             }
         };
+
+        subscribeEvent('extraction-status', (payload) => {
+            if (payload) {
+                client.emitLocal('extraction_status', payload);
+            }
+        });
+
+        client.extractArchive = (payload) => invoke('rust_extract_archive', { payload: payload || {} });
     }
 
     // Enable frameless titlebar drag & double-click maximize + Stage 4.1 Rust data bridge
